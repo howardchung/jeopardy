@@ -208,8 +208,11 @@ export class Jeopardy {
         }
         this.emitState();
       });
-      socket.on('JPD:start', (episode, filter) => {
-        this.loadEpisode(episode, filter);
+      socket.on('JPD:start', (episode, filter, data) => {
+        if (data && data.length > 1000000) {
+          return;
+        }
+        this.loadEpisode(episode, filter, data);
       });
       socket.on('JPD:pickQ', (id: string) => {
         if (
@@ -346,21 +349,28 @@ export class Jeopardy {
     });
   }
 
-  loadEpisode(number: string, filter: string) {
-    console.log('[LOADEPISODE]', number, filter);
-    // Load question data into game
-    let nums = Object.keys(jData);
-    if (filter) {
-      // Only load episodes with info matching the filter: kids, teen, college etc.
-      nums = nums.filter(
-        (num) => (jData as any)[num].info && (jData as any)[num].info === filter
-      );
+  loadEpisode(number: string, filter: string, custom: any) {
+    console.log('[LOADEPISODE]', number, filter, Boolean(custom));
+    let loadedData = null;
+    if (custom) {
+      loadedData = JSON.parse(custom);
+      loadedData.epNum = 'Custom';
+    } else {
+      // Load question data into game
+      let nums = Object.keys(jData);
+      if (filter) {
+        // Only load episodes with info matching the filter: kids, teen, college etc.
+        nums = nums.filter(
+          (num) =>
+            (jData as any)[num].info && (jData as any)[num].info === filter
+        );
+      }
+      if (!number) {
+        // Random an episode
+        number = nums[Math.floor(Math.random() * nums.length)];
+      }
+      loadedData = (jData as any)[number];
     }
-    if (!number) {
-      // Random an episode
-      number = nums[Math.floor(Math.random() * nums.length)];
-    }
-    let loadedData = (jData as any)[number];
     if (loadedData) {
       const { epNum, airDate, info, jeopardy, double, final } = loadedData;
       this.jpd = getGameState(epNum, airDate, info, jeopardy, double, final);
