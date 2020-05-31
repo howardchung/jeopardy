@@ -244,6 +244,11 @@ export const JeopardyHome = () => {
             title="Judging"
             text="Players perform answer judging themselves, so you're not penalized for incorrect spelling."
           />
+          <Feature
+            icon="wrench"
+            title="Custom Games"
+            text="Upload your own data file to play a custom game!"
+          />
         </div>
       </div>
     </div>
