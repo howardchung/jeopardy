@@ -159,10 +159,41 @@ export class Jeopardy extends React.Component<{
     }
   }
 
-  newGame = async (episode: number | null, filter: string | null) => {
+  newGame = async (
+    episode: number | null,
+    filter: string | null,
+    customGame?: string
+  ) => {
     this.setState({ game: null });
     // optionally send an episode number
-    this.props.socket.emit('JPD:start', episode, filter);
+    this.props.socket.emit('JPD:start', episode, filter, customGame);
+  };
+
+  customGame = () => {
+    // Create an input element
+    const inputElement = document.createElement('input');
+
+    // Set its type to file
+    inputElement.type = 'file';
+
+    // Set accept to the file types you want the user to select.
+    // Include both the file extension and the mime type
+    // inputElement.accept = accept;
+
+    // set onchange event to call callback when user has selected file
+    inputElement.addEventListener('change', () => {
+      const file = inputElement.files![0];
+      // Read the file
+      const reader = new FileReader();
+      reader.readAsText(file);
+      reader.onload = (e) => {
+        let content = e.target?.result;
+        this.newGame(null, null, content as string);
+      };
+    });
+
+    // dispatch a click event to open the file dialog
+    inputElement.dispatchEvent(new MouseEvent('click'));
   };
 
   playIntro = async () => {
@@ -757,6 +788,39 @@ export class Jeopardy extends React.Component<{
                 <Icon name="book" />
                 {this.state.readingDisabled ? 'Reading off' : 'Reading on'}
               </Button>
+              <Button.Group>
+                <Popup
+                  content={`Create your own custom game by uploading a data file`}
+                  trigger={
+                    <Button
+                      onClick={() => this.customGame()}
+                      icon
+                      labelPosition="left"
+                      color="yellow"
+                    >
+                      <Icon name="wrench" />
+                      Custom
+                    </Button>
+                  }
+                />
+                <Popup
+                  content={`Download an example data file`}
+                  trigger={
+                    <Button
+                      icon
+                      labelPosition="left"
+                      color="orange"
+                      href={`data:application/octet-stream,${encodeURIComponent(
+                        JSON.stringify(require('./example.json'), null, 2)
+                      )}`}
+                      download="example.json"
+                    >
+                      <Icon name="download" />
+                      Template
+                    </Button>
+                  }
+                />
+              </Button.Group>
             </div>
           </React.Fragment>
         }
