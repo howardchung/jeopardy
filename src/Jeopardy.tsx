@@ -542,7 +542,7 @@ export class Jeopardy extends React.Component<{
               </div>
             }
             <div style={{ height: '8px' }} />
-            <div style={{ display: 'flex' }}>
+            <div style={{ display: 'flex', overflowX: 'auto' }}>
               {this.props.participants.map((p) => {
                 return (
                   <div className="scoreboard">

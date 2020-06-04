@@ -540,6 +540,11 @@ export class Jeopardy {
       // Already judged this player
       return false;
     }
+    if (!this.jpd.public.currentQ) {
+      // No question picked currently
+      return false;
+    }
+    this.jpd.public.judges[id] = correct;
     console.log('[JUDGE]', id, correct);
     // Currently anyone can pick the correct answer
     // Can turn this into a vote or make a non-player the host
@@ -547,7 +552,6 @@ export class Jeopardy {
     if (!this.jpd.public.scores[id]) {
       this.jpd.public.scores[id] = 0;
     }
-    this.jpd.public.judges[id] = correct;
     if (correct) {
       this.jpd.public.scores[id] +=
         this.jpd.public.wagers[id] || this.jpd.public.currentValue;

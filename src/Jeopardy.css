@@ -139,6 +139,7 @@
   flex-direction: column;
   width: 110px;
   margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .scoreboard .icons {
