@@ -498,7 +498,10 @@ export class Jeopardy extends React.Component<{
                           <TimerBar duration={game.playClueDuration} />
                         )}
                         {Boolean(game.questionDuration) && (
-                          <TimerBar duration={game.questionDuration} />
+                          <TimerBar
+                            duration={game.questionDuration}
+                            secondary
+                          />
                         )}
                         <div
                           style={{
@@ -834,7 +837,10 @@ export class Jeopardy extends React.Component<{
   }
 }
 
-class TimerBar extends React.Component<{ duration: number }> {
+class TimerBar extends React.Component<{
+  duration: number;
+  secondary?: boolean;
+}> {
   public state = { width: '0%' };
   componentDidMount() {
     requestAnimationFrame(() => {
@@ -850,7 +856,7 @@ class TimerBar extends React.Component<{ duration: number }> {
           left: '0px',
           height: '10px',
           width: this.state.width,
-          backgroundColor: '#0E6EB8',
+          backgroundColor: this.props.secondary ? '#16AB39' : '#0E6EB8',
           transition: `${this.props.duration / 1000}s width linear`,
         }}
       />
