@@ -471,7 +471,17 @@ export class Jeopardy extends React.Component<{
                           {game.waitingForWager &&
                           game.waitingForWager[this.props.socket.id] ? (
                             <Input
-                              label="Wager"
+                              label={`Wager (${
+                                getWagerBounds(
+                                  game.round,
+                                  game.scores[this.props.socket.id]
+                                ).minWager
+                              } to ${
+                                getWagerBounds(
+                                  game.round,
+                                  game.scores[this.props.socket.id]
+                                ).maxWager
+                              })`}
                               value={this.state.localWager}
                               onChange={(e) =>
                                 this.setState({ localWager: e.target.value })
@@ -545,7 +555,7 @@ export class Jeopardy extends React.Component<{
               </div>
             }
             <div style={{ height: '8px' }} />
-            <div style={{ display: 'flex', overflowX: 'auto' }}>
+            <div style={{ display: 'flex', overflowX: 'auto', flexShrink: 0 }}>
               {this.props.participants.map((p) => {
                 return (
                   <div className="scoreboard">
@@ -862,4 +872,20 @@ class TimerBar extends React.Component<{
       />
     );
   }
+}
+
+function getWagerBounds(round: string, score: number) {
+  // User setting a wager for DD or final
+  // Can bet up to current score, minimum of 1000 in single or 2000 in double, 0 in final
+  let maxWager = 0;
+  let minWager = 5;
+  if (round === 'jeopardy') {
+    maxWager = Math.max(score || 0, 1000);
+  } else if (round === 'double') {
+    maxWager = Math.max(score || 0, 2000);
+  } else if (round === 'final') {
+    minWager = 0;
+    maxWager = Math.max(score || 0, 0);
+  }
+  return { minWager, maxWager };
 }

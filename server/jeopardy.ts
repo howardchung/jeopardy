@@ -52,6 +52,9 @@ function constructPublicBoard(questions: RawQuestion[]) {
   // Map of x_y coordinates to questions
   let output: { [key: string]: Question } = {};
   questions.forEach((q) => {
+    // if (!q.dd) {
+    //   return;
+    // }
     output[`${q.x}_${q.y}`] = {
       value: q.val,
       category: q.cat,
