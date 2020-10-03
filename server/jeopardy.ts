@@ -181,10 +181,6 @@ export class Jeopardy {
         }
       });
       socket.on('JPD:reconnect', (id: string) => {
-        // Make sure the ID doesn't belong to a player already in the roster
-        if (this.roster.some((p) => p.id === id)) {
-          return;
-        }
         // Transfer old state to this player
         if (this.jpd.public.scores && this.jpd.public.scores[id]) {
           this.jpd.public.scores[socket.id] = this.jpd.public.scores[id];
