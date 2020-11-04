@@ -38,14 +38,6 @@ export class Jeopardy extends React.Component<{
       ),
     });
 
-    // If we stored an old ID in localstorage, send reconnection request
-    const savedId = window.localStorage.getItem('jeopardy-savedId');
-    if (savedId) {
-      this.props.socket.emit('JPD:reconnect', savedId);
-    }
-    // Save our current ID to localstorage
-    window.localStorage.setItem('jeopardy-savedId', this.props.socket.id);
-
     this.props.socket.emit('JPD:init');
     this.props.socket.on('JPD:state', (game: any) => {
       this.setState({ game, localEpNum: game.epNum });
