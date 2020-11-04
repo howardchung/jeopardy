@@ -111,6 +111,12 @@ export default class App extends React.Component<null, AppState> {
       // Load username from localstorage
       let userName = window.localStorage.getItem('watchparty-username');
       this.updateName(null, { value: userName || generateName() });
+      const savedId = window.localStorage.getItem('jeopardy-savedId');
+      if (savedId) {
+        socket.emit('JPD:reconnect', savedId);
+      }
+      // Save our current ID to localstorage
+      window.localStorage.setItem('jeopardy-savedId', socket.id);
     });
     socket.on('error', (err: any) => {
       console.error(err);
