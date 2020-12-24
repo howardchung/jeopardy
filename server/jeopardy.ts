@@ -352,8 +352,12 @@ export class Jeopardy {
     console.log('[LOADEPISODE]', number, filter, Boolean(custom));
     let loadedData = null;
     if (custom) {
-      loadedData = JSON.parse(custom);
-      loadedData.epNum = 'Custom';
+      try {
+        loadedData = JSON.parse(custom);
+        loadedData.epNum = 'Custom';
+      } catch (e) {
+        console.warn(e);
+      }
     } else {
       // Load question data into game
       let nums = Object.keys(jData);
