@@ -24,7 +24,11 @@ export class Jeopardy extends React.Component<{
     readingDisabled: false,
     buzzFrozen: false,
   };
+  buzzLock = 0;
+
   async componentDidMount() {
+    document.onkeydown = this.onKeydown;
+
     window.speechSynthesis.getVoices();
     const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
     const boardFill = new Audio('/jeopardy/jeopardy-board-fill.mp3');
@@ -132,6 +136,10 @@ export class Jeopardy extends React.Component<{
     });
   }
 
+  componentWillUnmount() {
+    document.removeEventListener('keydown', this.onKeydown);
+  }
+
   async componentDidUpdate(prevProps: any, prevState: any) {
     if (!prevState.game?.currentQ && this.state.game?.currentQ) {
       // Run growing clue animation
@@ -150,6 +158,15 @@ export class Jeopardy extends React.Component<{
       }, 1);
     }
   }
+
+  onKeydown = (e: any) => {
+    if (!document.activeElement || document.activeElement.tagName === 'BODY') {
+      if (e.key === ' ') {
+        e.preventDefault();
+        this.onBuzz();
+      }
+    }
+  };
 
   newGame = async (
     episode: number | null,
@@ -317,6 +334,25 @@ export class Jeopardy extends React.Component<{
     return this.state.game?.buzzes[id] - this.state.game?.buzzUnlockTS;
   };
 
+  onBuzz = () => {
+    const game = this.state.game;
+    if (game.canBuzz && !this.buzzLock && !this.state.buzzFrozen) {
+      this.props.socket.emit('JPD:buzz');
+    } else {
+      // Freeze the buzzer for 0.5 seconds
+      // setState takes a little bit, so also set a local var to prevent spam
+      const now = Date.now();
+      this.buzzLock = now;
+      this.setState({ buzzFrozen: true });
+      setTimeout(() => {
+        if (this.buzzLock === now) {
+          this.setState({ buzzFrozen: false });
+          this.buzzLock = 0;
+        }
+      }, 500);
+    }
+  };
+
   render() {
     const game = this.state.game;
     const categories = this.getCategories();
@@ -391,19 +427,7 @@ export class Jeopardy extends React.Component<{
                                 disabled={this.state.buzzFrozen}
                                 color="green"
                                 size="huge"
-                                onClick={() => {
-                                  if (game.canBuzz) {
-                                    this.props.socket.emit('JPD:buzz');
-                                  } else {
-                                    // Freeze the buzzer for 0.5 seconds
-                                    this.setState({ buzzFrozen: true });
-                                    setTimeout(
-                                      () =>
-                                        this.setState({ buzzFrozen: false }),
-                                      500
-                                    );
-                                  }
-                                }}
+                                onClick={this.onBuzz}
                                 icon
                                 labelPosition="left"
                               >
