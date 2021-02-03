@@ -650,6 +650,9 @@ export class Jeopardy {
       // Allow some time for reading the text, based on content
       // Count syllables in text, assume speaking rate of 4 syll/sec
       const syllCountArr = clue.question
+        // Remove parenthetical starts and blanks
+        .replace(/^\(.*\)/, '')
+        .replace(/_/g, ' blank ')
         .split(' ')
         .map((word: string) => syllableCount(word));
       const totalSyll = syllCountArr.reduce((a: number, b: number) => a + b, 0);
