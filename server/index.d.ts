@@ -1,6 +1,6 @@
 type StringDict = { [key: string]: string };
 type NumberDict = { [key: string]: number };
-type BooleanDict = { [key: string]: boolean };
+type BooleanDict = { [key: string]: boolean | null };
 type PCDict = { [key: string]: RTCPeerConnection };
 
 interface User {

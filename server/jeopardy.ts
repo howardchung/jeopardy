@@ -330,11 +330,10 @@ export class Jeopardy {
       });
       socket.on('disconnect', () => {
         if (this.jpd && this.jpd.public) {
-          // If player being judged leaves, rule them wrong
+          // If player being judged leaves, skip their answer
           if (this.jpd.public.currentJudgeAnswer === socket.id) {
-            // This is done for now to run the rest of the code around judging
-            // Might be better not to penalize and treat as just not having answered
-            this.judgeAnswer({ id: socket.id, correct: false });
+            // This is to run the rest of the code around judging
+            this.judgeAnswer({ id: socket.id, correct: null });
           }
           // If player who needs to submit wager leaves, submit 0
           if (
@@ -538,7 +537,7 @@ export class Jeopardy {
     }
   }
 
-  judgeAnswer({ id, correct }: { id: string; correct: boolean }) {
+  judgeAnswer({ id, correct }: { id: string; correct: boolean | null }) {
     if (id in this.jpd.public.judges) {
       // Already judged this player
       return false;
@@ -555,15 +554,17 @@ export class Jeopardy {
     if (!this.jpd.public.scores[id]) {
       this.jpd.public.scores[id] = 0;
     }
-    if (correct) {
+    if (correct === true) {
       this.jpd.public.scores[id] +=
         this.jpd.public.wagers[id] || this.jpd.public.currentValue;
       // Correct answer is next picker
       this.jpd.public.picker = id;
-    } else {
+    }
+    if (correct === false) {
       this.jpd.public.scores[id] -=
         this.jpd.public.wagers[id] || this.jpd.public.currentValue;
     }
+    // If null, don't change scores
 
     this.advanceJudging();
 
@@ -583,7 +584,7 @@ export class Jeopardy {
         this.emitState();
       }
     }
-    return true;
+    return correct !== null;
   }
 
   submitWager(id: string, wager: number) {

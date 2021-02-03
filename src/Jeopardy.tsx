@@ -285,7 +285,7 @@ export class Jeopardy extends React.Component<{
     this.setState({ localAnswer: '', localAnswerSubmitted: true });
   };
 
-  judgeAnswer = (id: string, correct: boolean) => {
+  judgeAnswer = (id: string, correct: boolean | null) => {
     this.props.socket.emit('JPD:judge', { id, correct });
   };
 
@@ -644,6 +644,20 @@ export class Jeopardy extends React.Component<{
                                 fluid
                               >
                                 <Icon name="close" />
+                              </Button>
+                            }
+                          />
+                          <Popup
+                            content="Skip"
+                            trigger={
+                              <Button
+                                onClick={() => this.judgeAnswer(p.id, null)}
+                                color="grey"
+                                size="tiny"
+                                icon
+                                fluid
+                              >
+                                <Icon name="angle double right" />
                               </Button>
                             }
                           />
