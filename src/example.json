@@ -280,7 +280,7 @@
       "a": "An answer",
       "cat": "A CATEGORY",
       "dd": true,
-      "val": 200
+      "val": 400
     },
     {
       "x": 2,
@@ -289,7 +289,7 @@
       "a": "A daily double answeer",
       "cat": "ANOTHER CATEGORY",
       "dd": true,
-      "val": 200
+      "val": 400
     },
     {
       "x": 3,
@@ -298,7 +298,7 @@
       "a": "An answer",
       "cat": "A THIRD CATEGORY",
       "dd": false,
-      "val": 200
+      "val": 400
     },
     {
       "x": 4,
@@ -307,7 +307,7 @@
       "a": "An answer",
       "cat": "CATEGORY FOUR",
       "dd": false,
-      "val": 200
+      "val": 400
     },
     {
       "x": 5,
@@ -316,7 +316,7 @@
       "a": "An answer",
       "cat": "CATEGORY 5",
       "dd": false,
-      "val": 200
+      "val": 400
     },
     {
       "x": 6,
@@ -325,119 +325,11 @@
       "a": "An answer",
       "cat": "SOMETHING ELSE",
       "dd": false,
-      "val": 200
-    },
-    {
-      "x": 1,
-      "y": 2,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "A CATEGORY",
-      "dd": false,
-      "val": 400
-    },
-    {
-      "x": 2,
-      "y": 2,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "ANOTHER CATEGORY",
-      "dd": false,
-      "val": 400
-    },
-    {
-      "x": 3,
-      "y": 2,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "A THIRD CATEGORY",
-      "dd": false,
-      "val": 400
-    },
-    {
-      "x": 4,
-      "y": 2,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "CATEGORY FOUR",
-      "dd": false,
-      "val": 400
-    },
-    {
-      "x": 5,
-      "y": 2,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "CATEGORY 5",
-      "dd": false,
-      "val": 400
-    },
-    {
-      "x": 6,
-      "y": 2,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "SOMETHING ELSE",
-      "dd": false,
       "val": 400
     },
     {
       "x": 1,
-      "y": 3,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "A CATEGORY",
-      "dd": false,
-      "val": 600
-    },
-    {
-      "x": 2,
-      "y": 3,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "ANOTHER CATEGORY",
-      "dd": false,
-      "val": 600
-    },
-    {
-      "x": 3,
-      "y": 3,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "A THIRD CATEGORY",
-      "dd": false,
-      "val": 600
-    },
-    {
-      "x": 4,
-      "y": 3,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "CATEGORY FOUR",
-      "dd": false,
-      "val": 600
-    },
-    {
-      "x": 5,
-      "y": 3,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "CATEGORY 5",
-      "dd": false,
-      "val": 600
-    },
-    {
-      "x": 6,
-      "y": 3,
-      "q": "A question",
-      "a": "An answer",
-      "cat": "SOMETHING ELSE",
-      "dd": false,
-      "val": 600
-    },
-    {
-      "x": 1,
-      "y": 4,
+      "y": 2,
       "q": "A question",
       "a": "An answer",
       "cat": "A CATEGORY",
@@ -446,12 +338,120 @@
     },
     {
       "x": 2,
-      "y": 4,
+      "y": 2,
       "q": "A question",
       "a": "An answer",
       "cat": "ANOTHER CATEGORY",
       "dd": false,
       "val": 800
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "A THIRD CATEGORY",
+      "dd": false,
+      "val": 800
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "CATEGORY FOUR",
+      "dd": false,
+      "val": 800
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "CATEGORY 5",
+      "dd": false,
+      "val": 800
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "SOMETHING ELSE",
+      "dd": false,
+      "val": 800
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "A CATEGORY",
+      "dd": false,
+      "val": 1200
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "ANOTHER CATEGORY",
+      "dd": false,
+      "val": 1200
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "A THIRD CATEGORY",
+      "dd": false,
+      "val": 1200
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "CATEGORY FOUR",
+      "dd": false,
+      "val": 1200
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "CATEGORY 5",
+      "dd": false,
+      "val": 1200
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "SOMETHING ELSE",
+      "dd": false,
+      "val": 1200
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "A CATEGORY",
+      "dd": false,
+      "val": 1600
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "q": "A question",
+      "a": "An answer",
+      "cat": "ANOTHER CATEGORY",
+      "dd": false,
+      "val": 1600
     },
     {
       "x": 3,
@@ -460,7 +460,7 @@
       "a": "An answer",
       "cat": "A THIRD CATEGORY",
       "dd": false,
-      "val": 800
+      "val": 1600
     },
     {
       "x": 4,
@@ -469,7 +469,7 @@
       "a": "An answer",
       "cat": "CATEGORY FOUR",
       "dd": false,
-      "val": 800
+      "val": 1600
     },
     {
       "x": 5,
@@ -478,7 +478,7 @@
       "a": "An answer",
       "cat": "CATEGORY 5",
       "dd": false,
-      "val": 800
+      "val": 1600
     },
     {
       "x": 6,
@@ -487,7 +487,7 @@
       "a": "An answer",
       "cat": "SOMETHING ELSE",
       "dd": false,
-      "val": 800
+      "val": 1600
     },
     {
       "x": 1,
@@ -496,7 +496,7 @@
       "a": "An answer",
       "cat": "A CATEGORY",
       "dd": false,
-      "val": 1000
+      "val": 2000
     },
     {
       "x": 2,
@@ -505,7 +505,7 @@
       "a": "An answer",
       "cat": "ANOTHER CATEGORY",
       "dd": false,
-      "val": 1000
+      "val": 2000
     },
     {
       "x": 3,
@@ -514,7 +514,7 @@
       "a": "An answer",
       "cat": "A THIRD CATEGORY",
       "dd": false,
-      "val": 1000
+      "val": 2000
     },
     {
       "x": 4,
@@ -523,7 +523,7 @@
       "a": "An answer",
       "cat": "CATEGORY FOUR",
       "dd": false,
-      "val": 1000
+      "val": 2000
     },
     {
       "x": 5,
@@ -532,7 +532,7 @@
       "a": "An answer",
       "cat": "CATEGORY 5",
       "dd": false,
-      "val": 1000
+      "val": 2000
     },
     {
       "x": 6,
@@ -541,7 +541,7 @@
       "a": "An answer",
       "cat": "SOMETHING ELSE",
       "dd": false,
-      "val": 1000
+      "val": 2000
     }
   ],
   "final": [
