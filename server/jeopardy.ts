@@ -109,6 +109,10 @@ function getGameState(
       epNum,
       airDate,
       info,
+      scoring: 'standard',
+      numCorrect: 0,
+      numTotal:
+        (jeopardy?.length ?? 0) + (double?.length ?? 0) + (final?.length ?? 0),
       board: {} as { [key: string]: Question },
       scores: {} as NumberDict, // player scores
       round: '', // jeopardy or double or final
@@ -315,6 +319,10 @@ export class Jeopardy {
         } else {
           this.emitState();
         }
+      });
+      socket.on('JPD:scoring', (scoreMethod: string) => {
+        this.jpd.public.scoring = scoreMethod;
+        this.emitState();
       });
       socket.on('disconnect', () => {
         if (this.jpd && this.jpd.public) {
@@ -543,6 +551,7 @@ export class Jeopardy {
       this.jpd.public.scores[id] = 0;
     }
     if (correct === true) {
+      this.jpd.public.numCorrect += 1;
       this.jpd.public.scores[id] +=
         this.jpd.public.wagers[id] || this.jpd.public.currentValue;
       // Correct answer is next picker
