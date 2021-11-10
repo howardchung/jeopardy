@@ -4,6 +4,12 @@ import './Jeopardy.css';
 import { getDefaultPicture, getColorHex, shuffle, getColor } from './utils';
 import { Socket } from 'socket.io';
 
+const scoringOptions = [
+  { key: 'standard', value: 'standard', text: 'Standard' },
+  // { key: 'coryat', value: 'coryat', text: 'Coryat'},
+  { key: 'coop', value: 'coop', text: 'Co-Op' },
+];
+
 export class Jeopardy extends React.Component<{
   socket: Socket;
   participants: User[];
@@ -177,6 +183,10 @@ export class Jeopardy extends React.Component<{
     this.setState({ game: null });
     // optionally send an episode number
     this.props.socket.emit('JPD:start', episode, filter, customGame);
+  };
+
+  changeScoring = (scoreMethod: string) => {
+    this.props.socket.emit('JPD:scoring', scoreMethod);
   };
 
   customGame = () => {
@@ -691,10 +701,15 @@ export class Jeopardy extends React.Component<{
                     </div>
                     <div
                       className={`points ${
-                        game?.scores[p.id] < 0 ? 'negative' : ''
+                        game?.scores[p.id] < 0 && game?.scoring !== 'coop'
+                          ? 'negative'
+                          : ''
                       }`}
                     >
-                      {(game?.scores[p.id] || 0).toLocaleString()}
+                      {game?.scoring === 'coop' &&
+                        game?.numCorrect + '/' + game?.numTotal}
+                      {game?.scoring === 'standard' &&
+                        (game?.scores[p.id] || 0).toLocaleString()}
                     </div>
                     <div
                       className={`answerBox ${
@@ -721,15 +736,6 @@ export class Jeopardy extends React.Component<{
                 flexWrap: 'wrap',
               }}
             >
-              <Button
-                onClick={() => this.props.socket.emit('JPD:cmdIntro')}
-                icon
-                labelPosition="left"
-                color="blue"
-              >
-                <Icon name="film" />
-                Play Intro
-              </Button>
               <Dropdown
                 button
                 className="icon"
@@ -832,7 +838,38 @@ export class Jeopardy extends React.Component<{
                 <Icon name="book" />
                 {this.state.readingDisabled ? 'Reading off' : 'Reading on'}
               </Button>
-              <Button.Group>
+              <Dropdown
+                button
+                className="icon"
+                labeled
+                icon="calculator"
+                text={
+                  scoringOptions.find(
+                    (option) => option.value === this.state.game?.scoring
+                  )?.text
+                }
+              >
+                <Dropdown.Menu>
+                  {scoringOptions.map((item) => (
+                    <Dropdown.Item
+                      key={item.key}
+                      onClick={() => this.changeScoring(item.value)}
+                    >
+                      {item.text}
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
+              <Button.Group size="mini" vertical={false}>
+                <Button
+                  onClick={() => this.props.socket.emit('JPD:cmdIntro')}
+                  icon
+                  labelPosition="left"
+                  color="blue"
+                >
+                  <Icon name="film" />
+                  Play Intro
+                </Button>
                 <Popup
                   content={`Create your own custom game by uploading a data file`}
                   trigger={
@@ -852,7 +889,6 @@ export class Jeopardy extends React.Component<{
                   trigger={
                     <Button
                       icon
-                      labelPosition="left"
                       color="orange"
                       href={`data:application/octet-stream,${encodeURIComponent(
                         JSON.stringify(require('./example.json'), null, 2)
@@ -860,7 +896,6 @@ export class Jeopardy extends React.Component<{
                       download="example.json"
                     >
                       <Icon name="download" />
-                      Template
                     </Button>
                   }
                 />
