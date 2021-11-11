@@ -111,8 +111,7 @@ function getGameState(
       info,
       scoring: 'standard',
       numCorrect: 0,
-      numTotal:
-        (jeopardy?.length ?? 0) + (double?.length ?? 0) + (final?.length ?? 0),
+      numTotal: 0,
       board: {} as { [key: string]: Question },
       scores: {} as NumberDict, // player scores
       round: '', // jeopardy or double or final
@@ -479,7 +478,7 @@ export class Jeopardy {
   }
 
   revealAnswer() {
-    console.log('[REVEALANSWER]');
+    this.jpd.public.numTotal += 1;
     clearTimeout(this.questionAnswerTimeout);
     this.jpd.public.questionDuration = 0;
     this.jpd.public.questionEndTS = 0;

@@ -305,12 +305,14 @@ export class Jeopardy extends React.Component<{
   };
 
   submitAnswer = (answer = null) => {
-    this.props.socket.emit(
-      'JPD:answer',
-      this.state.game?.currentQ,
-      answer || this.state.localAnswer
-    );
-    this.setState({ localAnswer: '', localAnswerSubmitted: true });
+    if (!this.state.localAnswerSubmitted) {
+      this.props.socket.emit(
+        'JPD:answer',
+        this.state.game?.currentQ,
+        answer || this.state.localAnswer
+      );
+      this.setState({ localAnswer: '', localAnswerSubmitted: true });
+    }
   };
 
   judgeAnswer = (id: string, correct: boolean | null) => {
@@ -350,7 +352,7 @@ export class Jeopardy extends React.Component<{
     if (game.canBuzz && !this.buzzLock && !this.state.buzzFrozen) {
       this.props.socket.emit('JPD:buzz');
     } else {
-      // Freeze the buzzer for 0.5 seconds
+      // Freeze the buzzer for 0.25 seconds
       // setState takes a little bit, so also set a local var to prevent spam
       const now = Date.now();
       this.buzzLock = now;
@@ -360,7 +362,7 @@ export class Jeopardy extends React.Component<{
           this.setState({ buzzFrozen: false });
           this.buzzLock = 0;
         }
-      }, 500);
+      }, 250);
     }
   };
 
@@ -452,14 +454,6 @@ export class Jeopardy extends React.Component<{
                                 onClick={() => {
                                   if (game.canBuzz) {
                                     this.submitAnswer(null);
-                                  } else {
-                                    // Freeze the buzzer for 0.5 seconds
-                                    this.setState({ buzzFrozen: true });
-                                    setTimeout(
-                                      () =>
-                                        this.setState({ buzzFrozen: false }),
-                                      500
-                                    );
                                   }
                                 }}
                                 icon
@@ -538,6 +532,7 @@ export class Jeopardy extends React.Component<{
                           <TimerBar
                             duration={game.questionDuration}
                             secondary
+                            submitAnswer={this.submitAnswer}
                           />
                         )}
                         <div
@@ -916,12 +911,25 @@ export class Jeopardy extends React.Component<{
 class TimerBar extends React.Component<{
   duration: number;
   secondary?: boolean;
+  submitAnswer?: Function;
 }> {
   public state = { width: '0%' };
+  submitTimeout: number | null = null;
   componentDidMount() {
     requestAnimationFrame(() => {
       this.setState({ width: '100%' });
     });
+    if (this.props.submitAnswer) {
+      this.submitTimeout = window.setTimeout(
+        this.props.submitAnswer,
+        this.props.duration - 500
+      );
+    }
+  }
+  componentWillUnmount() {
+    if (this.submitTimeout) {
+      window.clearTimeout(this.submitTimeout);
+    }
   }
   render() {
     return (
