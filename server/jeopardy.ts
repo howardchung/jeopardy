@@ -226,14 +226,16 @@ export class Jeopardy {
           this.jpd.public.currentDailyDouble = true;
           this.jpd.public.dailyDoublePlayer = socket.id;
           this.jpd.public.waitingForWager = { [socket.id]: true };
-          // Autobuzz the player, all others pass
-          this.roster.forEach((p) => {
-            if (p.id === socket.id) {
-              this.jpd.public.buzzes[p.id] = Number(new Date());
-            } else {
-              this.jpd.public.submitted[p.id] = true;
-            }
-          });
+          if (this.jpd.public.scoring !== 'coryat') {
+            // Autobuzz the player, all others pass
+            this.roster.forEach((p) => {
+              if (p.id === socket.id) {
+                this.jpd.public.buzzes[p.id] = Number(new Date());
+              } else {
+                this.jpd.public.submitted[p.id] = true;
+              }
+            });
+          }
           this.io.of(this.roomId).emit('JPD:playDailyDouble');
         } else {
           // Put Q in public state
@@ -575,8 +577,11 @@ export class Jeopardy {
 
     this.advanceJudging();
 
-    if (this.jpd.public.round === 'final') {
-      // We can have multiple correct answers in final, so only move on if everyone is done
+    if (
+      this.jpd.public.round === 'final' ||
+      this.jpd.public.scoring === 'coryat'
+    ) {
+      // We can have multiple correct answers in final/Coryat scoring, so only move on if everyone is done
       if (!this.jpd.public.currentJudgeAnswer) {
         this.jpd.public.canNextQ = true;
         this.nextQuestion();
@@ -615,6 +620,9 @@ export class Jeopardy {
       numWager = minWager;
     } else {
       numWager = Math.min(Math.max(numWager, minWager), maxWager);
+    }
+    if (this.jpd.public.scoring === 'coryat') {
+      numWager = this.jpd.public.currentValue;
     }
     console.log('[WAGER]', id, wager, numWager);
     if (id === this.jpd.public.dailyDoublePlayer) {

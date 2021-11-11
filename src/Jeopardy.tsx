@@ -5,9 +5,27 @@ import { getDefaultPicture, getColorHex, shuffle, getColor } from './utils';
 import { Socket } from 'socket.io';
 
 const scoringOptions = [
-  { key: 'standard', value: 'standard', text: 'Standard' },
-  // { key: 'coryat', value: 'coryat', text: 'Coryat'},
-  { key: 'coop', value: 'coop', text: 'Co-Op' },
+  {
+    key: 'standard',
+    value: 'standard',
+    text: 'Standard',
+    title:
+      'Same as the TV show. First correct answer scores the points. Incorrect answers before the correct answer lose points.',
+  },
+  {
+    key: 'coryat',
+    value: 'coryat',
+    text: 'Coryat',
+    title:
+      'Buzz order has no effect. All players get a chance to score/lose points. Daily Doubles score their normal value and can be answered by all players.',
+  },
+  {
+    key: 'coop',
+    value: 'coop',
+    text: 'Co-Op',
+    title:
+      'Point values are ignored. Score is the same for all players and shows how many questions had a correct answer.',
+  },
 ];
 
 export class Jeopardy extends React.Component<{
@@ -706,8 +724,8 @@ export class Jeopardy extends React.Component<{
                       }`}
                     >
                       {game?.scoring === 'coop' &&
-                        game?.numCorrect + '/' + game?.numTotal}
-                      {game?.scoring === 'standard' &&
+                        game?.numCorrect + ' / ' + game?.numTotal}
+                      {game?.scoring !== 'coop' &&
                         (game?.scores[p.id] || 0).toLocaleString()}
                     </div>
                     <div
@@ -853,6 +871,7 @@ export class Jeopardy extends React.Component<{
                     <Dropdown.Item
                       key={item.key}
                       onClick={() => this.changeScoring(item.value)}
+                      title={item.title}
                     >
                       {item.text}
                     </Dropdown.Item>
