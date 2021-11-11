@@ -280,20 +280,10 @@ export class Jeopardy {
 
       socket.on('JPD:wager', (wager) => this.submitWager(socket.id, wager));
       socket.on('JPD:judge', async (data) => {
-        const msg = {
-          id: socket.id,
-          cmd: 'judge',
-          msg: JSON.stringify({
-            id: data.id,
-            answer: this.jpd.public.answers[data.id],
-            correct: data.correct,
-          }),
-        };
         const correct = this.jpd.public.currentAnswer;
         const submitted = this.jpd.public.answers[data.id];
-        const success = this.judgeAnswer(data);
+        const success = this.judgeAnswer(data, socket);
         if (success) {
-          this.room.addChatMessage(socket, msg);
           if (data.correct && redis) {
             // If the answer was judged correct and non-trivial (equal lowercase), log it for analysis
             if (correct?.toLowerCase() !== submitted?.toLowerCase()) {
@@ -328,7 +318,7 @@ export class Jeopardy {
           // If player being judged leaves, skip their answer
           if (this.jpd.public.currentJudgeAnswer === socket.id) {
             // This is to run the rest of the code around judging
-            this.judgeAnswer({ id: socket.id, correct: null });
+            this.judgeAnswer({ id: socket.id, correct: null }, undefined);
           }
           // If player who needs to submit wager leaves, submit 0
           if (
@@ -392,6 +382,11 @@ export class Jeopardy {
   }
 
   nextQuestion() {
+    this.room.addChatMessage(undefined, {
+      id: '',
+      cmd: 'answer',
+      msg: this.jpd.public.currentAnswer,
+    });
     delete this.jpd.public.board[this.jpd.public.currentQ];
     this.resetAfterQuestion();
     if (Object.keys(this.jpd.public.board).length === 0) {
@@ -532,7 +527,10 @@ export class Jeopardy {
     }
   }
 
-  judgeAnswer({ id, correct }: { id: string; correct: boolean | null }) {
+  judgeAnswer(
+    { id, correct }: { id: string; correct: boolean | null },
+    socket: Socket | undefined
+  ) {
     if (id in this.jpd.public.judges) {
       // Already judged this player
       return false;
@@ -561,6 +559,19 @@ export class Jeopardy {
         this.jpd.public.wagers[id] || this.jpd.public.currentValue;
     }
     // If null, don't change scores
+
+    if (socket) {
+      const msg = {
+        id: socket.id,
+        cmd: 'judge',
+        msg: JSON.stringify({
+          id: id,
+          answer: this.jpd.public.answers[id],
+          correct: correct,
+        }),
+      };
+      this.room.addChatMessage(socket, msg);
+    }
 
     this.advanceJudging();
 

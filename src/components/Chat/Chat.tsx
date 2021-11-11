@@ -87,6 +87,8 @@ export class Chat extends React.Component<ChatProps> {
           this.props.nameMap[id]
         } ${correct ? 'correct' : 'incorrect'}: ${answer} `}</span>
       );
+    } else if (cmd === 'answer') {
+      return `Correct answer: ${msg}`;
     }
     return cmd;
   };
