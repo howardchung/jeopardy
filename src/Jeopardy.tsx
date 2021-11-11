@@ -172,6 +172,10 @@ export class Jeopardy extends React.Component<{
         e.preventDefault();
         this.onBuzz();
       }
+      if (e.key === 'p') {
+        e.preventDefault();
+        this.submitAnswer(null);
+      }
     }
   };
 
@@ -305,7 +309,7 @@ export class Jeopardy extends React.Component<{
   };
 
   submitAnswer = (answer = null) => {
-    if (!this.state.localAnswerSubmitted) {
+    if (!this.state.localAnswerSubmitted && this.state.game.canBuzz) {
       this.props.socket.emit(
         'JPD:answer',
         this.state.game?.currentQ,
