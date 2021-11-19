@@ -16,7 +16,6 @@ import { generateName } from '../../utils/generateName';
 import { Chat } from '../Chat/Chat';
 import { JeopardyTopBar } from '../TopBar/TopBar';
 import { Jeopardy } from '../../Jeopardy';
-import 'firebase/auth';
 
 interface AppState {
   state: 'init' | 'starting' | 'connected';
