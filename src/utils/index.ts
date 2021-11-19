@@ -1,7 +1,3 @@
-//@ts-ignore
-import canAutoplay from 'can-autoplay';
-import { parseStringPromise } from 'xml2js';
-
 export function formatTimestamp(input: any) {
   if (
     input === null ||
@@ -99,11 +95,6 @@ export const getMediaType = (input: string) => {
   return 'video';
 };
 
-export async function testAutoplay() {
-  const result = await canAutoplay.video();
-  return result.result;
-}
-
 export function decodeEntities(input: string) {
   const doc = new DOMParser().parseFromString(input, 'text/html');
   return doc.documentElement.textContent;
@@ -185,77 +176,8 @@ export function shuffle(array: any[]) {
   }
 }
 
-export const iceServers = () => [
-  { urls: 'stun:stun.l.google.com:19302' },
-  // { urls: 'turn:13.66.162.252:3478', username: 'username', credential: 'password' },
-  {
-    urls: 'turn:212.47.251.184:3478',
-    username: 'username',
-    credential: 'password',
-  },
-  {
-    urls: 'turn:numb.viagenie.ca',
-    credential: 'watchparty',
-    username: 'howardzchung@gmail.com',
-  },
-];
-
 export const serverPath =
   process.env.REACT_APP_SERVER_HOST ||
   `${window.location.protocol}//${window.location.hostname}${
     process.env.NODE_ENV === 'production' ? '' : ':8080'
   }`;
-
-export async function getMediaPathResults(
-  mediaPath: string,
-  query: string
-): Promise<SearchResult[]> {
-  // Get media list if provided
-  const response = await window.fetch(mediaPath);
-  let results: SearchResult[] = [];
-  if (mediaPath.includes('s3.')) {
-    // S3-style buckets return data in XML
-    const xml = await response.text();
-    const data = await parseStringPromise(xml);
-    let filtered = data.ListBucketResult.Contents.filter(
-      (file: any) => !file.Key[0].includes('/')
-    );
-    results = filtered.map((file: any) => ({
-      url: mediaPath + '/' + file.Key[0],
-      name: mediaPath + '/' + file.Key[0],
-    }));
-  } else {
-    const data = await response.json();
-    results = data
-      .filter((file: any) => file.type === 'file')
-      .map((file: any) => ({
-        url: file.url || getMediaPathForList(mediaPath) + file.name,
-        name: getMediaPathForList(mediaPath) + file.name,
-      }));
-  }
-  results = results.filter((option: SearchResult) =>
-    option.name.toLowerCase().includes(query.toLowerCase())
-  );
-  return results;
-}
-
-export async function getStreamPathResults(
-  streamPath: string,
-  query: string
-): Promise<SearchResult[]> {
-  const response = await window.fetch(
-    streamPath + '/search?q=' + encodeURIComponent(query)
-  );
-  const data = await response.json();
-  return data;
-}
-
-export async function getYouTubeResults(
-  query: string
-): Promise<SearchResult[]> {
-  const response = await window.fetch(
-    serverPath + '/youtube?q=' + encodeURIComponent(query)
-  );
-  const data = await response.json();
-  return data;
-}

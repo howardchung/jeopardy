@@ -2,23 +2,16 @@ require('dotenv').config();
 import fs from 'fs';
 import util from 'util';
 import express from 'express';
-import bodyParser from 'body-parser';
 import compression from 'compression';
 import Moniker from 'moniker';
-import Youtube from 'youtube-api';
 import os from 'os';
 import cors from 'cors';
 import Redis from 'ioredis';
 import https from 'https';
 import http from 'http';
 import socketIO from 'socket.io';
-import { searchYoutube } from './utils/youtube';
 import { Room } from './room';
 import { getRedisCountDay } from './utils/redis';
-import { Scaleway } from './vm/scaleway';
-import { Hetzner } from './vm/hetzner';
-import { DigitalOcean } from './vm/digitalocean';
-import { VMManager } from './vm/base';
 
 const app = express();
 let server: any = null;
@@ -42,26 +35,6 @@ const names = Moniker.generator([
 ]);
 
 const rooms = new Map<string, Room>();
-// Start the VM manager
-let vmManager: VMManager;
-let vmManagerLarge: VMManager;
-if (
-  process.env.REDIS_URL &&
-  process.env.SCW_SECRET_KEY &&
-  process.env.SCW_ORGANIZATION
-) {
-  // new Scaleway(rooms, 0);
-  // new Scaleway(rooms, 0, true)
-}
-if (process.env.REDIS_URL && process.env.HETZNER_TOKEN) {
-  // new Hetzner(rooms, 0);
-  vmManagerLarge = new Hetzner(rooms, 0, true);
-}
-if (process.env.REDIS_URL && process.env.DO_TOKEN) {
-  vmManager = new DigitalOcean(rooms);
-  // new DigitalOcean(rooms, 0, true);
-}
-const vmManagers = { standard: vmManager!, large: vmManagerLarge! };
 init();
 
 async function saveRoomsToRedis() {
@@ -90,21 +63,20 @@ async function init() {
       const key = keys[i];
       const roomData = await redis.get(key);
       console.log(key, roomData?.length);
-      rooms.set(key, new Room(io, vmManagers, key, roomData));
+      rooms.set(key, new Room(io, key, roomData));
     }
     // Start saving rooms to Redis
     saveRoomsToRedis();
   }
 
   if (!rooms.has('/default')) {
-    rooms.set('/default', new Room(io, vmManagers, '/default'));
+    rooms.set('/default', new Room(io, '/default'));
   }
 
   server.listen(process.env.PORT || 8080);
 }
 
 app.use(cors());
-app.use(bodyParser.json());
 app.use(compression());
 app.use(express.static('build'));
 
@@ -117,37 +89,13 @@ app.get('/stats', async (req, res) => {
     const roomData: any[] = [];
     const now = Number(new Date());
     let currentUsers = 0;
-    let currentVBrowser = 0;
-    let currentVBrowserLarge = 0;
-    let currentScreenShare = 0;
-    let currentFileShare = 0;
-    let currentVideoChat = 0;
     rooms.forEach((room) => {
       const obj = {
         creationTime: room.creationTime,
         roomId: room.roomId,
-        video: room.video,
-        videoTS: room.videoTS,
         rosterLength: room.roster.length,
-        videoChats: room.roster.filter((p) => p.isVideoChat).length,
-        vBrowser: room.vBrowser,
-        vBrowserElapsed:
-          room.vBrowser?.assignTime && now - room.vBrowser?.assignTime,
       };
       currentUsers += obj.rosterLength;
-      currentVideoChat += obj.videoChats;
-      if (obj.vBrowser) {
-        currentVBrowser += 1;
-      }
-      if (obj.vBrowser && obj.vBrowser.large) {
-        currentVBrowserLarge += 1;
-      }
-      if (obj.video?.startsWith('screenshare://') && obj.rosterLength) {
-        currentScreenShare += 1;
-      }
-      if (obj.video?.startsWith('fileshare://') && obj.rosterLength) {
-        currentFileShare += 1;
-      }
       roomData.push(obj);
     });
     // Sort newest first
@@ -158,94 +106,20 @@ app.get('/stats', async (req, res) => {
       .find((line) => line.startsWith('used_memory:'))
       ?.split(':')[1]
       .trim();
-    const availableVBrowsers = await redis.lrange(
-      vmManager?.getRedisQueueKey() || 'availableList',
-      0,
-      -1
-    );
-    const stagingVBrowsers = await redis.lrange(
-      vmManager?.getRedisStagingKey() || 'stagingList',
-      0,
-      -1
-    );
-    const availableVBrowsersLarge = await redis.lrange(
-      vmManagerLarge?.getRedisQueueKey() || 'availableList',
-      0,
-      -1
-    );
-    const stagingVBrowsersLarge = await redis.lrange(
-      vmManagerLarge?.getRedisStagingKey() || 'stagingList',
-      0,
-      -1
-    );
     const chatMessages = await getRedisCountDay('chatMessages');
-    const vBrowserStarts = await getRedisCountDay('vBrowserStarts');
-    const vBrowserLaunches = await getRedisCountDay('vBrowserLaunches');
-    const vBrowserStartMS = await redis.lrange('vBrowserStartMS', 0, -1);
-    const vBrowserSessionMS = await redis.lrange('vBrowserSessionMS', 0, -1);
-    const vBrowserVMLifetime = await redis.lrange('vBrowserVMLifetime', 0, -1);
-    const vBrowserTerminateTimeout = await getRedisCountDay(
-      'vBrowserTerminateTimeout'
-    );
-    const vBrowserTerminateEmpty = await getRedisCountDay(
-      'vBrowserTerminateEmpty'
-    );
-    const vBrowserTerminateManual = await getRedisCountDay(
-      'vBrowserTerminateManual'
-    );
-    const urlStarts = await getRedisCountDay('urlStarts');
-    const screenShareStarts = await getRedisCountDay('screenShareStarts');
-    const fileShareStarts = await getRedisCountDay('fileShareStarts');
-    const videoChatStarts = await getRedisCountDay('videoChatStarts');
-    const connectStarts = await getRedisCountDay('connectStarts');
     const nonTrivialJudges = await redis.llen('jpd:nonTrivialJudges');
 
     res.json({
       roomCount: rooms.size,
       cpuUsage,
       redisUsage,
-      availableVBrowsers,
-      stagingVBrowsers,
-      availableVBrowsersLarge,
-      stagingVBrowsersLarge,
       chatMessages,
-      vBrowserStarts,
-      vBrowserLaunches,
-      vBrowserTerminateManual,
-      vBrowserTerminateEmpty,
-      vBrowserTerminateTimeout,
-      vBrowserStartMS,
-      vBrowserSessionMS,
-      vBrowserVMLifetime,
-      urlStarts,
-      screenShareStarts,
-      fileShareStarts,
-      videoChatStarts,
-      connectStarts,
       currentUsers,
-      currentVBrowser,
-      currentVBrowserLarge,
-      currentScreenShare,
-      currentFileShare,
-      currentVideoChat,
       nonTrivialJudges,
       rooms: roomData,
     });
   } else {
     return res.status(403).json({ error: 'Access Denied' });
-  }
-});
-
-app.get('/youtube', async (req, res) => {
-  if (typeof req.query.q === 'string') {
-    try {
-      const items = await searchYoutube(req.query.q);
-      res.json(items);
-    } catch {
-      return res.status(500).json({ error: 'youtube error' });
-    }
-  } else {
-    return res.status(500).json({ error: 'query must be a string' });
   }
 });
 
@@ -256,40 +130,8 @@ app.post('/createRoom', (req, res) => {
     name = names.choose();
   }
   console.log('createRoom: ', name);
-  const newRoom = new Room(io, vmManagers, '/' + name);
+  const newRoom = new Room(io, '/' + name);
   newRoom.video = req.body?.video || '';
   rooms.set('/' + name, newRoom);
   res.json({ name });
-});
-
-app.get('/settings', (req, res) => {
-  if (req.hostname === process.env.CUSTOM_SETTINGS_HOSTNAME) {
-    return res.json({
-      mediaPath: process.env.MEDIA_PATH,
-      streamPath: process.env.STREAM_PATH,
-    });
-  }
-  return res.json({});
-});
-
-app.get('/kv', async (req, res) => {
-  if (req.query.key === process.env.KV_KEY) {
-    return res.end(await redis.get(('kv:' + req.query.k) as string));
-  } else {
-    return res.status(403).json({ error: 'Access Denied' });
-  }
-});
-
-app.post('/kv', async (req, res) => {
-  if (req.query.key === process.env.KV_KEY) {
-    return res.end(
-      await redis.setex(
-        'kv:' + req.query.k,
-        24 * 60 * 60,
-        req.query.v as string
-      )
-    );
-  } else {
-    return res.status(403).json({ error: 'Access Denied' });
-  }
 });
