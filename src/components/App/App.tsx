@@ -1,49 +1,34 @@
 import './App.css';
 import React from 'react';
-import { Button, Grid, Header, Icon, Input, Modal } from 'semantic-ui-react';
+import {
+  Button,
+  Divider,
+  Grid,
+  Header,
+  Icon,
+  Input,
+  Modal,
+} from 'semantic-ui-react';
 //@ts-ignore
 import io from 'socket.io-client';
-import { serverPath, testAutoplay } from '../../utils';
+import { serverPath } from '../../utils';
 import { generateName } from '../../utils/generateName';
-import { Chat } from '../Chat';
-import { JeopardyTopBar } from '../TopBar';
-import { getCurrentSettings } from '../Settings';
+import { Chat } from '../Chat/Chat';
+import { JeopardyTopBar } from '../TopBar/TopBar';
 import { Jeopardy } from '../../Jeopardy';
-import firebase from 'firebase/app';
 import 'firebase/auth';
-
-const firebaseConfig = process.env.REACT_APP_FIREBASE_CONFIG;
-if (firebaseConfig) {
-  firebase.initializeApp(JSON.parse(firebaseConfig));
-}
-
-declare global {
-  interface Window {
-    onYouTubeIframeAPIReady: any;
-    YT: any;
-    FB: any;
-    fbAsyncInit: Function;
-  }
-}
 
 interface AppState {
   state: 'init' | 'starting' | 'connected';
   participants: User[];
   rosterUpdateTS: Number;
   chat: ChatMessage[];
-  tsMap: NumberDict;
   nameMap: StringDict;
   pictureMap: StringDict;
   myName: string;
   myPicture: string;
   scrollTimestamp: number;
-  fullScreen: boolean;
-  isAutoPlayable: boolean;
   error: string;
-  settings: Settings;
-  vBrowserResolution: string;
-  nonPlayableMedia: boolean;
-  currentTab: string;
 }
 
 export default class App extends React.Component<null, AppState> {
@@ -52,46 +37,23 @@ export default class App extends React.Component<null, AppState> {
     participants: [],
     rosterUpdateTS: Number(new Date()),
     chat: [],
-    tsMap: {},
     nameMap: {},
     pictureMap: {},
     myName: '',
     myPicture: '',
     scrollTimestamp: 0,
-    fullScreen: false,
-    isAutoPlayable: true,
     error: '',
-    settings: {},
-    vBrowserResolution: '1280x720@30',
-    nonPlayableMedia: false,
-    currentTab: 'chat',
   };
   socket: any = null;
 
   async componentDidMount() {
-    const canAutoplay = await testAutoplay();
-    this.setState({ isAutoPlayable: canAutoplay });
-
-    document.onfullscreenchange = () => {
-      this.setState({ fullScreen: Boolean(document.fullscreenElement) });
-    };
-
     // Send heartbeat to the server
     window.setInterval(() => {
       window.fetch(serverPath + '/ping');
     }, 10 * 60 * 1000);
 
-    this.loadSettings();
     this.init();
   }
-
-  loadSettings = async () => {
-    // Load settings from localstorage and remote
-    const customSettingsData = await fetch(serverPath + '/settings');
-    const customSettings = await customSettingsData.json();
-    let settings = { ...getCurrentSettings(), ...customSettings };
-    this.setState({ settings });
-  };
 
   init = () => {
     // Load room ID from url
@@ -181,24 +143,6 @@ export default class App extends React.Component<null, AppState> {
             </div>
           </Modal>
         )}
-        {!this.state.error && !this.state.isAutoPlayable && (
-          <Modal inverted basic open>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <Button
-                primary
-                size="huge"
-                onClick={() => {
-                  this.setState({ isAutoPlayable: true });
-                }}
-                icon
-                labelPosition="left"
-              >
-                <Icon name="sign-in" />
-                Join Party
-              </Button>
-            </div>
-          </Modal>
-        )}
         <JeopardyTopBar />
         {
           <Grid stackable celled="internally">
@@ -236,7 +180,7 @@ export default class App extends React.Component<null, AppState> {
                     />
                   }
                 />
-                {/* <Divider inverted horizontal></Divider> */}
+                <Divider inverted horizontal></Divider>
                 <Chat
                   chat={this.state.chat}
                   nameMap={this.state.nameMap}
@@ -244,7 +188,6 @@ export default class App extends React.Component<null, AppState> {
                   socket={this.socket}
                   scrollTimestamp={this.state.scrollTimestamp}
                   getMediaDisplayName={() => ''}
-                  hide={this.state.currentTab !== 'chat'}
                 />
               </Grid.Column>
             </Grid.Row>
