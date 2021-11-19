@@ -2,28 +2,28 @@
   font-family: 'Korinna';
   font-style: normal;
   font-weight: 400;
-  src: url('/jeopardy/korinna-regular.otf');
+  src: url('./korinna-regular.otf');
 }
 
 @font-face {
   font-family: 'Swiss 911';
   font-style: normal;
   font-weight: 400;
-  src: url('/jeopardy/swiss911-xcm-bt.ttf');
+  src: url('./swiss911-xcm-bt.ttf');
 }
 
 @font-face {
   font-family: 'Univers';
   font-style: normal;
   font-weight: 400;
-  src: url('/jeopardy/univers-75-black.ttf');
+  src: url('./univers-75-black.ttf');
 }
 
 @font-face {
   font-family: 'Gyparody';
   font-style: normal;
   font-weight: 400;
-  src: url('/jeopardy/gyparody.ttf');
+  src: url('./gyparody.ttf');
 }
 
 .logo {
@@ -109,7 +109,7 @@
   background-position-x: center;
   background-size: contain;
   background-repeat: no-repeat;
-  background-image: url('/jeopardy/jeopardy-daily-double.png');
+  background-image: url('./jeopardy-daily-double.png');
   background-color: rgba(0, 0, 0, 1);
 }
 
