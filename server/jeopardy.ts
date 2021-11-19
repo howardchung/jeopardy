@@ -361,12 +361,23 @@ export class Jeopardy {
       if (!number) {
         // Random an episode
         number = nums[Math.floor(Math.random() * nums.length)];
+      } else if (number === 'ddtest') {
+        loadedData = jData['8000'];
+        loadedData['jeopardy'] = loadedData['jeopardy'].filter(
+          (q: any) => q.dd
+        );
+      } else if (number === 'finaltest') {
+        loadedData = jData['8000'];
+      } else {
+        loadedData = (jData as any)[number];
       }
-      loadedData = (jData as any)[number];
     }
     if (loadedData) {
       const { epNum, airDate, info, jeopardy, double, final } = loadedData;
       this.jpd = getGameState(epNum, airDate, info, jeopardy, double, final);
+      if (number === 'finaltest') {
+        this.jpd.public.round = 'double';
+      }
       this.nextRound();
     }
   }

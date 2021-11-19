@@ -200,7 +200,7 @@ export class Jeopardy extends React.Component<{
   };
 
   newGame = async (
-    episode: number | null,
+    episode: string | null,
     filter: string | null,
     customGame?: string
   ) => {
@@ -804,14 +804,11 @@ export class Jeopardy extends React.Component<{
                 value={this.state.localEpNum}
                 onChange={(e) => this.setState({ localEpNum: e.target.value })}
                 onKeyPress={(e: any) =>
-                  e.key === 'Enter' &&
-                  this.newGame(Number(this.state.localEpNum), null)
+                  e.key === 'Enter' && this.newGame(this.state.localEpNum, null)
                 }
                 icon={
                   <Icon
-                    onClick={() =>
-                      this.newGame(Number(this.state.localEpNum), null)
-                    }
+                    onClick={() => this.newGame(this.state.localEpNum, null)}
                     name="arrow right"
                     inverted
                     circular
