@@ -557,8 +557,10 @@ export class Jeopardy {
       this.jpd.public.numCorrect += 1;
       this.jpd.public.scores[id] +=
         this.jpd.public.wagers[id] || this.jpd.public.currentValue;
-      // Correct answer is next picker
-      this.jpd.public.picker = id;
+      if (this.jpd.public.scoring !== 'coryat') {
+        // Correct answer is next picker
+        this.jpd.public.picker = id;
+      }
     }
     if (correct === false) {
       this.jpd.public.scores[id] -=
