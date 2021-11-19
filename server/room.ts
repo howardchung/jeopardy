@@ -3,7 +3,6 @@ import { Socket } from 'socket.io';
 import { User, ChatMessage, NumberDict, StringDict } from '.';
 import Redis from 'ioredis';
 import { redisCount } from './utils/redis';
-import * as admin from 'firebase-admin';
 
 let redis = (undefined as unknown) as Redis.Redis;
 if (process.env.REDIS_URL) {
