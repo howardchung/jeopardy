@@ -1,4 +1,4 @@
-import { Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import Redis from 'ioredis';
 import { BooleanDict, StringDict, NumberDict, User } from '.';
 import { Room } from './room';
@@ -121,14 +121,14 @@ function getGameState(
 export class Jeopardy {
   public jpd: ReturnType<typeof getGameState>;
   public roomId: string;
-  private io: SocketIO.Server;
+  private io: Server;
   private roster: User[];
   private room: Room;
   private playClueTimeout: NodeJS.Timeout = (undefined as unknown) as NodeJS.Timeout;
   private questionAnswerTimeout: NodeJS.Timeout = (undefined as unknown) as NodeJS.Timeout;
 
   constructor(
-    io: SocketIO.Server,
+    io: Server,
     roomId: string,
     roster: User[],
     room: Room,

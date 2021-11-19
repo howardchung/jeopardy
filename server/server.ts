@@ -3,13 +3,14 @@ import fs from 'fs';
 import util from 'util';
 import express from 'express';
 import compression from 'compression';
+//@ts-ignore
 import Moniker from 'moniker';
 import os from 'os';
 import cors from 'cors';
 import Redis from 'ioredis';
 import https from 'https';
 import http from 'http';
-import socketIO from 'socket.io';
+import { Server } from 'socket.io';
 import { Room } from './room';
 import { getRedisCountDay } from './utils/redis';
 
@@ -22,7 +23,7 @@ if (process.env.HTTPS) {
 } else {
   server = new http.Server(app);
 }
-const io = socketIO(server, { origins: '*:*' });
+const io = new Server(server, { cors: { origin: '*' }});
 let redis = (undefined as unknown) as Redis.Redis;
 if (process.env.REDIS_URL) {
   redis = new Redis(process.env.REDIS_URL);
@@ -42,11 +43,10 @@ async function saveRoomsToRedis() {
     // console.time('roomSave');
     const roomArr = Array.from(rooms.values());
     for (let i = 0; i < roomArr.length; i++) {
-      if (roomArr[i].roster.length || roomArr[i].isRoomDirty) {
+      if (roomArr[i].roster.length) {
         const roomData = roomArr[i].serialize();
         const key = roomArr[i].roomId;
         await redis.setex(key, 24 * 60 * 60, roomData);
-        roomArr[i].isRoomDirty = false;
       }
     }
     // console.timeEnd('roomSave');
@@ -131,7 +131,6 @@ app.post('/createRoom', (req, res) => {
   }
   console.log('createRoom: ', name);
   const newRoom = new Room(io, '/' + name);
-  newRoom.video = req.body?.video || '';
   rooms.set('/' + name, newRoom);
   res.json({ name });
 });
