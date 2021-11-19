@@ -17,7 +17,7 @@ const scoringOptions = [
     value: 'coryat',
     text: 'Coryat',
     title:
-      'Buzz order has no effect. All players get a chance to score/lose points. Daily Doubles score their normal value and can be answered by all players.',
+      'All players get a chance to score/lose points. Daily Doubles are treated as regular questions.',
   },
   {
     key: 'coop',
