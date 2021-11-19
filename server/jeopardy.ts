@@ -40,9 +40,6 @@ function constructPublicBoard(questions: RawQuestion[]) {
   // Map of x_y coordinates to questions
   let output: { [key: string]: Question } = {};
   questions.forEach((q) => {
-    // if (!q.dd) {
-    //   return;
-    // }
     output[`${q.x}_${q.y}`] = {
       value: q.val,
       category: q.cat,
@@ -225,21 +222,19 @@ export class Jeopardy {
         this.jpd.public.currentQ = id;
         this.jpd.public.currentValue = this.jpd.public.board[id].value;
         // check if it's a daily double
-        if (this.jpd.board[id].dd) {
+        if (this.jpd.board[id].dd && this.jpd.public.scoring !== 'coryat') {
           // if it is, don't show it yet, we need to collect wager info based only on category
           this.jpd.public.currentDailyDouble = true;
           this.jpd.public.dailyDoublePlayer = socket.id;
           this.jpd.public.waitingForWager = { [socket.id]: true };
-          if (this.jpd.public.scoring !== 'coryat') {
-            // Autobuzz the player, all others pass
-            this.roster.forEach((p) => {
-              if (p.id === socket.id) {
-                this.jpd.public.buzzes[p.id] = Number(new Date());
-              } else {
-                this.jpd.public.submitted[p.id] = true;
-              }
-            });
-          }
+          // Autobuzz the player, all others pass
+          this.roster.forEach((p) => {
+            if (p.id === socket.id) {
+              this.jpd.public.buzzes[p.id] = Number(new Date());
+            } else {
+              this.jpd.public.submitted[p.id] = true;
+            }
+          });
           this.io.of(this.roomId).emit('JPD:playDailyDouble');
         } else {
           // Put Q in public state
@@ -637,9 +632,6 @@ export class Jeopardy {
       numWager = minWager;
     } else {
       numWager = Math.min(Math.max(numWager, minWager), maxWager);
-    }
-    if (this.jpd.public.scoring === 'coryat') {
-      numWager = this.jpd.public.currentValue;
     }
     console.log('[WAGER]', id, wager, numWager);
     if (id === this.jpd.public.dailyDoublePlayer) {
