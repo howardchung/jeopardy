@@ -675,7 +675,8 @@ export class Jeopardy {
         .split(' ')
         .map((word: string) => syllableCount(word));
       const totalSyll = syllCountArr.reduce((a: number, b: number) => a + b, 0);
-      speakingTime = (totalSyll / 4) * 1000;
+      // Minimum 1 second speaking time
+      speakingTime = Math.max((totalSyll / 4) * 1000, 1000);
       console.log('[TRIGGERPLAYCLUE]', clue.question, totalSyll, speakingTime);
       this.jpd.public.playClueDuration = speakingTime;
       this.jpd.public.playClueEndTS = Number(new Date()) + speakingTime;
