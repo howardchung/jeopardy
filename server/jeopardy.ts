@@ -353,10 +353,7 @@ export class Jeopardy {
             (jData as any)[num].info && (jData as any)[num].info === filter
         );
       }
-      if (!number) {
-        // Random an episode
-        number = nums[Math.floor(Math.random() * nums.length)];
-      } else if (number === 'ddtest') {
+      if (number === 'ddtest') {
         loadedData = jData['8000'];
         loadedData['jeopardy'] = loadedData['jeopardy'].filter(
           (q: any) => q.dd
@@ -364,8 +361,13 @@ export class Jeopardy {
       } else if (number === 'finaltest') {
         loadedData = jData['8000'];
       } else {
+        if (!number) {
+          // Random an episode
+          number = nums[Math.floor(Math.random() * nums.length)];
+        }
         loadedData = (jData as any)[number];
       }
+
     }
     if (loadedData) {
       const { epNum, airDate, info, jeopardy, double, final } = loadedData;
