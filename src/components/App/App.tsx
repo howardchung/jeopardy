@@ -65,7 +65,7 @@ export default class App extends React.Component<null, AppState> {
   };
 
   join = async (roomId: string) => {
-    const socket = io.connect(serverPath + roomId);
+    const socket = io(serverPath + roomId);
     this.socket = socket;
     socket.on('connect', async () => {
       this.setState({ state: 'connected' });

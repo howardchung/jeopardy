@@ -1,5 +1,5 @@
 import { Jeopardy } from './jeopardy';
-import { Socket } from 'socket.io';
+import { Socket, Server } from 'socket.io';
 import { User, ChatMessage, NumberDict, StringDict } from '.';
 import Redis from 'ioredis';
 import { redisCount } from './utils/redis';
@@ -14,13 +14,13 @@ export class Room {
   private chat: ChatMessage[] = [];
   private nameMap: StringDict = {};
   private pictureMap: StringDict = {};
-  private io: SocketIO.Server;
+  private io: Server;
   public roomId: string;
   public creationTime: Date = new Date();
   private jpd: Jeopardy | null = null;
 
   constructor(
-    io: SocketIO.Server,
+    io: Server,
     roomId: string,
     roomData?: string | null | undefined
   ) {
