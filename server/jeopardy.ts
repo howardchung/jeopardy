@@ -186,6 +186,10 @@ export class Jeopardy {
           ] = this.jpd.public.waitingForWager[id];
           delete this.jpd.public.waitingForWager[id];
         }
+        if (this.jpd.wagers && this.jpd.wagers[id]) {
+          this.jpd.wagers[socket.id] = this.jpd.wagers[id];
+          delete this.jpd.wagers[id];
+        }
         if (this.jpd.public.buzzes && this.jpd.public.buzzes[id]) {
           this.jpd.public.buzzes[socket.id] = this.jpd.public.buzzes[id];
           delete this.jpd.public.buzzes[id];
