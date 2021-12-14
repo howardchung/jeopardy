@@ -73,6 +73,8 @@ function getPerQuestionState() {
     playClueEndTS: 0,
     questionDuration: 0,
     questionEndTS: 0,
+    wagerEndTS: 0,
+    wagerDuration: 0,
     buzzUnlockTS: 0,
     answers: {} as StringDict,
     submitted: {} as BooleanDict,
@@ -126,6 +128,7 @@ export class Jeopardy {
   private room: Room;
   private playClueTimeout: NodeJS.Timeout = (undefined as unknown) as NodeJS.Timeout;
   private questionAnswerTimeout: NodeJS.Timeout = (undefined as unknown) as NodeJS.Timeout;
+  private wagerTimeout: NodeJS.Timeout = (undefined as unknown) as NodeJS.Timeout;
 
   constructor(
     io: Server,
@@ -151,6 +154,11 @@ export class Jeopardy {
         const remaining = this.jpd.public.playClueEndTS - Number(new Date());
         console.log('[PLAYCLUEENDTS]', remaining);
         this.setPlayClueTimeout(remaining);
+      }
+      if (this.jpd.public.wagerEndTS) {
+        const remaining = this.jpd.public.wagerEndTS - Number(new Date());
+        console.log('[WAGERENDTS]', remaining);
+        this.setWagerTimeout(remaining, this.jpd.public.wagerEndTS);
       }
     } else {
       this.jpd = getGameState(undefined, undefined, undefined, [], [], []);
@@ -227,6 +235,7 @@ export class Jeopardy {
           this.jpd.public.currentDailyDouble = true;
           this.jpd.public.dailyDoublePlayer = socket.id;
           this.jpd.public.waitingForWager = { [socket.id]: true };
+          this.setWagerTimeout(15000);
           // Autobuzz the player, all others pass
           this.roster.forEach((p) => {
             if (p.id === socket.id) {
@@ -392,6 +401,7 @@ export class Jeopardy {
     this.jpd.wagers = {};
     clearTimeout(this.playClueTimeout);
     clearTimeout(this.questionAnswerTimeout);
+    clearTimeout(this.wagerTimeout);
     this.jpd.public = { ...this.jpd.public, ...getPerQuestionState() };
   }
 
@@ -431,6 +441,7 @@ export class Jeopardy {
       this.roster.forEach((p) => {
         this.jpd.public.waitingForWager![p.id] = true;
       });
+      this.setWagerTimeout(15000);
       // autopick the question
       this.jpd.public.currentQ = '1_1';
       // autobuzz the players in ascending score order
@@ -666,7 +677,19 @@ export class Jeopardy {
     }
   }
 
+  setWagerTimeout(duration: number, endTS?: number) {
+    this.jpd.public.wagerEndTS = endTS ?? (Number(new Date()) + duration);
+    this.jpd.public.wagerDuration = duration;
+    this.wagerTimeout = setTimeout(() => {
+      Object.keys(this.jpd.public.waitingForWager ?? {}).forEach(id => {
+        this.submitWager(id, 0);
+      });
+    }, duration);
+  }
+
   triggerPlayClue() {
+    clearTimeout(this.wagerTimeout);
+    this.jpd.public.wagerDuration = 0;
     const clue = this.jpd.public.board[this.jpd.public.currentQ];
     this.io
       .of(this.roomId)

@@ -559,6 +559,12 @@ export class Jeopardy extends React.Component<{
                             submitAnswer={this.submitAnswer}
                           />
                         )}
+                        {Boolean(game.wagerDuration) && (
+                          <TimerBar
+                            duration={game.wagerDuration}
+                            secondary
+                          />
+                        )}
                         <div
                           style={{
                             position: 'absolute',
