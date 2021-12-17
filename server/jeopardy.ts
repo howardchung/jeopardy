@@ -441,7 +441,7 @@ export class Jeopardy {
       this.roster.forEach((p) => {
         this.jpd.public.waitingForWager![p.id] = true;
       });
-      this.setWagerTimeout(15000);
+      this.setWagerTimeout(30000);
       // autopick the question
       this.jpd.public.currentQ = '1_1';
       // autobuzz the players in ascending score order
