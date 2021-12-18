@@ -108,6 +108,7 @@ app.get('/stats', async (req, res) => {
       .trim();
     const chatMessages = await getRedisCountDay('chatMessages');
     const nonTrivialJudges = await redis.llen('jpd:nonTrivialJudges');
+    const jeopardyResults = await redis.lrange('jpd:results', 0, -1);
 
     res.json({
       roomCount: rooms.size,
@@ -116,6 +117,7 @@ app.get('/stats', async (req, res) => {
       chatMessages,
       currentUsers,
       nonTrivialJudges,
+      jeopardyResults,
       rooms: roomData,
     });
   } else {

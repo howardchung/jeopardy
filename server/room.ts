@@ -12,7 +12,7 @@ if (process.env.REDIS_URL) {
 export class Room {
   public roster: User[] = [];
   private chat: ChatMessage[] = [];
-  private nameMap: StringDict = {};
+  public nameMap: StringDict = {};
   private pictureMap: StringDict = {};
   private io: Server;
   public roomId: string;
