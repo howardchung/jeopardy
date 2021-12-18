@@ -458,6 +458,14 @@ export class Jeopardy {
       this.io.of(this.roomId).emit('JPD:playRightanswer');
     } else if (this.jpd.public.round === 'final') {
       this.jpd.public.round = 'end';
+      // Log the results
+      const scores = Object.entries(this.jpd.public.scores);
+      scores.sort((a, b) => b[1] - a[1]);
+      const scoresNames = scores.map(score => ([
+        this.room.nameMap[score[0]],
+        score[1],
+      ]));
+      redis?.lpush('jpd:results', JSON.stringify(scoresNames));
     } else {
       this.jpd.public.round = 'jeopardy';
     }
@@ -701,7 +709,7 @@ export class Jeopardy {
       const syllCountArr = clue.question
         // Remove parenthetical starts and blanks
         .replace(/^\(.*\)/, '')
-        .replace(/_/g, ' blank ')
+        .replace(/_+/g, ' blank ')
         .split(' ')
         .map((word: string) => syllableCount(word));
       const totalSyll = syllCountArr.reduce((a: number, b: number) => a + b, 0);
