@@ -113,7 +113,7 @@ export class Jeopardy extends React.Component<{
       // Read the question
       // console.log('JPD:playClue', text);
       // Remove parenthetical starts and blanks
-      await this.sayText(text.replace(/^\(.*\)/, '').replace(/_/g, ' blank '));
+      await this.sayText(text.replace(/^\(.*\)/, '').replace(/_+/g, ' blank '));
     });
     this.props.socket.on('JPD:playCategories', async () => {
       const now = Number(new Date());
