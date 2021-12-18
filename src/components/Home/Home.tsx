@@ -74,8 +74,8 @@ export const JeopardyHome = () => {
       <JeopardyTopBar hideNewRoom />
       <div className={styles.container}>
         <Hero
-          heroText={'Play through episodes of Jeopardy! with friends.'}
-          subText={'Over 6,800 episodes featuring 400,000+ clues.'}
+          heroText={'Play Jeopardy! online with friends.'}
+          subText={'Pick from 6,800+ episodes featuring 400,000+ clues.'}
           action={<NewRoomButton />}
           image={'/screenshot3.png'}
         />
@@ -94,7 +94,7 @@ export const JeopardyHome = () => {
           <Feature
             icon="lightbulb"
             title="Buzzer"
-            text="Be fast on the buzzer to score points! But don't buzz too early or you'll be locked out for a brief period."
+            text="Implements the buzzer logic from the TV show (first correct answer scores points)"
           />
           <Feature
             icon="microphone"
@@ -109,7 +109,7 @@ export const JeopardyHome = () => {
           <Feature
             icon="wrench"
             title="Custom Games"
-            text="Upload your own data file to play a custom game!"
+            text="Upload your own data file to play a custom game"
           />
         </div>
       </div>

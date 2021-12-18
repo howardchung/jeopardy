@@ -4,12 +4,13 @@ const fs = require('fs');
 const dataDir = '../j-archive-parser/j-archive-csv/';
 const files = fs.readdirSync(dataDir);
 let all = [];
+let qCount = 0;
+let epCount = 0;
 files.forEach((file) => {
-  const episode = fs.readFileSync(dataDir + file, 'utf-8');
-  const output = Papa.parse(episode, { header: true });
-  all = [...all, ...output.data];
+  const season = fs.readFileSync(dataDir + file, 'utf-8');
+  const output = Papa.parse(season, { header: true });
+  all.push(...output.data);
 });
-console.log(all.length);
 // Fix up the data format
 all.forEach((row, i) => {
   if (!row.coord) {
@@ -52,9 +53,10 @@ all.forEach((row) => {
     } else if (/^\d{4} Tournament of Champions/.test(row.extra_info)) {
       info = 'champions';
     }
-    if (info) {
-      console.log(row.extra_info, info);
-    }
+    // if (info) {
+    //   console.log(row.extra_info, info);
+    // }
+    epCount += 1;
     output[row.epNum] = {
       epNum: row.epNum,
       airDate: row.airDate,
@@ -65,17 +67,22 @@ all.forEach((row) => {
     };
   }
   if (!output[row.epNum][row.round_name]) {
-    console.log(row);
+    // console.log(row);
     return;
   }
+  // if (row.answer.includes('\\')) {
+  //   console.log(row.answer, row.answer.replace(/\\/g, ''));
+  // }
+  qCount += 1;
   output[row.epNum][row.round_name].push({
     x: row.xcoord,
     y: row.ycoord,
     q: row.question,
-    a: row.answer,
+    a: row.answer.replace(/\\/g, ''),
     cat: row.category,
     dd: row.daily_double,
     val: row.value,
   });
 });
 fs.writeFileSync('./jeopardy.json', JSON.stringify(output));
+console.log('%s eps, %s clues', epCount, qCount);
