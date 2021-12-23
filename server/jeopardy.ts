@@ -428,12 +428,14 @@ export class Jeopardy {
       this.jpd.public.round = 'double';
       // If double, person with lowest score is picker
       // This is nlogn rather than n, but prob ok for small numbers of players
-      const playersWithScores = this.roster.map((p) => ({
-        id: p.id,
-        score: this.jpd.public.scores[p.id] || 0,
-      }));
-      playersWithScores.sort((a, b) => a.score - b.score);
-      this.jpd.public.picker = playersWithScores[0]?.id;
+      if (this.jpd.public.scoring !== 'coryat') {
+        const playersWithScores = this.roster.map((p) => ({
+          id: p.id,
+          score: this.jpd.public.scores[p.id] || 0,
+        }));
+        playersWithScores.sort((a, b) => a.score - b.score);
+        this.jpd.public.picker = playersWithScores[0]?.id;
+      }
     } else if (this.jpd.public.round === 'double') {
       this.jpd.public.round = 'final';
       const now = Number(new Date());
