@@ -36,6 +36,7 @@ const names = Moniker.generator([
 ]);
 
 const rooms = new Map<string, Room>();
+const permaRooms = ['/default', '/smokestack', '/howard-and-katie'];
 init();
 
 async function saveRoomsToRedis() {
@@ -47,6 +48,9 @@ async function saveRoomsToRedis() {
         const roomData = roomArr[i].serialize();
         const key = roomArr[i].roomId;
         await redis.setex(key, 24 * 60 * 60, roomData);
+        if (permaRooms.includes(key)) {
+          await redis.persist(key);
+        }
       }
     }
     // console.timeEnd('roomSave');
@@ -68,10 +72,11 @@ async function init() {
     // Start saving rooms to Redis
     saveRoomsToRedis();
   }
-
-  if (!rooms.has('/default')) {
-    rooms.set('/default', new Room(io, '/default'));
-  }
+  permaRooms.forEach(room => {
+    if(!rooms.has(room)) {
+      rooms.set(room, new Room(io, room));
+    }
+  });
 
   server.listen(process.env.PORT || 8080);
 }
