@@ -1,6 +1,6 @@
 # Jeopardy
 
-An website for playing Jeopardy! together
+A website for playing Jeopardy! together
 
 ## Description
 
