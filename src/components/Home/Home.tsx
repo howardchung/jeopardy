@@ -75,7 +75,7 @@ export const JeopardyHome = () => {
       <div className={styles.container}>
         <Hero
           heroText={'Play Jeopardy! online with friends.'}
-          subText={'Pick from 6,800+ episodes featuring 400,000+ clues.'}
+          subText={'Pick from 7,000+ episodes featuring 400,000+ clues.'}
           action={<NewRoomButton />}
           image={'/screenshot3.png'}
         />
