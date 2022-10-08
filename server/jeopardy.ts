@@ -661,9 +661,11 @@ export class Jeopardy {
       this.jpd.wagers[id] = numWager;
       this.jpd.public.wagers[id] = numWager;
       this.jpd.public.waitingForWager = undefined;
-      this.jpd.public.board[this.jpd.public.currentQ].question = this.jpd.board[
-        this.jpd.public.currentQ
-      ]?.q;
+      if (this.jpd.public.board[this.jpd.public.currentQ]) {
+        this.jpd.public.board[this.jpd.public.currentQ].question = this.jpd.board[
+          this.jpd.public.currentQ
+        ]?.q;
+      }
       this.triggerPlayClue();
       this.emitState();
     }
