@@ -657,13 +657,13 @@ export class Jeopardy {
       numWager = Math.min(Math.max(numWager, minWager), maxWager);
     }
     console.log('[WAGER]', id, wager, numWager);
-    if (id === this.jpd.public.dailyDoublePlayer) {
+    if (id === this.jpd.public.dailyDoublePlayer && this.jpd.public.currentQ) {
       this.jpd.wagers[id] = numWager;
       this.jpd.public.wagers[id] = numWager;
       this.jpd.public.waitingForWager = undefined;
       this.jpd.public.board[this.jpd.public.currentQ].question = this.jpd.board[
         this.jpd.public.currentQ
-      ].q;
+      ]?.q;
       this.triggerPlayClue();
       this.emitState();
     }
