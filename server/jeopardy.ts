@@ -524,9 +524,7 @@ export class Jeopardy {
       // In final, reveal one by one during judging
       this.jpd.public.answers = { ...this.jpd.answers };
     }
-    if (this.jpd.board[this.jpd.public.currentQ]) {
-    this.jpd.public.currentAnswer = this.jpd.board[this.jpd.public.currentQ].a;
-    }
+    this.jpd.public.currentAnswer = this.jpd.board[this.jpd.public.currentQ]?.a;
     this.advanceJudging();
     if (!this.jpd.public.currentJudgeAnswer) {
       this.jpd.public.canNextQ = true;
