@@ -680,9 +680,11 @@ export class Jeopardy {
       ) {
         // if final, reveal clue if all players made wager
         this.jpd.public.waitingForWager = undefined;
-        this.jpd.public.board[
-          this.jpd.public.currentQ
-        ].question = this.jpd.board[this.jpd.public.currentQ].q;
+        if (this.jpd.public.board[this.jpd.public.currentQ]) {
+          this.jpd.public.board[this.jpd.public.currentQ].question = this.jpd.board[
+            this.jpd.public.currentQ
+          ]?.q;
+        }
         this.triggerPlayClue();
       }
       this.emitState();
