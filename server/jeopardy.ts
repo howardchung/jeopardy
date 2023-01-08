@@ -182,15 +182,6 @@ export class Jeopardy {
           this.jpd.public.scores[socket.id] = this.jpd.public.scores[id];
           delete this.jpd.public.scores[id];
         }
-        if (
-          this.jpd.public.waitingForWager &&
-          this.jpd.public.waitingForWager[id]
-        ) {
-          this.jpd.public.waitingForWager[
-            socket.id
-          ] = this.jpd.public.waitingForWager[id];
-          delete this.jpd.public.waitingForWager[id];
-        }
         if (this.jpd.wagers && this.jpd.wagers[id]) {
           this.jpd.wagers[socket.id] = this.jpd.wagers[id];
           delete this.jpd.wagers[id];
@@ -676,7 +667,7 @@ export class Jeopardy {
         delete this.jpd.public.waitingForWager[id];
       }
       if (
-        Object.keys(this.jpd.public.buzzes).every((id) => id in this.jpd.wagers)
+        Object.keys(this.jpd.public.waitingForWager).length === 0
       ) {
         // if final, reveal clue if all players made wager
         this.jpd.public.waitingForWager = undefined;
