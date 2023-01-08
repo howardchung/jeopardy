@@ -667,7 +667,7 @@ export class Jeopardy {
         delete this.jpd.public.waitingForWager[id];
       }
       if (
-        Object.keys(this.jpd.public.waitingForWager).length === 0
+        Object.keys(this.jpd.public.waitingForWager ?? {}).length === 0
       ) {
         // if final, reveal clue if all players made wager
         this.jpd.public.waitingForWager = undefined;
