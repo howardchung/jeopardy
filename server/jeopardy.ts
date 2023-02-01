@@ -343,7 +343,7 @@ export class Jeopardy {
         const parse = Papa.parse(custom, {header: true});
         const typed = parse.data.map((d: any) => ({...d, val: Number(d.val), dd: d.dd === 'true', x: Number(d.x), y: Number(d.y) }));
         loadedData = {
-          airDate: new Date().toISOString(),
+          airDate: new Date().toISOString().split("T")[0],
           epNum: 'Custom',
           jeopardy: typed.filter((d: any) => d.round === 'jeopardy'),
           double: typed.filter((d: any) => d.round === 'double'),
