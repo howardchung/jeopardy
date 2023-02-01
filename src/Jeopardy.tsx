@@ -462,18 +462,18 @@ export class Jeopardy extends React.Component<{
                             <div style={{ display: 'flex' }}>
                               <Button
                                 disabled={this.state.buzzFrozen}
-                                color="green"
+                                color={game.canBuzz ? "green" : 'grey'}
                                 size="huge"
                                 onClick={this.onBuzz}
                                 icon
                                 labelPosition="left"
                               >
-                                <Icon name="lightbulb" />
+                                <Icon name={game.canBuzz ? 'lightbulb' : "lock"} />
                                 Buzz
                               </Button>
                               <Button
                                 disabled={this.state.buzzFrozen}
-                                color="red"
+                                color={game.canBuzz ? "red" : 'grey'}
                                 size="huge"
                                 onClick={() => {
                                   if (game.canBuzz) {
@@ -483,7 +483,7 @@ export class Jeopardy extends React.Component<{
                                 icon
                                 labelPosition="left"
                               >
-                                <Icon name="close" />
+                                <Icon name={game.canBuzz ? 'close' : "lock"} />
                                 Pass
                               </Button>
                             </div>
