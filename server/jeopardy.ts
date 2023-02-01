@@ -2,6 +2,8 @@ import { Server, Socket } from 'socket.io';
 import Redis from 'ioredis';
 import { BooleanDict, StringDict, NumberDict, User } from '.';
 import { Room } from './room';
+//@ts-ignore
+import Papa from 'papaparse';
 const jData = require('../jeopardy.json');
 
 let redis = (undefined as unknown) as Redis.Redis;
@@ -333,13 +335,21 @@ export class Jeopardy {
     });
   }
 
-  loadEpisode(number: string, filter: string, custom: any) {
+  loadEpisode(number: string, filter: string, custom: string) {
     console.log('[LOADEPISODE]', number, filter, Boolean(custom));
     let loadedData = null;
     if (custom) {
       try {
-        loadedData = JSON.parse(custom);
-        loadedData.epNum = 'Custom';
+        const parse = Papa.parse(custom, {header: true});
+        const typed = parse.data.map((d: any) => ({...d, val: Number(d.val), dd: d.dd === 'true', x: Number(d.x), y: Number(d.y) }));
+        loadedData = {
+          airDate: new Date().toISOString(),
+          epNum: 'Custom',
+          jeopardy: typed.filter((d: any) => d.round === 'jeopardy'),
+          double: typed.filter((d: any) => d.round === 'double'),
+          final: typed.filter((d: any) => d.round === 'final'),
+        }
+        console.log(loadedData);
       } catch (e) {
         console.warn(e);
       }

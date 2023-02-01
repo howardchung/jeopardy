@@ -81,7 +81,7 @@ export default class App extends React.Component<null, AppState> {
     });
     socket.on('error', (err: any) => {
       console.error(err);
-      this.setState({ error: "There's no room with this name." });
+      this.setState({ error: "An error occurred." });
     });
     socket.on('REC:chat', (data: ChatMessage) => {
       if (document.visibilityState && document.visibilityState !== 'visible') {

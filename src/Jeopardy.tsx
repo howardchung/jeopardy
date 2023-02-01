@@ -913,10 +913,8 @@ export class Jeopardy extends React.Component<{
                     <Button
                       icon
                       color="orange"
-                      href={`data:application/octet-stream,${encodeURIComponent(
-                        JSON.stringify(require('./example.json'), null, 2)
-                      )}`}
-                      download="example.json"
+                      href={`./example.csv`}
+                      download="example.csv"
                     >
                       <Icon name="download" />
                     </Button>
