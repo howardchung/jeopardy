@@ -1,13 +1,10 @@
 import './App.css';
 import React from 'react';
 import {
-  Button,
   Divider,
   Grid,
-  Header,
   Icon,
   Input,
-  Modal,
 } from 'semantic-ui-react';
 //@ts-ignore
 import io from 'socket.io-client';
@@ -78,10 +75,6 @@ export default class App extends React.Component<null, AppState> {
       // Save our current ID to localstorage
       window.localStorage.setItem('jeopardy-savedId', socket.id);
     });
-    socket.on('error', (err: any) => {
-      console.error(err);
-      this.setState({ error: "An error occurred." });
-    });
     socket.on('REC:chat', (data: ChatMessage) => {
       if (document.visibilityState && document.visibilityState !== 'visible') {
         new Audio('/clearly.mp3').play();
@@ -120,27 +113,6 @@ export default class App extends React.Component<null, AppState> {
   render() {
     return (
       <React.Fragment>
-        {this.state.error && (
-          <Modal inverted basic open>
-            <Header as="h1" style={{ textAlign: 'center' }}>
-              {this.state.error}
-            </Header>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <Button
-                primary
-                size="huge"
-                onClick={() => {
-                  window.location.href = '/';
-                }}
-                icon
-                labelPosition="left"
-              >
-                <Icon name="home" />
-                Go to home page
-              </Button>
-            </div>
-          </Modal>
-        )}
         <JeopardyTopBar />
         {
           <Grid stackable celled="internally">
