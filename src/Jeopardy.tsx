@@ -70,9 +70,9 @@ export class Jeopardy extends React.Component<{
     this.props.socket.on('JPD:state', (game: any) => {
       this.setState({ game, localEpNum: game.epNum });
     });
-    this.props.socket.on('JPD:playIntro', () => {
-      this.playIntro();
-    });
+    // this.props.socket.on('JPD:playIntro', () => {
+    //   this.playIntro();
+    // });
     this.props.socket.on('JPD:playTimesUp', () => {
       timesUp.play();
     });
@@ -240,58 +240,58 @@ export class Jeopardy extends React.Component<{
     inputElement.dispatchEvent(new MouseEvent('click'));
   };
 
-  playIntro = async () => {
-    this.setState({ isIntroPlaying: true });
-    document.getElementById('intro')!.innerHTML = '';
-    let introVideo = document.createElement('video');
-    let introMusic = new Audio('/jeopardy/jeopardy-intro-full.ogg');
-    document.getElementById('intro')?.appendChild(introVideo);
-    introVideo.muted = true;
-    introVideo.src = '/jeopardy/jeopardy-intro-video.mp4';
-    introVideo.play();
-    introVideo.style.width = '100%';
-    introVideo.style.height = '100%';
-    introVideo.style.backgroundColor = '#000000';
-    introMusic.volume = 0.5;
-    introMusic.play();
-    setTimeout(async () => {
-      await this.sayText('This is Jeopardy!');
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      await this.sayText("Here are today's contestants.");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      for (let i = 0; i < this.props.participants.length; i++) {
-        const p = this.props.participants[i];
-        const name = this.props.nameMap[p.id];
-        const player = document.createElement('img');
-        player.src =
-          getDefaultPicture(this.props.nameMap[p.id], getColorHex(p.id)) ||
-          this.props.pictureMap[p.id];
-        player.style.width = '200px';
-        player.style.height = '200px';
-        player.style.position = 'absolute';
-        player.style.margin = 'auto';
-        player.style.top = '0px';
-        player.style.bottom = '0px';
-        player.style.left = '0px';
-        player.style.right = '0px';
-        document.getElementById('intro')!.appendChild(player);
-        // maybe we can look up the location by IP?
-        await this.sayText('A person from somewhere, ' + name);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        document.getElementById('intro')!.removeChild(player);
-      }
-      await this.sayText(
-        'And now, here is the host of Jeopardy, your computer!'
-      );
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      introMusic.pause();
-      introVideo.pause();
-      introVideo = null as any;
-      introMusic = null as any;
-      document.getElementById('intro')!.innerHTML = '';
-      this.setState({ isIntroPlaying: false });
-    }, 10000);
-  };
+  // playIntro = async () => {
+  //   this.setState({ isIntroPlaying: true });
+  //   document.getElementById('intro')!.innerHTML = '';
+  //   let introVideo = document.createElement('video');
+  //   let introMusic = new Audio('/jeopardy/jeopardy-intro-full.ogg');
+  //   document.getElementById('intro')?.appendChild(introVideo);
+  //   introVideo.muted = true;
+  //   introVideo.src = '/jeopardy/jeopardy-intro-video.mp4';
+  //   introVideo.play();
+  //   introVideo.style.width = '100%';
+  //   introVideo.style.height = '100%';
+  //   introVideo.style.backgroundColor = '#000000';
+  //   introMusic.volume = 0.5;
+  //   introMusic.play();
+  //   setTimeout(async () => {
+  //     await this.sayText('This is Jeopardy!');
+  //     await new Promise((resolve) => setTimeout(resolve, 1000));
+  //     await this.sayText("Here are today's contestants.");
+  //     await new Promise((resolve) => setTimeout(resolve, 1000));
+  //     for (let i = 0; i < this.props.participants.length; i++) {
+  //       const p = this.props.participants[i];
+  //       const name = this.props.nameMap[p.id];
+  //       const player = document.createElement('img');
+  //       player.src =
+  //         getDefaultPicture(this.props.nameMap[p.id], getColorHex(p.id)) ||
+  //         this.props.pictureMap[p.id];
+  //       player.style.width = '200px';
+  //       player.style.height = '200px';
+  //       player.style.position = 'absolute';
+  //       player.style.margin = 'auto';
+  //       player.style.top = '0px';
+  //       player.style.bottom = '0px';
+  //       player.style.left = '0px';
+  //       player.style.right = '0px';
+  //       document.getElementById('intro')!.appendChild(player);
+  //       // maybe we can look up the location by IP?
+  //       await this.sayText('A person from somewhere, ' + name);
+  //       await new Promise((resolve) => setTimeout(resolve, 1000));
+  //       document.getElementById('intro')!.removeChild(player);
+  //     }
+  //     await this.sayText(
+  //       'And now, here is the host of Jeopardy, your computer!'
+  //     );
+  //     await new Promise((resolve) => setTimeout(resolve, 1000));
+  //     introMusic.pause();
+  //     introVideo.pause();
+  //     introVideo = null as any;
+  //     introMusic = null as any;
+  //     document.getElementById('intro')!.innerHTML = '';
+  //     this.setState({ isIntroPlaying: false });
+  //   }, 10000);
+  // };
 
   sayText = async (text: string) => {
     if (this.state.readingDisabled) {
@@ -884,7 +884,7 @@ export class Jeopardy extends React.Component<{
                 </Dropdown.Menu>
               </Dropdown>
               <Button.Group size="mini" vertical={false}>
-                <Button
+                {/* <Button
                   onClick={() => this.props.socket.emit('JPD:cmdIntro')}
                   icon
                   labelPosition="left"
@@ -892,7 +892,7 @@ export class Jeopardy extends React.Component<{
                 >
                   <Icon name="film" />
                   Play Intro
-                </Button>
+                </Button> */}
                 <Popup
                   content={`Create your own custom game by uploading a data file`}
                   trigger={
