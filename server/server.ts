@@ -3,8 +3,6 @@ import fs from 'fs';
 import util from 'util';
 import express from 'express';
 import compression from 'compression';
-//@ts-ignore
-import Moniker from 'moniker';
 import os from 'os';
 import cors from 'cors';
 import Redis from 'ioredis';
@@ -13,6 +11,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import { Room } from './room';
 import { getRedisCountDay } from './utils/redis';
+import { makeRoomName, makeUserName } from './utils/moniker';
 
 const app = express();
 let server: any = null;
@@ -28,12 +27,6 @@ let redis = (undefined as unknown) as Redis.Redis;
 if (process.env.REDIS_URL) {
   redis = new Redis(process.env.REDIS_URL);
 }
-
-const names = Moniker.generator([
-  Moniker.adjective,
-  Moniker.noun,
-  Moniker.verb,
-]);
 
 const rooms = new Map<string, Room>();
 const permaRooms = ['/default', '/smokestack', '/howard-and-katie'];
@@ -131,13 +124,19 @@ app.get('/stats', async (req, res) => {
 });
 
 app.post('/createRoom', (req, res) => {
-  let name = names.choose();
+  const genName = () => '/' + makeRoomName();
+  let name = genName();
   // Keep retrying until no collision
   while (rooms.has(name)) {
-    name = names.choose();
+    name = genName();
   }
   console.log('createRoom: ', name);
-  const newRoom = new Room(io, '/' + name);
-  rooms.set('/' + name, newRoom);
-  res.json({ name });
+  const newRoom = new Room(io, name);
+  rooms.set(name, newRoom);
+  res.json({ name: name.slice(1) });
 });
+
+app.get('/generateName', async (req, res) => {
+  return res.send(makeUserName());
+});
+
