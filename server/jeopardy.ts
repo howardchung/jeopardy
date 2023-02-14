@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 import { Room } from './room';
 //@ts-ignore
 import Papa from 'papaparse';
+import { redisCount } from './utils/redis';
 const jData = require('../jeopardy.json');
 
 let redis = undefined as unknown as Redis;
@@ -356,6 +357,7 @@ export class Jeopardy {
           final: typed.filter((d: any) => d.round === 'final'),
         };
         console.log(loadedData);
+        redisCount('customGames');
       } catch (e) {
         console.warn(e);
       }
@@ -385,6 +387,7 @@ export class Jeopardy {
       }
     }
     if (loadedData) {
+      redisCount('newGames');
       const { epNum, airDate, info, jeopardy, double, final } = loadedData;
       this.jpd = getGameState(epNum, airDate, info, jeopardy, double, final);
       if (number === 'finaltest') {
