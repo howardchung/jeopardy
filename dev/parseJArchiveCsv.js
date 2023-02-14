@@ -1,7 +1,7 @@
 const Papa = require('papaparse');
 const fs = require('fs');
 
-const dataDir = '../j-archive-parser/j-archive-csv/';
+const dataDir = './j-archive-parser/j-archive-csv/';
 const files = fs.readdirSync(dataDir);
 let all = [];
 let qCount = 0;
