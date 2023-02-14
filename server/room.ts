@@ -3,7 +3,7 @@ import { Socket, Server } from 'socket.io';
 import Redis from 'ioredis';
 import { redisCount } from './utils/redis';
 
-let redis = (undefined as unknown) as Redis.Redis;
+let redis = undefined as unknown as Redis;
 if (process.env.REDIS_URL) {
   redis = new Redis(process.env.REDIS_URL);
 }

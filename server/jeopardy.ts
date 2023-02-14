@@ -5,7 +5,7 @@ import { Room } from './room';
 import Papa from 'papaparse';
 const jData = require('../jeopardy.json');
 
-let redis = (undefined as unknown) as Redis.Redis;
+let redis = undefined as unknown as Redis;
 if (process.env.REDIS_URL) {
   redis = new Redis(process.env.REDIS_URL);
 }
@@ -127,9 +127,11 @@ export class Jeopardy {
   private io: Server;
   private roster: User[];
   private room: Room;
-  private playClueTimeout: NodeJS.Timeout = (undefined as unknown) as NodeJS.Timeout;
-  private questionAnswerTimeout: NodeJS.Timeout = (undefined as unknown) as NodeJS.Timeout;
-  private wagerTimeout: NodeJS.Timeout = (undefined as unknown) as NodeJS.Timeout;
+  private playClueTimeout: NodeJS.Timeout =
+    undefined as unknown as NodeJS.Timeout;
+  private questionAnswerTimeout: NodeJS.Timeout =
+    undefined as unknown as NodeJS.Timeout;
+  private wagerTimeout: NodeJS.Timeout = undefined as unknown as NodeJS.Timeout;
 
   constructor(
     io: Server,
@@ -239,9 +241,8 @@ export class Jeopardy {
           this.io.of(this.roomId).emit('JPD:playDailyDouble');
         } else {
           // Put Q in public state
-          this.jpd.public.board[
-            this.jpd.public.currentQ
-          ].question = this.jpd.board[this.jpd.public.currentQ].q;
+          this.jpd.public.board[this.jpd.public.currentQ].question =
+            this.jpd.board[this.jpd.public.currentQ].q;
           this.triggerPlayClue();
         }
         this.emitState();
@@ -339,15 +340,21 @@ export class Jeopardy {
     let loadedData = null;
     if (custom) {
       try {
-        const parse = Papa.parse(custom, {header: true});
-        const typed = parse.data.map((d: any) => ({...d, val: Number(d.val), dd: d.dd === 'true', x: Number(d.x), y: Number(d.y) }));
+        const parse = Papa.parse(custom, { header: true });
+        const typed = parse.data.map((d: any) => ({
+          ...d,
+          val: Number(d.val),
+          dd: d.dd === 'true',
+          x: Number(d.x),
+          y: Number(d.y),
+        }));
         loadedData = {
-          airDate: new Date().toISOString().split("T")[0],
+          airDate: new Date().toISOString().split('T')[0],
           epNum: 'Custom',
           jeopardy: typed.filter((d: any) => d.round === 'jeopardy'),
           double: typed.filter((d: any) => d.round === 'double'),
           final: typed.filter((d: any) => d.round === 'final'),
-        }
+        };
         console.log(loadedData);
       } catch (e) {
         console.warn(e);
@@ -376,7 +383,6 @@ export class Jeopardy {
         }
         loadedData = (jData as any)[number];
       }
-
     }
     if (loadedData) {
       const { epNum, airDate, info, jeopardy, double, final } = loadedData;
@@ -463,10 +469,10 @@ export class Jeopardy {
       // Log the results
       const scores = Object.entries(this.jpd.public.scores);
       scores.sort((a, b) => b[1] - a[1]);
-      const scoresNames = scores.map(score => ([
+      const scoresNames = scores.map((score) => [
         this.room.nameMap[score[0]],
         score[1],
-      ]));
+      ]);
       redis?.lpush('jpd:results', JSON.stringify(scoresNames));
     } else {
       this.jpd.public.round = 'jeopardy';
@@ -542,12 +548,10 @@ export class Jeopardy {
     this.jpd.public.currentJudgeAnswer = Object.keys(this.jpd.public.buzzes)[
       this.jpd.public.currentJudgeAnswerIndex
     ];
-    this.jpd.public.wagers[
-      this.jpd.public.currentJudgeAnswer
-    ] = this.jpd.wagers[this.jpd.public.currentJudgeAnswer];
-    this.jpd.public.answers[
-      this.jpd.public.currentJudgeAnswer
-    ] = this.jpd.answers[this.jpd.public.currentJudgeAnswer];
+    this.jpd.public.wagers[this.jpd.public.currentJudgeAnswer] =
+      this.jpd.wagers[this.jpd.public.currentJudgeAnswer];
+    this.jpd.public.answers[this.jpd.public.currentJudgeAnswer] =
+      this.jpd.answers[this.jpd.public.currentJudgeAnswer];
 
     // If the current judge player isn't connected, advance again
     if (
@@ -662,9 +666,8 @@ export class Jeopardy {
       this.jpd.public.wagers[id] = numWager;
       this.jpd.public.waitingForWager = undefined;
       if (this.jpd.public.board[this.jpd.public.currentQ]) {
-        this.jpd.public.board[this.jpd.public.currentQ].question = this.jpd.board[
-          this.jpd.public.currentQ
-        ]?.q;
+        this.jpd.public.board[this.jpd.public.currentQ].question =
+          this.jpd.board[this.jpd.public.currentQ]?.q;
       }
       this.triggerPlayClue();
       this.emitState();
@@ -675,15 +678,12 @@ export class Jeopardy {
       if (this.jpd.public.waitingForWager) {
         delete this.jpd.public.waitingForWager[id];
       }
-      if (
-        Object.keys(this.jpd.public.waitingForWager ?? {}).length === 0
-      ) {
+      if (Object.keys(this.jpd.public.waitingForWager ?? {}).length === 0) {
         // if final, reveal clue if all players made wager
         this.jpd.public.waitingForWager = undefined;
         if (this.jpd.public.board[this.jpd.public.currentQ]) {
-          this.jpd.public.board[this.jpd.public.currentQ].question = this.jpd.board[
-            this.jpd.public.currentQ
-          ]?.q;
+          this.jpd.public.board[this.jpd.public.currentQ].question =
+            this.jpd.board[this.jpd.public.currentQ]?.q;
         }
         this.triggerPlayClue();
       }
@@ -692,10 +692,10 @@ export class Jeopardy {
   }
 
   setWagerTimeout(duration: number, endTS?: number) {
-    this.jpd.public.wagerEndTS = endTS ?? (Number(new Date()) + duration);
+    this.jpd.public.wagerEndTS = endTS ?? Number(new Date()) + duration;
     this.jpd.public.wagerDuration = duration;
     this.wagerTimeout = setTimeout(() => {
-      Object.keys(this.jpd.public.waitingForWager ?? {}).forEach(id => {
+      Object.keys(this.jpd.public.waitingForWager ?? {}).forEach((id) => {
         this.submitWager(id, 0);
       });
     }, duration);
