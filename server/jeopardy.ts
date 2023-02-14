@@ -169,9 +169,9 @@ export class Jeopardy {
       this.jpd.public.scores[socket.id] = 0;
       this.emitState();
 
-      socket.on('JPD:cmdIntro', () => {
-        this.io.of(this.roomId).emit('JPD:playIntro');
-      });
+      // socket.on('JPD:cmdIntro', () => {
+      //   this.io.of(this.roomId).emit('JPD:playIntro');
+      // });
       socket.on('JPD:init', () => {
         if (this.jpd) {
           socket.emit('JPD:state', this.jpd.public);
