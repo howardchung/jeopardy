@@ -451,7 +451,7 @@ export class Jeopardy extends React.Component<{
             <React.Fragment>
               {
                 <div style={{ display: 'flex', flexGrow: 1 }}>
-                  <div className="board">
+                  <div className={`board ${this.state.game?.currentQ ? 'currentQ' : ''}`}>
                     {this.state.isIntroPlaying && <div id="intro" />}
                     {categories.map((cat, i) => (
                       <div className="category box">
@@ -818,6 +818,7 @@ export class Jeopardy extends React.Component<{
                   display: 'flex',
                   justifyContent: 'center',
                   flexWrap: 'wrap',
+                  rowGap: '4px',
                 }}
               >
                 <Dropdown
