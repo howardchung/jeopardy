@@ -1,6 +1,5 @@
 import { Server, Socket } from 'socket.io';
 import Redis from 'ioredis';
-import { BooleanDict, StringDict, NumberDict, User } from '.';
 import { Room } from './room';
 //@ts-ignore
 import Papa from 'papaparse';
