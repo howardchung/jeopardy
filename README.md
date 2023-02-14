@@ -1,12 +1,13 @@
 # Jeopardy
 
-A website for playing Jeopardy! together
+A website for playing Jeopardy! together with friends over the Internet. Designed for computer browsers, although it's playable on mobile. If the UI/code looks familiar, much of it is copied from my other project, WatchParty: https://github.com/howardchung/watchparty
 
 ## Description
 
 - Implements the game show Jeopardy!, including the Jeopardy, Double Jeopardy, and Final Jeopardy rounds. Daily Doubles are also included.
 - Any archived episode of Jeopardy! can be loaded, with options for loading specific event games (e.g. College Championship)
 - Load games by episode number
+- Create your own custom game with a CSV file
 - Supports creating multiple rooms for private/simultaneous games.
 - Text chat included
 
