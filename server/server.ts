@@ -23,7 +23,7 @@ if (process.env.HTTPS) {
   server = new http.Server(app);
 }
 const io = new Server(server, { cors: { origin: '*' } });
-let redis = undefined as unknown as Redis;
+let redis: Redis | null = null;
 if (process.env.REDIS_URL) {
   redis = new Redis(process.env.REDIS_URL);
 }
@@ -40,9 +40,9 @@ async function saveRoomsToRedis() {
       if (roomArr[i].roster.length) {
         const roomData = roomArr[i].serialize();
         const key = roomArr[i].roomId;
-        await redis.setex(key, 24 * 60 * 60, roomData);
+        await redis?.setex(key, 24 * 60 * 60, roomData);
         if (permaRooms.includes(key)) {
-          await redis.persist(key);
+          await redis?.persist(key);
         }
       }
     }
@@ -51,7 +51,7 @@ async function saveRoomsToRedis() {
   }
 }
 async function init() {
-  if (process.env.REDIS_URL) {
+  if (redis) {
     // Load rooms from Redis
     console.log('loading rooms from redis');
     const keys = await redis.keys('/*');
@@ -99,14 +99,16 @@ app.get('/stats', async (req, res) => {
     // Sort newest first
     roomData.sort((a, b) => b.creationTime - a.creationTime);
     const cpuUsage = os.loadavg();
-    const redisUsage = (await redis.info())
-      .split('\n')
+    const redisUsage = (await redis?.info())
+      ?.split('\n')
       .find((line) => line.startsWith('used_memory:'))
       ?.split(':')[1]
       .trim();
     const chatMessages = await getRedisCountDay('chatMessages');
-    const nonTrivialJudges = await redis.llen('jpd:nonTrivialJudges');
-    const jeopardyResults = await redis.lrange('jpd:results', 0, -1);
+    const newGames = await getRedisCountDay('newGames');
+    const customGames = await getRedisCountDay('customGames');
+    const nonTrivialJudges = await redis?.llen('jpd:nonTrivialJudges');
+    const jeopardyResults = await redis?.llen('jpd:results');
 
     res.json({
       roomCount: rooms.size,
@@ -114,10 +116,30 @@ app.get('/stats', async (req, res) => {
       redisUsage,
       chatMessages,
       currentUsers,
+      newGames,
+      customGames,
       nonTrivialJudges,
       jeopardyResults,
       rooms: roomData,
     });
+  } else {
+    return res.status(403).json({ error: 'Access Denied' });
+  }
+});
+
+app.get('/jeopardyResults', async (req, res) => {
+  if (req.query.key && req.query.key === process.env.STATS_KEY) {
+    const data = await redis?.lrange('jpd:results', 0, -1);
+    return res.json(data);
+  } else {
+    return res.status(403).json({ error: 'Access Denied' });
+  }
+});
+
+app.get('/nonTrivialJudges', async (req, res) => {
+  if (req.query.key && req.query.key === process.env.STATS_KEY) {
+    const data = await redis?.lrange('jpd:nonTrivialJudges', 0, -1);
+    return res.json(data);
   } else {
     return res.status(403).json({ error: 'Access Denied' });
   }
