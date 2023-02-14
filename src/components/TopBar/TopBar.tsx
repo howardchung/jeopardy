@@ -87,7 +87,7 @@ export class JeopardyTopBar extends React.Component<{ hideNewRoom?: boolean }> {
               <div className="logo">Jeopardy!</div>
             </div>
           </a>
-          {/* <div
+          <div
             style={{
               display: 'flex',
               marginLeft: '10px',
@@ -103,7 +103,7 @@ export class JeopardyTopBar extends React.Component<{ hideNewRoom?: boolean }> {
             >
               <Icon name="github" size="big" link />
             </a>
-          </div> */}
+          </div>
           <div
             style={{
               display: 'flex',
