@@ -1,11 +1,6 @@
 import './App.css';
 import React from 'react';
-import {
-  Divider,
-  Grid,
-  Icon,
-  Input,
-} from 'semantic-ui-react';
+import { Divider, Grid, Icon, Input } from 'semantic-ui-react';
 //@ts-ignore
 import io from 'socket.io-client';
 import { serverPath, generateName } from '../../utils';
@@ -67,7 +62,7 @@ export default class App extends React.Component<null, AppState> {
       this.setState({ state: 'connected' });
       // Load username from localstorage
       let userName = window.localStorage.getItem('watchparty-username');
-      this.updateName(null, { value: userName || await generateName() });
+      this.updateName(null, { value: userName || (await generateName()) });
       const savedId = window.localStorage.getItem('jeopardy-savedId');
       if (savedId) {
         socket.emit('JPD:reconnect', savedId);

@@ -1,7 +1,7 @@
 import './index.css';
 import 'semantic-ui-css/semantic.min.css';
 
-import {createRoot} from 'react-dom';
+import { createRoot } from 'react-dom';
 
 import App from './components/App';
 import * as serviceWorker from './serviceWorker';

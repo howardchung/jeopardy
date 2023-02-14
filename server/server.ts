@@ -22,8 +22,8 @@ if (process.env.HTTPS) {
 } else {
   server = new http.Server(app);
 }
-const io = new Server(server, { cors: { origin: '*' }});
-let redis = (undefined as unknown) as Redis.Redis;
+const io = new Server(server, { cors: { origin: '*' } });
+let redis = undefined as unknown as Redis;
 if (process.env.REDIS_URL) {
   redis = new Redis(process.env.REDIS_URL);
 }
@@ -65,8 +65,8 @@ async function init() {
     // Start saving rooms to Redis
     saveRoomsToRedis();
   }
-  permaRooms.forEach(room => {
-    if(!rooms.has(room)) {
+  permaRooms.forEach((room) => {
+    if (!rooms.has(room)) {
       rooms.set(room, new Room(io, room));
     }
   });
@@ -139,4 +139,3 @@ app.post('/createRoom', (req, res) => {
 app.get('/generateName', async (req, res) => {
   return res.send(makeUserName());
 });
-
