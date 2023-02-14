@@ -112,7 +112,7 @@ export default class App extends React.Component<null, AppState> {
         {
           <Grid stackable celled="internally">
             <Grid.Row>
-              <Grid.Column width={12} className="fullHeightColumn">
+              <Grid.Column width={12}>
                 {this.state.state === 'connected' && (
                   <Jeopardy
                     socket={this.socket}
