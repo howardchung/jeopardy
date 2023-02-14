@@ -1,6 +1,5 @@
 import { Jeopardy } from './jeopardy';
 import { Socket, Server } from 'socket.io';
-import { User, ChatMessage, NumberDict, StringDict } from '.';
 import Redis from 'ioredis';
 import { redisCount } from './utils/redis';
 
