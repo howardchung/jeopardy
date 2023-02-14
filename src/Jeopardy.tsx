@@ -165,7 +165,10 @@ export class Jeopardy extends React.Component<{
         let newMask: Boolean[] = [...this.state.categoryMask];
         newMask[i] = true;
         this.setState({ categoryMask: newMask });
-        await this.sayText(categories[i]);
+        await Promise.race([
+          this.sayText(categories[i]),
+          new Promise((resolve) => setTimeout(resolve, 5000)),
+        ]);
       }
     });
   }
@@ -305,7 +308,7 @@ export class Jeopardy extends React.Component<{
 
   sayText = async (text: string) => {
     if (this.state.readingDisabled) {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       return;
     }
     await new Promise((resolve) => {
@@ -454,18 +457,19 @@ export class Jeopardy extends React.Component<{
                   <div className={`board ${this.state.game?.currentQ ? 'currentQ' : ''}`}>
                     {this.state.isIntroPlaying && <div id="intro" />}
                     {categories.map((cat, i) => (
-                      <div className="category box">
+                      <div key={cat} className="category box">
                         {this.state.categoryMask[i] ? cat : ''}
                       </div>
                     ))}
                     {Array.from(Array(5)).map((_, i) => {
                       return (
-                        <React.Fragment>
+                        <React.Fragment key={i}>
                           {categories.map((cat, j) => {
                             const id = `${j + 1}_${i + 1}`;
                             const clue = game.board[id];
                             return (
                               <div
+                                key={id}
                                 id={id}
                                 onClick={
                                   clue ? () => this.pickQ(id) : undefined
@@ -647,6 +651,7 @@ export class Jeopardy extends React.Component<{
                         <div style={{ display: 'flex' }}>
                           {this.getWinners().map((winner: string) => (
                             <img
+                              key={winner}
                               alt=""
                               style={{ width: '200px', height: '200px' }}
                               src={
@@ -669,7 +674,7 @@ export class Jeopardy extends React.Component<{
               >
                 {this.props.participants.map((p) => {
                   return (
-                    <div className="scoreboard">
+                    <div key={p.id} className="scoreboard">
                       <div className="picture" style={{ position: 'relative' }}>
                         <img
                           alt=""
