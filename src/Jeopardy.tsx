@@ -1,5 +1,13 @@
 import React from 'react';
-import { Button, Label, Input, Icon, Dropdown, Popup } from 'semantic-ui-react';
+import {
+  Button,
+  Label,
+  Input,
+  Icon,
+  Dropdown,
+  Popup,
+  Modal,
+} from 'semantic-ui-react';
 import './Jeopardy.css';
 import { getDefaultPicture, getColorHex, shuffle, getColor } from './utils';
 import { Socket } from 'socket.io';
@@ -28,6 +36,13 @@ const scoringOptions = [
   },
 ];
 
+window.speechSynthesis.getVoices();
+const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
+const boardFill = new Audio('/jeopardy/jeopardy-board-fill.mp3');
+const think = new Audio('/jeopardy/jeopardy-think.mp3');
+const timesUp = new Audio('/jeopardy/jeopardy-times-up.mp3');
+const rightAnswer = new Audio('/jeopardy/jeopardy-rightanswer.mp3');
+
 export class Jeopardy extends React.Component<{
   socket: Socket;
   participants: User[];
@@ -47,18 +62,12 @@ export class Jeopardy extends React.Component<{
     clueMask: {} as any,
     readingDisabled: false,
     buzzFrozen: false,
+    showCustomModal: false,
   };
   buzzLock = 0;
 
   async componentDidMount() {
     document.onkeydown = this.onKeydown;
-
-    window.speechSynthesis.getVoices();
-    const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
-    const boardFill = new Audio('/jeopardy/jeopardy-board-fill.mp3');
-    const think = new Audio('/jeopardy/jeopardy-think.mp3');
-    const timesUp = new Audio('/jeopardy/jeopardy-times-up.mp3');
-    const rightAnswer = new Audio('/jeopardy/jeopardy-rightanswer.mp3');
 
     this.setState({
       readingDisabled: Boolean(
@@ -233,6 +242,7 @@ export class Jeopardy extends React.Component<{
       reader.onload = (e) => {
         let content = e.target?.result;
         this.newGame(null, null, content as string);
+        this.setState({ showCustomModal: false });
       };
     });
 
@@ -394,495 +404,560 @@ export class Jeopardy extends React.Component<{
     const game = this.state.game;
     const categories = this.getCategories();
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        {
-          <React.Fragment>
-            {
-              <div style={{ display: 'flex', flexGrow: 1 }}>
-                <div className="board">
-                  {this.state.isIntroPlaying && <div id="intro" />}
-                  {categories.map((cat, i) => (
-                    <div className="category box">
-                      {this.state.categoryMask[i] ? cat : ''}
-                    </div>
-                  ))}
-                  {Array.from(Array(5)).map((_, i) => {
-                    return (
-                      <React.Fragment>
-                        {categories.map((cat, j) => {
-                          const id = `${j + 1}_${i + 1}`;
-                          const clue = game.board[id];
-                          return (
-                            <div
-                              id={id}
-                              onClick={clue ? () => this.pickQ(id) : undefined}
-                              className={`${clue ? 'value' : ''} box`}
-                            >
-                              {!this.state.clueMask[id] && clue
-                                ? clue.value
-                                : ''}
-                            </div>
-                          );
-                        })}
-                      </React.Fragment>
-                    );
-                  })}
-                  {game && Boolean(game.currentQ) && (
-                    <div
-                      id="clueContainerContainer"
-                      className="clueContainerContainer"
+      <>
+        {this.state.showCustomModal && (
+          <Modal open onClose={() => this.setState({ showCustomModal: false })}>
+            <Modal.Header>Custom Game</Modal.Header>
+            <Modal.Content>
+              <Modal.Description>
+                <div>
+                  You can create and play a custom game by uploading a data
+                  file. Download the example and customize with your own
+                  questions and answers.
+                  <div>
+                    <Button
+                      color="orange"
+                      icon
+                      labelPosition="left"
+                      href={`./example.csv`}
+                      download="example.csv"
                     >
+                      <Icon name="download" />
+                      Download Example .csv
+                    </Button>
+                  </div>
+                </div>
+                <hr />
+                <div>Once you're done, upload your file:</div>
+                <div>
+                  <Button
+                    onClick={() => this.customGame()}
+                    icon
+                    labelPosition="left"
+                    color="purple"
+                  >
+                    <Icon name="upload" />
+                    Upload
+                  </Button>
+                </div>
+              </Modal.Description>
+            </Modal.Content>
+          </Modal>
+        )}
+        <div
+          style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+        >
+          {
+            <React.Fragment>
+              {
+                <div style={{ display: 'flex', flexGrow: 1 }}>
+                  <div className="board">
+                    {this.state.isIntroPlaying && <div id="intro" />}
+                    {categories.map((cat, i) => (
+                      <div className="category box">
+                        {this.state.categoryMask[i] ? cat : ''}
+                      </div>
+                    ))}
+                    {Array.from(Array(5)).map((_, i) => {
+                      return (
+                        <React.Fragment>
+                          {categories.map((cat, j) => {
+                            const id = `${j + 1}_${i + 1}`;
+                            const clue = game.board[id];
+                            return (
+                              <div
+                                id={id}
+                                onClick={
+                                  clue ? () => this.pickQ(id) : undefined
+                                }
+                                className={`${clue ? 'value' : ''} box`}
+                              >
+                                {!this.state.clueMask[id] && clue
+                                  ? clue.value
+                                  : ''}
+                              </div>
+                            );
+                          })}
+                        </React.Fragment>
+                      );
+                    })}
+                    {game && Boolean(game.currentQ) && (
                       <div
-                        id="clueContainer"
-                        className={`clueContainer ${
-                          game.currentDailyDouble && game.waitingForWager
-                            ? 'dailyDouble'
+                        id="clueContainerContainer"
+                        className="clueContainerContainer"
+                      >
+                        <div
+                          id="clueContainer"
+                          className={`clueContainer ${
+                            game.currentDailyDouble && game.waitingForWager
+                              ? 'dailyDouble'
+                              : ''
+                          }`}
+                        >
+                          <div className="category" style={{ height: '30px' }}>
+                            {game.board[game.currentQ] &&
+                              game.board[game.currentQ].category}
+                          </div>
+                          <div className="category" style={{ height: '30px' }}>
+                            {Boolean(game.currentValue) && game.currentValue}
+                          </div>
+                          {
+                            <div className={`clue`}>
+                              {game.board[game.currentQ] &&
+                                game.board[game.currentQ].question}
+                            </div>
+                          }
+                          <div className="" style={{ height: '60px' }}>
+                            {!game.currentAnswer &&
+                            !game.buzzes[this.props.socket.id] &&
+                            !game.submitted[this.props.socket.id] &&
+                            !game.currentDailyDouble &&
+                            game.round !== 'final' ? (
+                              <div style={{ display: 'flex' }}>
+                                <Button
+                                  disabled={this.state.buzzFrozen}
+                                  color={game.canBuzz ? 'green' : 'grey'}
+                                  size="huge"
+                                  onClick={this.onBuzz}
+                                  icon
+                                  labelPosition="left"
+                                >
+                                  <Icon
+                                    name={game.canBuzz ? 'lightbulb' : 'lock'}
+                                  />
+                                  Buzz
+                                </Button>
+                                <Button
+                                  disabled={this.state.buzzFrozen}
+                                  color={game.canBuzz ? 'red' : 'grey'}
+                                  size="huge"
+                                  onClick={() => {
+                                    if (game.canBuzz) {
+                                      this.submitAnswer(null);
+                                    }
+                                  }}
+                                  icon
+                                  labelPosition="left"
+                                >
+                                  <Icon
+                                    name={game.canBuzz ? 'close' : 'lock'}
+                                  />
+                                  Pass
+                                </Button>
+                              </div>
+                            ) : null}
+                            {!game.currentAnswer &&
+                            !this.state.localAnswerSubmitted &&
+                            game.buzzes[this.props.socket.id] &&
+                            game.questionDuration ? (
+                              <Input
+                                autoFocus
+                                label="Answer"
+                                value={this.state.localAnswer}
+                                onChange={(e) =>
+                                  this.setState({ localAnswer: e.target.value })
+                                }
+                                onKeyPress={(e: any) =>
+                                  e.key === 'Enter' && this.submitAnswer()
+                                }
+                                icon={
+                                  <Icon
+                                    onClick={() => this.submitAnswer()}
+                                    name="arrow right"
+                                    inverted
+                                    circular
+                                    link
+                                  />
+                                }
+                              />
+                            ) : null}
+                            {game.waitingForWager &&
+                            game.waitingForWager[this.props.socket.id] ? (
+                              <Input
+                                label={`Wager (${
+                                  getWagerBounds(
+                                    game.round,
+                                    game.scores[this.props.socket.id]
+                                  ).minWager
+                                } to ${
+                                  getWagerBounds(
+                                    game.round,
+                                    game.scores[this.props.socket.id]
+                                  ).maxWager
+                                })`}
+                                value={this.state.localWager}
+                                onChange={(e) =>
+                                  this.setState({ localWager: e.target.value })
+                                }
+                                onKeyPress={(e: any) =>
+                                  e.key === 'Enter' && this.submitWager()
+                                }
+                                icon={
+                                  <Icon
+                                    onClick={() => this.submitWager()}
+                                    name="arrow right"
+                                    inverted
+                                    circular
+                                    link
+                                  />
+                                }
+                              />
+                            ) : null}
+                          </div>
+                          <div className={`answer`} style={{ height: '30px' }}>
+                            {game.currentAnswer}
+                          </div>
+                          {Boolean(game.playClueDuration) && (
+                            <TimerBar duration={game.playClueDuration} />
+                          )}
+                          {Boolean(game.questionDuration) && (
+                            <TimerBar
+                              duration={game.questionDuration}
+                              secondary
+                              submitAnswer={this.submitAnswer}
+                            />
+                          )}
+                          {Boolean(game.wagerDuration) && (
+                            <TimerBar duration={game.wagerDuration} secondary />
+                          )}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '0px',
+                              right: '0px',
+                            }}
+                          >
+                            <Button
+                              onClick={() =>
+                                this.props.socket.emit('JPD:skipQ')
+                              }
+                              icon
+                              labelPosition="left"
+                            >
+                              <Icon name="forward" />
+                              Next Question
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {Boolean(game) && game.round === 'end' && (
+                      <div id="endgame">
+                        <h1 style={{ color: 'white' }}>Winner!</h1>
+                        <div style={{ display: 'flex' }}>
+                          {this.getWinners().map((winner: string) => (
+                            <img
+                              alt=""
+                              style={{ width: '200px', height: '200px' }}
+                              src={
+                                getDefaultPicture(
+                                  this.props.nameMap[winner],
+                                  getColorHex(winner)
+                                ) || this.props.pictureMap[winner]
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              }
+              <div style={{ height: '8px' }} />
+              <div
+                style={{ display: 'flex', overflowX: 'auto', flexShrink: 0 }}
+              >
+                {this.props.participants.map((p) => {
+                  return (
+                    <div className="scoreboard">
+                      <div className="picture" style={{ position: 'relative' }}>
+                        <img
+                          alt=""
+                          src={
+                            this.props.pictureMap[p.id] ||
+                            getDefaultPicture(
+                              this.props.nameMap[p.id],
+                              getColorHex(p.id)
+                            )
+                          }
+                        />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: '4px',
+                            left: '0px',
+                            width: '100%',
+                            backgroundColor: '#' + getColorHex(p.id),
+                            color: 'white',
+                            borderRadius: '4px',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            display: 'flex',
+                          }}
+                        >
+                          <div
+                            title={this.props.nameMap[p.id] || p.id}
+                            style={{
+                              width: '100%',
+                              backdropFilter: 'brightness(80%)',
+                              padding: '4px',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              display: 'inline-block',
+                            }}
+                          >
+                            {this.props.nameMap[p.id] || p.id}
+                          </div>
+                        </div>
+                        {game && p.id in game.wagers ? (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              bottom: '8px',
+                              right: '0px',
+                            }}
+                          >
+                            <Label title="Wager" circular size="tiny">
+                              {game.wagers[p.id] || 0}
+                            </Label>
+                          </div>
+                        ) : null}
+                        {game && (
+                          <div className="icons">
+                            {!game.picker || game.picker === p.id ? (
+                              <Icon
+                                title="Controlling the board"
+                                name="pointing up"
+                              />
+                            ) : null}
+                            {game.skips[p.id] ? (
+                              <Icon title="Voted to skip" name="forward" />
+                            ) : null}
+                          </div>
+                        )}
+                        {game && p.id === game.currentJudgeAnswer ? (
+                          <div className="judgeButtons">
+                            <Popup
+                              content="Correct"
+                              trigger={
+                                <Button
+                                  onClick={() => this.judgeAnswer(p.id, true)}
+                                  color="green"
+                                  size="tiny"
+                                  icon
+                                  fluid
+                                >
+                                  <Icon name="check" />
+                                </Button>
+                              }
+                            />
+                            <Popup
+                              content="Incorrect"
+                              trigger={
+                                <Button
+                                  onClick={() => this.judgeAnswer(p.id, false)}
+                                  color="red"
+                                  size="tiny"
+                                  icon
+                                  fluid
+                                >
+                                  <Icon name="close" />
+                                </Button>
+                              }
+                            />
+                            <Popup
+                              content="Skip"
+                              trigger={
+                                <Button
+                                  onClick={() => this.judgeAnswer(p.id, null)}
+                                  color="grey"
+                                  size="tiny"
+                                  icon
+                                  fluid
+                                >
+                                  <Icon name="angle double right" />
+                                </Button>
+                              }
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                      <div
+                        className={`points ${
+                          game?.scores[p.id] < 0 && game?.scoring !== 'coop'
+                            ? 'negative'
                             : ''
                         }`}
                       >
-                        <div className="category" style={{ height: '30px' }}>
-                          {game.board[game.currentQ] &&
-                            game.board[game.currentQ].category}
-                        </div>
-                        <div className="category" style={{ height: '30px' }}>
-                          {Boolean(game.currentValue) && game.currentValue}
-                        </div>
-                        {
-                          <div className={`clue`}>
-                            {game.board[game.currentQ] &&
-                              game.board[game.currentQ].question}
-                          </div>
-                        }
-                        <div className="" style={{ height: '60px' }}>
-                          {!game.currentAnswer &&
-                          !game.buzzes[this.props.socket.id] &&
-                          !game.submitted[this.props.socket.id] &&
-                          !game.currentDailyDouble &&
-                          game.round !== 'final' ? (
-                            <div style={{ display: 'flex' }}>
-                              <Button
-                                disabled={this.state.buzzFrozen}
-                                color={game.canBuzz ? 'green' : 'grey'}
-                                size="huge"
-                                onClick={this.onBuzz}
-                                icon
-                                labelPosition="left"
-                              >
-                                <Icon
-                                  name={game.canBuzz ? 'lightbulb' : 'lock'}
-                                />
-                                Buzz
-                              </Button>
-                              <Button
-                                disabled={this.state.buzzFrozen}
-                                color={game.canBuzz ? 'red' : 'grey'}
-                                size="huge"
-                                onClick={() => {
-                                  if (game.canBuzz) {
-                                    this.submitAnswer(null);
-                                  }
-                                }}
-                                icon
-                                labelPosition="left"
-                              >
-                                <Icon name={game.canBuzz ? 'close' : 'lock'} />
-                                Pass
-                              </Button>
-                            </div>
-                          ) : null}
-                          {!game.currentAnswer &&
-                          !this.state.localAnswerSubmitted &&
-                          game.buzzes[this.props.socket.id] &&
-                          game.questionDuration ? (
-                            <Input
-                              autoFocus
-                              label="Answer"
-                              value={this.state.localAnswer}
-                              onChange={(e) =>
-                                this.setState({ localAnswer: e.target.value })
-                              }
-                              onKeyPress={(e: any) =>
-                                e.key === 'Enter' && this.submitAnswer()
-                              }
-                              icon={
-                                <Icon
-                                  onClick={() => this.submitAnswer()}
-                                  name="arrow right"
-                                  inverted
-                                  circular
-                                  link
-                                />
-                              }
-                            />
-                          ) : null}
-                          {game.waitingForWager &&
-                          game.waitingForWager[this.props.socket.id] ? (
-                            <Input
-                              label={`Wager (${
-                                getWagerBounds(
-                                  game.round,
-                                  game.scores[this.props.socket.id]
-                                ).minWager
-                              } to ${
-                                getWagerBounds(
-                                  game.round,
-                                  game.scores[this.props.socket.id]
-                                ).maxWager
-                              })`}
-                              value={this.state.localWager}
-                              onChange={(e) =>
-                                this.setState({ localWager: e.target.value })
-                              }
-                              onKeyPress={(e: any) =>
-                                e.key === 'Enter' && this.submitWager()
-                              }
-                              icon={
-                                <Icon
-                                  onClick={() => this.submitWager()}
-                                  name="arrow right"
-                                  inverted
-                                  circular
-                                  link
-                                />
-                              }
-                            />
-                          ) : null}
-                        </div>
-                        <div className={`answer`} style={{ height: '30px' }}>
-                          {game.currentAnswer}
-                        </div>
-                        {Boolean(game.playClueDuration) && (
-                          <TimerBar duration={game.playClueDuration} />
-                        )}
-                        {Boolean(game.questionDuration) && (
-                          <TimerBar
-                            duration={game.questionDuration}
-                            secondary
-                            submitAnswer={this.submitAnswer}
-                          />
-                        )}
-                        {Boolean(game.wagerDuration) && (
-                          <TimerBar duration={game.wagerDuration} secondary />
-                        )}
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '0px',
-                            right: '0px',
-                          }}
-                        >
-                          <Button
-                            onClick={() => this.props.socket.emit('JPD:skipQ')}
-                            icon
-                            labelPosition="left"
-                          >
-                            <Icon name="forward" />
-                            Next Question
-                          </Button>
-                        </div>
+                        {game?.scoring === 'coop' &&
+                          game?.numCorrect + ' / ' + game?.numTotal}
+                        {game?.scoring !== 'coop' &&
+                          (game?.scores[p.id] || 0).toLocaleString()}
                       </div>
-                    </div>
-                  )}
-                  {Boolean(game) && game.round === 'end' && (
-                    <div id="endgame">
-                      <h1 style={{ color: 'white' }}>Winner!</h1>
-                      <div style={{ display: 'flex' }}>
-                        {this.getWinners().map((winner: string) => (
-                          <img
-                            alt=""
-                            style={{ width: '200px', height: '200px' }}
-                            src={
-                              getDefaultPicture(
-                                this.props.nameMap[winner],
-                                getColorHex(winner)
-                              ) || this.props.pictureMap[winner]
-                            }
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            }
-            <div style={{ height: '8px' }} />
-            <div style={{ display: 'flex', overflowX: 'auto', flexShrink: 0 }}>
-              {this.props.participants.map((p) => {
-                return (
-                  <div className="scoreboard">
-                    <div className="picture" style={{ position: 'relative' }}>
-                      <img
-                        alt=""
-                        src={
-                          this.props.pictureMap[p.id] ||
-                          getDefaultPicture(
-                            this.props.nameMap[p.id],
-                            getColorHex(p.id)
-                          )
-                        }
-                      />
                       <div
-                        style={{
-                          position: 'absolute',
-                          bottom: '4px',
-                          left: '0px',
-                          width: '100%',
-                          backgroundColor: '#' + getColorHex(p.id),
-                          color: 'white',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          display: 'flex',
+                        className={`answerBox ${
+                          game?.buzzes[p.id] ? 'buzz' : ''
+                        } ${game?.judges[p.id] === false ? 'negative' : ''}`}
+                      >
+                        {game && game.answers[p.id]}
+                        <div className="timeOffset">
+                          {this.getBuzzOffset(p.id) &&
+                          this.getBuzzOffset(p.id) > 0
+                            ? `+${(this.getBuzzOffset(p.id) / 1000).toFixed(3)}`
+                            : ''}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ height: '8px' }} />
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Dropdown
+                  button
+                  className="icon"
+                  labeled
+                  icon="certificate"
+                  text="New Game"
+                >
+                  <Dropdown.Menu>
+                    {[
+                      { key: 'all', value: null, text: 'Any' },
+                      { key: 'kids', value: 'kids', text: 'Kids Week' },
+                      { key: 'teen', value: 'teen', text: 'Teen Tournament' },
+                      {
+                        key: 'college',
+                        value: 'college',
+                        text: 'College Championship',
+                      },
+                      {
+                        key: 'celebrity',
+                        value: 'celebrity',
+                        text: 'Celebrity Jeopardy',
+                      },
+                      {
+                        key: 'teacher',
+                        value: 'teacher',
+                        text: 'Teachers Tournament',
+                      },
+                      {
+                        key: 'champions',
+                        value: 'champions',
+                        text: 'Tournament of Champions',
+                      },
+                      {
+                        key: 'custom',
+                        value: 'custom',
+                        text: 'Custom Game',
+                      },
+                    ].map((item) => (
+                      <Dropdown.Item
+                        key={item.key}
+                        onClick={() => {
+                          if (item.value === 'custom') {
+                            this.setState({ showCustomModal: true });
+                          } else {
+                            this.newGame(null, item.value);
+                          }
                         }}
                       >
-                        <div
-                          title={this.props.nameMap[p.id] || p.id}
-                          style={{
-                            width: '100%',
-                            backdropFilter: 'brightness(80%)',
-                            padding: '4px',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            display: 'inline-block',
-                          }}
-                        >
-                          {this.props.nameMap[p.id] || p.id}
-                        </div>
-                      </div>
-                      {game && p.id in game.wagers ? (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            bottom: '8px',
-                            right: '0px',
-                          }}
-                        >
-                          <Label title="Wager" circular size="tiny">
-                            {game.wagers[p.id] || 0}
-                          </Label>
-                        </div>
-                      ) : null}
-                      {game && (
-                        <div className="icons">
-                          {!game.picker || game.picker === p.id ? (
-                            <Icon
-                              title="Controlling the board"
-                              name="pointing up"
-                            />
-                          ) : null}
-                          {game.skips[p.id] ? (
-                            <Icon title="Voted to skip" name="forward" />
-                          ) : null}
-                        </div>
-                      )}
-                      {game && p.id === game.currentJudgeAnswer ? (
-                        <div className="judgeButtons">
-                          <Popup
-                            content="Correct"
-                            trigger={
-                              <Button
-                                onClick={() => this.judgeAnswer(p.id, true)}
-                                color="green"
-                                size="tiny"
-                                icon
-                                fluid
-                              >
-                                <Icon name="check" />
-                              </Button>
-                            }
-                          />
-                          <Popup
-                            content="Incorrect"
-                            trigger={
-                              <Button
-                                onClick={() => this.judgeAnswer(p.id, false)}
-                                color="red"
-                                size="tiny"
-                                icon
-                                fluid
-                              >
-                                <Icon name="close" />
-                              </Button>
-                            }
-                          />
-                          <Popup
-                            content="Skip"
-                            trigger={
-                              <Button
-                                onClick={() => this.judgeAnswer(p.id, null)}
-                                color="grey"
-                                size="tiny"
-                                icon
-                                fluid
-                              >
-                                <Icon name="angle double right" />
-                              </Button>
-                            }
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-                    <div
-                      className={`points ${
-                        game?.scores[p.id] < 0 && game?.scoring !== 'coop'
-                          ? 'negative'
-                          : ''
-                      }`}
-                    >
-                      {game?.scoring === 'coop' &&
-                        game?.numCorrect + ' / ' + game?.numTotal}
-                      {game?.scoring !== 'coop' &&
-                        (game?.scores[p.id] || 0).toLocaleString()}
-                    </div>
-                    <div
-                      className={`answerBox ${
-                        game?.buzzes[p.id] ? 'buzz' : ''
-                      } ${game?.judges[p.id] === false ? 'negative' : ''}`}
-                    >
-                      {game && game.answers[p.id]}
-                      <div className="timeOffset">
-                        {this.getBuzzOffset(p.id) &&
-                        this.getBuzzOffset(p.id) > 0
-                          ? `+${(this.getBuzzOffset(p.id) / 1000).toFixed(3)}`
-                          : ''}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ height: '8px' }} />
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-              }}
-            >
-              <Dropdown
-                button
-                className="icon"
-                labeled
-                icon="certificate"
-                text="New Game"
-              >
-                <Dropdown.Menu>
-                  {[
-                    { key: 'all', value: null, text: 'Any' },
-                    { key: 'kids', value: 'kids', text: 'Kids Week' },
-                    { key: 'teen', value: 'teen', text: 'Teen Tournament' },
-                    {
-                      key: 'college',
-                      value: 'college',
-                      text: 'College Championship',
-                    },
-                    {
-                      key: 'celebrity',
-                      value: 'celebrity',
-                      text: 'Celebrity Jeopardy',
-                    },
-                    {
-                      key: 'teacher',
-                      value: 'teacher',
-                      text: 'Teachers Tournament',
-                    },
-                    {
-                      key: 'champions',
-                      value: 'champions',
-                      text: 'Tournament of Champions',
-                    },
-                  ].map((item) => (
-                    <Dropdown.Item
-                      key={item.key}
-                      onClick={() => this.newGame(null, item.value)}
-                    >
-                      {item.text}
-                    </Dropdown.Item>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
-              <Input
-                className="gameSelector"
-                style={{ marginRight: '.25em' }}
-                label="Game #"
-                value={this.state.localEpNum}
-                onChange={(e) => this.setState({ localEpNum: e.target.value })}
-                onKeyPress={(e: any) =>
-                  e.key === 'Enter' && this.newGame(this.state.localEpNum, null)
-                }
-                icon={
-                  <Icon
-                    onClick={() => this.newGame(this.state.localEpNum, null)}
-                    name="arrow right"
-                    inverted
-                    circular
-                  />
-                }
-              />
-              {game && game.airDate && (
+                        {item.text}
+                      </Dropdown.Item>
+                    ))}
+                  </Dropdown.Menu>
+                </Dropdown>
+                <Input
+                  className="gameSelector"
+                  style={{ marginRight: '.25em' }}
+                  label="Game #"
+                  value={this.state.localEpNum}
+                  onChange={(e) =>
+                    this.setState({ localEpNum: e.target.value })
+                  }
+                  onKeyPress={(e: any) =>
+                    e.key === 'Enter' &&
+                    this.newGame(this.state.localEpNum, null)
+                  }
+                  icon={
+                    <Icon
+                      onClick={() => this.newGame(this.state.localEpNum, null)}
+                      name="arrow right"
+                      inverted
+                      circular
+                    />
+                  }
+                />
+                {game && game.airDate && (
+                  <Label
+                    style={{ display: 'flex', alignItems: 'center' }}
+                    size="medium"
+                  >
+                    {new Date(game.airDate + 'T00:00').toLocaleDateString([], {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </Label>
+                )}
                 <Label
                   style={{ display: 'flex', alignItems: 'center' }}
                   size="medium"
+                  color={getColor((game && game.info) || 'standard') as any}
                 >
-                  {new Date(game.airDate + 'T00:00').toLocaleDateString([], {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
+                  {(game && game.info) || 'standard'}
                 </Label>
-              )}
-              <Label
-                style={{ display: 'flex', alignItems: 'center' }}
-                size="medium"
-                color={getColor((game && game.info) || 'standard') as any}
-              >
-                {(game && game.info) || 'standard'}
-              </Label>
-              <Button
-                icon
-                labelPosition="left"
-                color={this.state.readingDisabled ? 'red' : 'green'}
-                onClick={() => {
-                  const checked = !this.state.readingDisabled;
-                  this.setState({ readingDisabled: checked });
-                  if (checked) {
-                    window.localStorage.setItem(
-                      'jeopardy-readingDisabled',
-                      '1'
-                    );
-                  } else {
-                    window.localStorage.removeItem('jeopardy-readingDisabled');
+                <Button
+                  icon
+                  labelPosition="left"
+                  color={this.state.readingDisabled ? 'red' : 'green'}
+                  onClick={() => {
+                    const checked = !this.state.readingDisabled;
+                    this.setState({ readingDisabled: checked });
+                    if (checked) {
+                      window.localStorage.setItem(
+                        'jeopardy-readingDisabled',
+                        '1'
+                      );
+                    } else {
+                      window.localStorage.removeItem(
+                        'jeopardy-readingDisabled'
+                      );
+                    }
+                  }}
+                >
+                  <Icon name="book" />
+                  {this.state.readingDisabled ? 'Reading off' : 'Reading on'}
+                </Button>
+                <Dropdown
+                  button
+                  className="icon"
+                  labeled
+                  icon="calculator"
+                  text={
+                    scoringOptions.find(
+                      (option) => option.value === this.state.game?.scoring
+                    )?.text
                   }
-                }}
-              >
-                <Icon name="book" />
-                {this.state.readingDisabled ? 'Reading off' : 'Reading on'}
-              </Button>
-              <Dropdown
-                button
-                className="icon"
-                labeled
-                icon="calculator"
-                text={
-                  scoringOptions.find(
-                    (option) => option.value === this.state.game?.scoring
-                  )?.text
-                }
-              >
-                <Dropdown.Menu>
-                  {scoringOptions.map((item) => (
-                    <Dropdown.Item
-                      key={item.key}
-                      onClick={() => this.changeScoring(item.value)}
-                      title={item.title}
-                    >
-                      {item.text}
-                    </Dropdown.Item>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
-              <Button.Group size="mini" vertical={false}>
+                >
+                  <Dropdown.Menu>
+                    {scoringOptions.map((item) => (
+                      <Dropdown.Item
+                        key={item.key}
+                        onClick={() => this.changeScoring(item.value)}
+                        title={item.title}
+                      >
+                        {item.text}
+                      </Dropdown.Item>
+                    ))}
+                  </Dropdown.Menu>
+                </Dropdown>
                 {/* <Button
                   onClick={() => this.props.socket.emit('JPD:cmdIntro')}
                   icon
@@ -892,43 +967,18 @@ export class Jeopardy extends React.Component<{
                   <Icon name="film" />
                   Play Intro
                 </Button> */}
-                <Popup
-                  content={`Create your own custom game by uploading a data file`}
-                  trigger={
-                    <Button
-                      onClick={() => this.customGame()}
-                      icon
-                      labelPosition="left"
-                      color="yellow"
-                    >
-                      <Icon name="wrench" />
-                      Custom
-                    </Button>
-                  }
-                />
-                <Popup
-                  content={`Download an example data file`}
-                  trigger={
-                    <Button
-                      icon
-                      color="orange"
-                      href={`./example.csv`}
-                      download="example.csv"
-                    >
-                      <Icon name="download" />
-                    </Button>
-                  }
-                />
-              </Button.Group>
-            </div>
-          </React.Fragment>
-        }
-        {false && process.env.NODE_ENV === 'development' && (
-          <pre style={{ color: 'white', height: '200px', overflow: 'scroll' }}>
-            {JSON.stringify(game, null, 2)}
-          </pre>
-        )}
-      </div>
+              </div>
+            </React.Fragment>
+          }
+          {false && process.env.NODE_ENV === 'development' && (
+            <pre
+              style={{ color: 'white', height: '200px', overflow: 'scroll' }}
+            >
+              {JSON.stringify(game, null, 2)}
+            </pre>
+          )}
+        </div>
+      </>
     );
   }
 }
