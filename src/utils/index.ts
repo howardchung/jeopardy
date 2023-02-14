@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export function formatTimestamp(input: any) {
   if (
     input === null ||
@@ -13,16 +15,6 @@ export function formatTimestamp(input: any) {
     .toString()
     .padStart(2, '0');
   return `${minutes}:${seconds}`;
-}
-
-export function formatSpeed(input: number) {
-  if (input >= 1000000) {
-    return (input / 1000000).toFixed(2) + ' MiB/s';
-  }
-  if (input >= 1000) {
-    return (input / 1000).toFixed(0) + ' KiB/s';
-  }
-  return input + ' B/s';
 }
 
 export function hashString(input: string) {
@@ -76,85 +68,10 @@ export function getColorHex(id: string) {
   return mappings[getColor(id)];
 }
 
-export const getFbPhoto = (fbId: string) =>
-  `https://graph.facebook.com/${fbId}/picture?type=normal`;
-
-export const getMediaType = (input: string) => {
-  if (!input) {
-    return '';
-  }
-  if (
-    input.startsWith('https://www.youtube.com/') ||
-    input.startsWith('https://youtu.be/')
-  ) {
-    return 'youtube';
-  }
-  return 'video';
-};
-
 export function decodeEntities(input: string) {
   const doc = new DOMParser().parseFromString(input, 'text/html');
   return doc.documentElement.textContent;
 }
-
-// Returns a function, that, as long as it continues to be invoked, will not
-// be triggered. The function will be called after it stops being called for
-// N milliseconds. If `immediate` is passed, trigger the function on the
-// leading edge, instead of the trailing.
-export function debounce(func: Function, wait: number, immediate?: boolean) {
-  var timeout: any;
-
-  // This is the function that is actually executed when
-  // the DOM event is triggered.
-  return function executedFunction() {
-    // Store the context of this and any
-    // parameters passed to executedFunction
-    //@ts-ignore
-    var context = this;
-    var args = arguments;
-
-    // The function to be called after
-    // the debounce time has elapsed
-    var later = function () {
-      // null timeout to indicate the debounce ended
-      timeout = null;
-
-      // Call function now if you did not on the leading end
-      if (!immediate) func.apply(context, args);
-    };
-
-    // Determine if you should call the function
-    // on the leading or trail end
-    var callNow = immediate && !timeout;
-
-    // This will reset the waiting every function execution.
-    // This is the step that prevents the function from
-    // being executed because it will never reach the
-    // inside of the previous setTimeout
-    clearTimeout(timeout);
-
-    // Restart the debounce waiting period.
-    // setTimeout returns a truthy value (it differs in web vs node)
-    timeout = setTimeout(later, wait);
-
-    // Call immediately if you're dong a leading
-    // end execution
-    if (callNow) func.apply(context, args);
-  };
-}
-
-export const getMediaPathForList = (list: string) => {
-  if (list.startsWith('https://gitlab.com/')) {
-    const match = list.match(
-      /https:\/\/gitlab.com\/api\/v4\/projects\/(.*)\/repository\/tree/
-    );
-    const name = match && match[1];
-    const decoded = decodeURIComponent(name || '');
-    return `https://glcdn.githack.com/${decoded}/-/raw/master/`;
-  }
-  // Nginx servers use the same mediapath as list, add trailing /
-  return list + '/';
-};
 
 export const getDefaultPicture = (name: string, background = 'a0a0a0') => {
   return `https://ui-avatars.com/api/?name=${name}&background=${background}&size=256&color=ffffff`;
@@ -178,3 +95,8 @@ export const serverPath =
   `${window.location.protocol}//${window.location.hostname}${
     process.env.NODE_ENV === 'production' ? '' : ':8080'
   }`;
+
+export async function generateName(): Promise<string> {
+  const response = await axios.get<string>(serverPath + '/generateName');
+  return response.data;
+}

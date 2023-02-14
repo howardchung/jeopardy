@@ -11,8 +11,7 @@ import {
 } from 'semantic-ui-react';
 //@ts-ignore
 import io from 'socket.io-client';
-import { serverPath } from '../../utils';
-import { generateName } from '../../utils/generateName';
+import { serverPath, generateName } from '../../utils';
 import { Chat } from '../Chat/Chat';
 import { JeopardyTopBar } from '../TopBar/TopBar';
 import { Jeopardy } from '../../Jeopardy';
@@ -71,7 +70,7 @@ export default class App extends React.Component<null, AppState> {
       this.setState({ state: 'connected' });
       // Load username from localstorage
       let userName = window.localStorage.getItem('watchparty-username');
-      this.updateName(null, { value: userName || generateName() });
+      this.updateName(null, { value: userName || await generateName() });
       const savedId = window.localStorage.getItem('jeopardy-savedId');
       if (savedId) {
         socket.emit('JPD:reconnect', savedId);
@@ -169,10 +168,10 @@ export default class App extends React.Component<null, AppState> {
                   onChange={this.updateName}
                   icon={
                     <Icon
-                      onClick={() =>
-                        this.updateName(null, { value: generateName() })
+                      onClick={async () =>
+                        this.updateName(null, { value: await generateName() })
                       }
-                      name="refresh"
+                      name="random"
                       inverted
                       circular
                       link
