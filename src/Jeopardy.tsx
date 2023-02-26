@@ -462,7 +462,7 @@ export class Jeopardy extends React.Component<{
                   >
                     {this.state.isIntroPlaying && <div id="intro" />}
                     {categories.map((cat, i) => (
-                      <div key={cat} className="category box">
+                      <div key={i} className="category box">
                         {this.state.categoryMask[i] ? cat : ''}
                       </div>
                     ))}
