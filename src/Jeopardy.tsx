@@ -36,7 +36,6 @@ const scoringOptions = [
   },
 ];
 
-window.speechSynthesis.getVoices();
 const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
 const boardFill = new Audio('/jeopardy/jeopardy-board-fill.mp3');
 const think = new Audio('/jeopardy/jeopardy-think.mp3');
@@ -67,6 +66,8 @@ export class Jeopardy extends React.Component<{
   buzzLock = 0;
 
   async componentDidMount() {
+    window.speechSynthesis.getVoices();
+
     document.onkeydown = this.onKeydown;
 
     this.setState({
