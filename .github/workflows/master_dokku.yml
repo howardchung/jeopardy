@@ -41,11 +41,11 @@ jobs:
           git commit --quiet -m "Built from ${{ github.sha }}" 	
           git push origin release -f
       - name: Setup SSH Keys and known_hosts
-          env:
-              SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-          run: |
-              ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-              ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
+        env:
+            SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+            ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+            ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
       - name: Push to dokku
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         run: |
