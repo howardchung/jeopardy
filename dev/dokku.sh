@@ -13,9 +13,14 @@ dokku domains:set-global jeopardy.app
 
 dokku apps:create jeopardy.app
 # Set up env vars
-# dokku config:set jeopardy.app STATS_KEY=test
-# Use the IP of the docker bridge network
-dokku config:set jeopardy.app REDIS_URL=redis://172.17.0.4:6379
+dokku config:set jeopardy.app STATS_KEY=test
 
-# Set up redis
-sudo docker run --name redis -d redis:7
+# Set up Redis (dokku native)
+sudo dokku plugin:install https://github.com/dokku/dokku-redis.git
+dokku redis:create jeopardy-redis
+dokku redis:link jeopardy-redis jeopardy.app
+
+# Set up redis (custom)
+# sudo docker run --name redis -d redis:7
+# Use the IP of the docker bridge network
+# dokku config:set jeopardy.app REDIS_URL=redis://172.17.0.4:6379
