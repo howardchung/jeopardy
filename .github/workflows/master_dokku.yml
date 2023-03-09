@@ -41,9 +41,9 @@ jobs:
           git commit --quiet -m "Built from ${{ github.sha }}" 	
           git push origin release -f
       - name: Push to dokku
-        uses: dokku/github-action@master
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        run: |
+          git remote add dokku dokku@jeopardy.centralus.cloudapp.azure.com:jeopardy
+          git push dokku release:master
         with:
-          # specify the `main` branch as the remote branch to push to
-          branch: 'release'
-          git_remote_url: 'ssh://dokku@jeopardy.centralus.cloudapp.azure.com:22/jeopardy'
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
