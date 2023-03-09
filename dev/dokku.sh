@@ -9,11 +9,11 @@ cat ~/.ssh/authorized_keys | sudo dokku ssh-keys:add admin
 
 # you can use any domain you already have access to
 # this domain should have an A record or CNAME pointing at your server's IP
-dokku domains:set-global jeopardy.centralus.cloudapp.azure.com
+dokku domains:set-global jeopardy.app
 
-dokku apps:create jeopardy
+dokku apps:create jeopardy.app
 # Set up env vars
-# dokku config:set jeopardy STATS_KEY=test
+# dokku config:set jeopardy.app STATS_KEY=test
 
 # Set up redis
 sudo docker run --name redis --net=host -d redis:7
