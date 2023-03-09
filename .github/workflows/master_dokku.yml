@@ -42,8 +42,8 @@ jobs:
           git push origin release -f
       - name: Push to dokku
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        with:
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           git remote add dokku dokku@jeopardy.centralus.cloudapp.azure.com:jeopardy
           git push dokku release:master
-        with:
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
