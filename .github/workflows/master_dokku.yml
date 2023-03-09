@@ -45,5 +45,5 @@ jobs:
         with:
           # specify the `main` branch as the remote branch to push to
           branch: 'release'
-          git_remote_url: 'ssh://dokku@jeopardy.centralus.cloudapp.azure.com:jeopardy'
+          git_remote_url: 'ssh://dokku@jeopardy.centralus.cloudapp.azure.com:22/jeopardy'
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
