@@ -82,6 +82,7 @@
   line-height: 2.5vh;
   letter-spacing: 1px;
   color: #e1f3ff;
+  text-transform: uppercase;
 }
 
 .value {
