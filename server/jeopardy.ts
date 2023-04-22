@@ -489,6 +489,9 @@ export class Jeopardy {
       this.jpd.public.board = constructPublicBoard(
         (this.jpd as any)[this.jpd.public.round]
       );
+      if (Object.keys(this.jpd.public.board).length === 0) {
+        this.nextRound();
+      }
     }
     this.emitState();
     if (
