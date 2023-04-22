@@ -29,7 +29,7 @@ if (process.env.REDIS_URL) {
 }
 
 const rooms = new Map<string, Room>();
-const permaRooms = ['/default', '/smokestack', '/howard-and-katie'];
+const permaRooms = ['/default', '/smokestack', '/howard-and-katie', '/liz'];
 init();
 
 async function saveRoomsToRedis() {
