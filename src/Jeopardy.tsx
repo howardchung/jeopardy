@@ -97,22 +97,22 @@ export class Jeopardy extends React.Component<{
     this.props.socket.on('JPD:playRightanswer', () => {
       rightAnswer.play();
     });
-    this.props.socket.on('JPD:playMakeSelection', () => {
-      if (this.state.game.picker) {
-        const selectionText = [
-          'Make a selection, {name}',
-          'You have command of the board, {name}',
-          'Pick a clue, {name}',
-          'Select a category, {name}',
-          'Go again, {name}',
-        ];
-        const random =
-          selectionText[Math.floor(Math.random() * selectionText.length)];
-        this.sayText(
-          random.replace('{name}', this.props.nameMap[this.state.game.picker])
-        );
-      }
-    });
+    // this.props.socket.on('JPD:playMakeSelection', () => {
+    //   if (this.state.game.picker) {
+    //     const selectionText = [
+    //       'Make a selection, {name}',
+    //       'You have command of the board, {name}',
+    //       'Pick a clue, {name}',
+    //       'Select a category, {name}',
+    //       'Go again, {name}',
+    //     ];
+    //     const random =p
+    //       selectionText[Math.floor(Math.random() * selectionText.length)];
+    //     this.sayText(
+    //       random.replace('{name}', this.props.nameMap[this.state.game.picker])
+    //     );
+    //   }
+    // });
     this.props.socket.on('JPD:playClue', async (qid: string, text: string) => {
       this.setState({
         localAnswer: '',
@@ -407,6 +407,7 @@ export class Jeopardy extends React.Component<{
   render() {
     const game = this.state.game;
     const categories = this.getCategories();
+    const sortedParticipants = this.props.participants.sort((a, b) => game?.scores[b.id] - game?.scores[a.id]);
     return (
       <>
         {this.state.showCustomModal && (
@@ -685,7 +686,7 @@ export class Jeopardy extends React.Component<{
               <div
                 style={{ display: 'flex', overflowX: 'auto', flexShrink: 0 }}
               >
-                {this.props.participants.map((p) => {
+                {sortedParticipants.map((p) => {
                   return (
                     <div key={p.id} className="scoreboard">
                       <div className="picture" style={{ position: 'relative' }}>

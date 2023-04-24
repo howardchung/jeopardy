@@ -430,6 +430,7 @@ export class Jeopardy {
       this.nextRound();
     } else {
       this.emitState();
+      // TODO may want to introduce some delay here to make sure our state is updated before reading selection
       this.io.of(this.roomId).emit('JPD:playMakeSelection');
     }
   }
