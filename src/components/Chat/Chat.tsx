@@ -36,13 +36,13 @@ export class Chat extends React.Component<ChatProps> {
     this.setState({ chatMsg: data.value });
   };
 
-  sendChatMsg = () => {
-    if (!this.state.chatMsg) {
-      return;
-    }
-    this.setState({ chatMsg: '' });
-    this.props.socket.emit('CMD:chat', this.state.chatMsg);
-  };
+  // sendChatMsg = () => {
+  //   if (!this.state.chatMsg) {
+  //     return;
+  //   }
+  //   this.setState({ chatMsg: '' });
+  //   this.props.socket.emit('CMD:chat', this.state.chatMsg);
+  // };
 
   onScroll = () => {
     this.setState({ isNearBottom: this.isChatNearBottom() });
@@ -140,7 +140,7 @@ export class Chat extends React.Component<ChatProps> {
             </Button>
           )}
         </div>
-        <Input
+        {/* <Input
           inverted
           fluid
           onKeyPress={(e: any) => e.key === 'Enter' && this.sendChatMsg()}
@@ -156,7 +156,7 @@ export class Chat extends React.Component<ChatProps> {
             />
           }
           placeholder="Enter a message..."
-        />
+        /> */}
       </Segment>
     );
   }

@@ -3,10 +3,10 @@ import { Socket, Server } from 'socket.io';
 import Redis from 'ioredis';
 import { redisCount } from './utils/redis';
 
-let redis = undefined as unknown as Redis;
-if (process.env.REDIS_URL) {
-  redis = new Redis(process.env.REDIS_URL);
-}
+// let redis = undefined as unknown as Redis;
+// if (process.env.REDIS_URL) {
+//   redis = new Redis(process.env.REDIS_URL);
+// }
 
 export class Room {
   public roster: User[] = [];
@@ -61,20 +61,20 @@ export class Room {
         this.pictureMap[socket.id] = data;
         io.of(roomId).emit('REC:pictureMap', this.pictureMap);
       });
-      socket.on('CMD:chat', (data: string) => {
-        if (data && data.length > 65536) {
-          // TODO add some validation on client side too so we don't just drop long messages
-          return;
-        }
-        if (process.env.NODE_ENV === 'development' && data === '/clear') {
-          this.chat.length = 0;
-          io.of(roomId).emit('chatinit', this.chat);
-          return;
-        }
-        redisCount('chatMessages');
-        const chatMsg = { id: socket.id, msg: data };
-        this.addChatMessage(socket, chatMsg);
-      });
+      // socket.on('CMD:chat', (data: string) => {
+      //   if (data && data.length > 65536) {
+      //     // TODO add some validation on client side too so we don't just drop long messages
+      //     return;
+      //   }
+      //   if (process.env.NODE_ENV === 'development' && data === '/clear') {
+      //     this.chat.length = 0;
+      //     io.of(roomId).emit('chatinit', this.chat);
+      //     return;
+      //   }
+      //   redisCount('chatMessages');
+      //   const chatMsg = { id: socket.id, msg: data };
+      //   this.addChatMessage(socket, chatMsg);
+      // });
 
       socket.on('disconnect', () => {
         let index = this.roster.findIndex((user) => user.id === socket.id);
