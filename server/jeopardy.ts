@@ -536,10 +536,7 @@ export class Jeopardy {
       }
     });
     this.jpd.public.canBuzz = false;
-    if (this.jpd.public.round !== 'final') {
-      // In final, reveal one by one during judging
-      this.jpd.public.answers = { ...this.jpd.answers };
-    }
+    this.jpd.public.answers = { ...this.jpd.answers };
     this.jpd.public.currentAnswer = this.jpd.board[this.jpd.public.currentQ]?.a;
     this.advanceJudging();
     if (!this.jpd.public.currentJudgeAnswer) {

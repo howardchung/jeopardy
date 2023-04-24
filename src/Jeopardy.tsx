@@ -536,10 +536,17 @@ export class Jeopardy extends React.Component<{
                                   />
                                   Buzz
                                 </Button>
+                                <div
+                            style={{
+                              position: 'absolute',
+                              top: '0px',
+                              right: '0px',
+                              zIndex: 1,
+                            }}
+                          >
                                 <Button
                                   disabled={this.state.buzzFrozen}
                                   color={game.canBuzz ? 'red' : 'grey'}
-                                  size="huge"
                                   onClick={() => {
                                     if (game.canBuzz) {
                                       this.submitAnswer(null);
@@ -549,10 +556,11 @@ export class Jeopardy extends React.Component<{
                                   labelPosition="left"
                                 >
                                   <Icon
-                                    name={game.canBuzz ? 'close' : 'lock'}
+                                    name={game.canBuzz ? 'forward' : 'lock'}
                                   />
                                   Pass
                                 </Button>
+                                </div>
                               </div>
                             ) : null}
                             {!game.currentAnswer &&
@@ -629,7 +637,7 @@ export class Jeopardy extends React.Component<{
                           {Boolean(game.wagerDuration) && (
                             <TimerBar duration={game.wagerDuration} secondary />
                           )}
-                          <div
+                          {game.currentAnswer && <div
                             style={{
                               position: 'absolute',
                               top: '0px',
@@ -644,9 +652,9 @@ export class Jeopardy extends React.Component<{
                               labelPosition="left"
                             >
                               <Icon name="forward" />
-                              Next Question
+                              Next
                             </Button>
-                          </div>
+                          </div>}
                         </div>
                       </div>
                     )}
