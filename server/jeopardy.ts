@@ -315,6 +315,10 @@ export class Jeopardy {
       });
       socket.on('JPD:scoring', (scoreMethod: string) => {
         this.jpd.public.scoring = scoreMethod;
+        // Reset the picker if switching to coryat
+        if (scoreMethod === 'coryat') {
+          this.jpd.public.picker = undefined;
+        }
         this.emitState();
       });
       socket.on('disconnect', () => {
