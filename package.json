@@ -19,13 +19,13 @@
     "socket.io-client": "^4.6.0"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "node buildServer/server.js",
+    "react": "react-scripts start",
     "build": "react-scripts build && npm run buildServer",
     "buildServer": "tsc --project server/tsconfig.json --outDir buildServer",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "dev": "ts-node-dev --respawn --transpile-only --project server/tsconfig.json server/server.ts",
-    "server": "node buildServer/server.js",
     "prettier": "prettier --write ."
   },
   "eslintConfig": {

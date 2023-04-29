@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Button,
   Label,
@@ -7,6 +7,11 @@ import {
   Dropdown,
   Popup,
   Modal,
+  Table,
+  TableRow,
+  TableCell,
+  TableHeader,
+  TableHeaderCell,
 } from 'semantic-ui-react';
 import './Jeopardy.css';
 import { getDefaultPicture, getColorHex, shuffle, getColor } from './utils';
@@ -18,14 +23,14 @@ const scoringOptions = [
     value: 'standard',
     text: 'Standard',
     title:
-      'Same as the TV show. First correct answer scores the points. Incorrect answers before the correct answer lose points.',
+      'Same as the TV show. First correct answer scores the points. Incorrect answers before the correct answer lose points. The last correct answer picks the next question.',
   },
   {
     key: 'coryat',
     value: 'coryat',
     text: 'Coryat',
     title:
-      'All players get a chance to score/lose points. Daily Doubles are treated as regular questions.',
+      'All players get a chance to score/lose points. All players can pick the next question. Daily Doubles are disabled.',
   },
   {
     key: 'coop',
@@ -62,6 +67,7 @@ export class Jeopardy extends React.Component<{
     readingDisabled: false,
     buzzFrozen: false,
     showCustomModal: false,
+    showJudgingModal: false,
   };
   buzzLock = 0;
 
@@ -449,6 +455,9 @@ export class Jeopardy extends React.Component<{
             </Modal.Content>
           </Modal>
         )}
+        {this.state.showJudgingModal && (
+          <BulkJudgeModal game={game} nameMap={this.props.nameMap} participants={sortedParticipants} judgeAnswer={this.judgeAnswer} onClose={() => this.setState({ showJudgingModal: false })} getBuzzOffset={this.getBuzzOffset} />
+        )}
         <div
           style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
         >
@@ -654,6 +663,24 @@ export class Jeopardy extends React.Component<{
                             >
                               <Icon name="forward" />
                               Next
+                            </Button>
+                          </div>}
+                          {game.currentAnswer && <div
+                            style={{
+                              position: 'absolute',
+                              bottom: '0px',
+                              right: '0px',
+                            }}
+                          >
+                            <Button
+                              onClick={() =>
+                                this.setState({showJudgingModal: true})
+                              }
+                              icon
+                              labelPosition="left"
+                            >
+                              <Icon name="gavel" />
+                              Bulk Judge
                             </Button>
                           </div>}
                         </div>
@@ -1057,4 +1084,95 @@ function getWagerBounds(round: string, score: number) {
     maxWager = Math.max(score || 0, 0);
   }
   return { minWager, maxWager };
+}
+
+const BulkJudgeModal = ({
+  onClose,
+  game,
+  participants,
+  nameMap,
+  judgeAnswer,
+  getBuzzOffset,
+}: {
+  onClose: () => void,
+  game: any,
+  participants: User[],
+  nameMap: StringDict,
+  judgeAnswer: (id: string, correct: boolean | null) => void,
+  getBuzzOffset: (id: string) => number,
+}) => {
+  const [decisions, setDecisions] = useState<StringDict>({});
+  const distinctAnswers: string[] = Array.from(new Set(Object.values<string>(game?.answers ?? {}).map((answer: string) => answer.toLowerCase())));
+  return <Modal open onClose={onClose}>
+  <Modal.Header>{game?.currentAnswer}</Modal.Header>
+  <Modal.Content>
+    <Table>
+      <TableHeader>
+        <TableHeaderCell>
+          Answer
+        </TableHeaderCell>
+        <TableHeaderCell>
+          Decision
+        </TableHeaderCell>
+        <TableHeaderCell>
+          Responses
+        </TableHeaderCell>
+      </TableHeader>
+      {distinctAnswers.map(answer => {
+        return <TableRow>
+          <TableCell>
+            {answer}
+          </TableCell>
+          <TableCell>
+          <Dropdown
+          placeholder="Select"
+          value={decisions[answer]}
+          options={[
+            { key: 'correct', value: 'true', text: 'Correct' },
+            { key: 'incorrect', value: 'false', text: 'Incorrect' },
+            { key: 'skip', value: 'skip', text: 'Skip' },
+          ]}
+          onChange={(e, data) => {
+            const newDecisions = {...decisions, [answer]: (data.value as string)};
+            setDecisions(newDecisions);
+          }}
+         >
+                </Dropdown>
+          </TableCell>
+          <TableCell>
+            {participants.filter(p => game?.answers[p.id].toLowerCase() === answer).map((p) => {
+              return <img
+              style={{ width: '30px'}}
+              alt=""
+              src={
+                getDefaultPicture(
+                  nameMap[p.id],
+                  getColorHex(p.id)
+                )
+              }
+            />;
+      })}
+          </TableCell>
+        </TableRow>
+      })}
+    </Table>
+  </Modal.Content>
+  <Modal.Actions>
+  <Button onClick={() => {
+    // Submit the judging in order of getBuzzOffset
+    const answers = Object.entries<string>(game?.answers);
+    const answersInBuzzOrder = [...answers].sort((a, b) => {
+      return getBuzzOffset(a[0]) - getBuzzOffset(b[0]);
+    });
+    answersInBuzzOrder.forEach(ans => {
+      // Look up the answer and decision
+      const answer = ans[1].toLowerCase();
+      const decision = decisions[answer];
+      judgeAnswer(ans[0], decision === 'skip' ? null : JSON.parse(decision));
+    });
+    // Close the modal
+    onClose();
+  }}>Bulk Judge</Button>
+  </Modal.Actions>
+</Modal>;
 }

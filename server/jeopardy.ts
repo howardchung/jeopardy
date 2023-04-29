@@ -609,7 +609,7 @@ export class Jeopardy {
     }
     // If null, don't change scores
 
-    if (socket) {
+    if (socket && correct != null) {
       const msg = {
         id: socket.id,
         cmd: 'judge',
