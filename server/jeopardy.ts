@@ -295,7 +295,7 @@ export class Jeopardy {
                 'jpd:nonTrivialJudges',
                 `${correct},${submitted},${1}`
               );
-              await redis.ltrim('jpd:nonTrivialJudges', 0, 100000);
+              // await redis.ltrim('jpd:nonTrivialJudges', 0, 100000);
             }
           }
         }
