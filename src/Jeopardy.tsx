@@ -172,7 +172,7 @@ export class Jeopardy extends React.Component<{
         let newMask: Boolean[] = [...this.state.categoryMask];
         newMask[i] = true;
         this.setState({ categoryMask: newMask });
-        await Promise.race([
+        await Promise.any([
           this.sayText(categories[i]),
           new Promise((resolve) => setTimeout(resolve, 5000)),
         ]);
