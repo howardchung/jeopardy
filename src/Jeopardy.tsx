@@ -172,10 +172,7 @@ export class Jeopardy extends React.Component<{
         let newMask: Boolean[] = [...this.state.categoryMask];
         newMask[i] = true;
         this.setState({ categoryMask: newMask });
-        await Promise.any([
-          this.sayText(categories[i]),
-          new Promise((resolve) => setTimeout(resolve, 5000)),
-        ]);
+        await this.sayText(categories[i]);
       }
     });
   }
@@ -315,6 +312,12 @@ export class Jeopardy extends React.Component<{
 
   sayText = async (text: string) => {
     if (this.state.readingDisabled) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      return;
+    }
+    let isIOS = /iPad|iPhone|iPod/.test(navigator.platform);
+    if (isIOS) {
+      // on iOS speech synthesis just never returns
       await new Promise((resolve) => setTimeout(resolve, 2000));
       return;
     }
