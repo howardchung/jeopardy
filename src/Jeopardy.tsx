@@ -164,7 +164,6 @@ export class Jeopardy extends React.Component<{
       }
       // Reveal and read categories
       const categories = this.getCategories();
-      await this.sayText('Here are the categories.');
       for (let i = 0; i < this.state.categoryMask.length; i++) {
         if (this.state.categoryReadTime !== now) {
           continue;
@@ -172,7 +171,10 @@ export class Jeopardy extends React.Component<{
         let newMask: Boolean[] = [...this.state.categoryMask];
         newMask[i] = true;
         this.setState({ categoryMask: newMask });
-        await this.sayText(categories[i]);
+        await Promise.any([
+          this.sayText(categories[i]),
+          new Promise((resolve) => setTimeout(resolve, 3000)),
+        ]);
       }
     });
   }
