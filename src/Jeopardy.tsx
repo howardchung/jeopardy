@@ -1107,7 +1107,7 @@ const BulkJudgeModal = ({
   getBuzzOffset: (id: string) => number,
 }) => {
   const [decisions, setDecisions] = useState<StringDict>({});
-  const distinctAnswers: string[] = Array.from(new Set(Object.values<string>(game?.answers ?? {}).map((answer: string) => answer.toLowerCase())));
+  const distinctAnswers: string[] = Array.from(new Set(Object.values<string>(game?.answers ?? {}).map((answer: string) => answer?.toLowerCase())));
   return <Modal open onClose={onClose}>
   <Modal.Header>{game?.currentAnswer}</Modal.Header>
   <Modal.Content>
@@ -1145,7 +1145,7 @@ const BulkJudgeModal = ({
                 </Dropdown>
           </TableCell>
           <TableCell>
-            {participants.filter(p => game?.answers[p.id].toLowerCase() === answer).map((p) => {
+            {participants.filter(p => game?.answers[p.id]?.toLowerCase() === answer).map((p) => {
               return <img
               style={{ width: '30px'}}
               alt=""
@@ -1171,7 +1171,7 @@ const BulkJudgeModal = ({
     });
     answersInBuzzOrder.forEach(ans => {
       // Look up the answer and decision
-      const answer = ans[1].toLowerCase();
+      const answer = ans[1]?.toLowerCase();
       const decision = decisions[answer];
       judgeAnswer(ans[0], decision === 'skip' ? null : JSON.parse(decision));
     });
