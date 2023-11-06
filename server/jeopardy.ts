@@ -419,11 +419,15 @@ export class Jeopardy {
   }
 
   nextQuestion() {
+    // Show the correct answer in the game log
     this.room.addChatMessage(undefined, {
       id: '',
       cmd: 'answer',
       msg: this.jpd.public.currentAnswer,
     });
+    // sort the player list by score
+    this.roster.sort((a, b) => this.jpd.public?.scores[b.id] - this.jpd.public?.scores[a.id]);
+    this.io.of(this.roomId).emit('roster', this.roster);
     delete this.jpd.public.board[this.jpd.public.currentQ];
     this.resetAfterQuestion();
     if (Object.keys(this.jpd.public.board).length === 0) {

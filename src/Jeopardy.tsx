@@ -418,7 +418,7 @@ export class Jeopardy extends React.Component<{
   render() {
     const game = this.state.game;
     const categories = this.getCategories();
-    const sortedParticipants = this.props.participants.sort((a, b) => game?.scores[b.id] - game?.scores[a.id]);
+    const participants = this.props.participants;
     return (
       <>
         {this.state.showCustomModal && (
@@ -461,7 +461,7 @@ export class Jeopardy extends React.Component<{
           </Modal>
         )}
         {this.state.showJudgingModal && (
-          <BulkJudgeModal game={game} nameMap={this.props.nameMap} participants={sortedParticipants} judgeAnswer={this.judgeAnswer} onClose={() => this.setState({ showJudgingModal: false })} getBuzzOffset={this.getBuzzOffset} />
+          <BulkJudgeModal game={game} nameMap={this.props.nameMap} participants={participants} judgeAnswer={this.judgeAnswer} onClose={() => this.setState({ showJudgingModal: false })} getBuzzOffset={this.getBuzzOffset} />
         )}
         <div
           style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
@@ -718,7 +718,7 @@ export class Jeopardy extends React.Component<{
               <div
                 style={{ display: 'flex', overflowX: 'auto', flexShrink: 0 }}
               >
-                {sortedParticipants.map((p) => {
+                {participants.map((p) => {
                   return (
                     <div key={p.id} className="scoreboard">
                       <div className="picture" style={{ position: 'relative' }}>
