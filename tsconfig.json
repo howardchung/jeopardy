@@ -17,5 +17,5 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["vite/client"]
   },
-  "include": ["components"],
+  "include": ["src", "global.d.ts"],
 }
