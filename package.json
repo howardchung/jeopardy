@@ -19,7 +19,7 @@
     "vite": "^4.5.0"
   },
   "scripts": {
-    "start": "node buildServer/server.js",
+    "server": "node buildServer/server.js",
     "react": "vite --host",
     "build": "vite build && npm run buildServer",
     "buildServer": "tsc --project server/tsconfig.json --outDir buildServer",
