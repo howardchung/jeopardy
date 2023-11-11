@@ -6,7 +6,8 @@ import io from 'socket.io-client';
 import { serverPath, generateName } from '../../utils';
 import { Chat } from '../Chat/Chat';
 import { JeopardyTopBar } from '../TopBar/TopBar';
-import { Jeopardy } from '../../Jeopardy';
+import { Jeopardy } from '../Jeopardy/Jeopardy';
+import { ChatMessage, StringDict, User } from '../../global';
 
 interface AppState {
   state: 'init' | 'starting' | 'connected';

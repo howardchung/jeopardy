@@ -91,7 +91,7 @@ export function shuffle(array: any[]) {
 }
 
 export const serverPath =
-  process.env.REACT_APP_SERVER_HOST ||
+  import.meta.env.VITE_SERVER_HOST ||
   `${window.location.protocol}//${window.location.hostname}${
     process.env.NODE_ENV === 'production' ? '' : ':8080'
   }`;

@@ -14,7 +14,7 @@ import {
   TableHeaderCell,
 } from 'semantic-ui-react';
 import './Jeopardy.css';
-import { getDefaultPicture, getColorHex, shuffle, getColor } from './utils';
+import { getDefaultPicture, getColorHex, shuffle, getColor } from '../../utils';
 import { Socket } from 'socket.io';
 
 const scoringOptions = [

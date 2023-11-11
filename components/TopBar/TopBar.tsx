@@ -1,7 +1,7 @@
 import React from 'react';
 import { serverPath } from '../../utils';
 import { Icon, Popup, Button } from 'semantic-ui-react';
-import '../../Jeopardy.css';
+import '../Jeopardy/Jeopardy.css';
 
 export class NewRoomButton extends React.Component<{ size?: string }> {
   createRoom = async () => {
