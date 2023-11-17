@@ -3,7 +3,7 @@ import React from 'react';
 import { Divider, Grid, Icon, Input } from 'semantic-ui-react';
 //@ts-ignore
 import io from 'socket.io-client';
-import { serverPath, generateName } from '../utils';
+import { serverPath, generateName } from '../../utils';
 import { Chat } from '../Chat/Chat';
 import { JeopardyTopBar } from '../TopBar/TopBar';
 import { Jeopardy } from '../Jeopardy/Jeopardy';

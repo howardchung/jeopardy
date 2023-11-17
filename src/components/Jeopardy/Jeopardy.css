@@ -100,7 +100,6 @@
 }
 
 .clueContainerContainer {
-  position: absolute;
   transform: scale(0.17);
   transform-origin: 0 0;
   transition: 0.7s ease-out;

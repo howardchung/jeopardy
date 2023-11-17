@@ -14,8 +14,9 @@ import {
   TableHeaderCell,
 } from 'semantic-ui-react';
 import './Jeopardy.css';
-import { getDefaultPicture, getColorHex, shuffle, getColor } from '../utils';
+import { getDefaultPicture, getColorHex, shuffle, getColor } from '../../utils';
 import { Socket } from 'socket.io';
+import ReactMarkdown from 'react-markdown';
 
 const scoringOptions = [
   {
@@ -189,13 +190,17 @@ export class Jeopardy extends React.Component<{
       const clue = document.getElementById(
         'clueContainerContainer'
       ) as HTMLElement;
+      const board = document.getElementById(
+        'board'
+      ) as HTMLElement;
       const box = document.getElementById(
         this.state.game?.currentQ
       ) as HTMLElement;
+      clue.style.position = 'absolute';
       clue.style.left = box.offsetLeft + 'px';
       clue.style.top = box.offsetTop + 'px';
       setTimeout(() => {
-        clue.style.left = '0px';
+        clue.style.left = board.scrollLeft + 'px';
         clue.style.top = '0px';
         clue.style.transform = 'scale(1)';
       }, 1);
@@ -315,6 +320,10 @@ export class Jeopardy extends React.Component<{
   sayText = async (text: string) => {
     if (this.state.readingDisabled) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
+      return;
+    }
+    if (text.startsWith('!')) {
+      // This is probably markdown
       return;
     }
     let isIOS = /iPad|iPhone|iPod/.test(navigator.platform);
@@ -471,6 +480,7 @@ export class Jeopardy extends React.Component<{
               {
                 <div style={{ display: 'flex', flexGrow: 1 }}>
                   <div
+                    id="board"
                     className={`board ${
                       this.state.game?.currentQ ? 'currentQ' : ''
                     }`}
@@ -527,8 +537,30 @@ export class Jeopardy extends React.Component<{
                           </div>
                           {
                             <div className={`clue`}>
+                              <ReactMarkdown components={
+                                {
+                                  //This custom renderer changes how images are rendered
+                                  //we use it to constrain the max width of an image to its container
+                                  img: ({
+                                      alt,
+                                      src,
+                                      title,
+                                  }: {
+                                      alt?: string;
+                                      src?: string;
+                                      title?: string;
+                                  }) => (
+                                      <img 
+                                          alt={alt} 
+                                          src={src} 
+                                          title={title} 
+                                          style={{ maxWidth: '80%', maxHeight: '350px' }}  />
+                                  ),
+                              }
+                              }>
                               {game.board[game.currentQ] &&
                                 game.board[game.currentQ].question}
+                              </ReactMarkdown>
                             </div>
                           }
                           <div className="" style={{ height: '60px' }}>

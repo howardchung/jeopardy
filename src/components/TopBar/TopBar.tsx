@@ -1,5 +1,5 @@
 import React from 'react';
-import { serverPath } from '../utils';
+import { serverPath } from '../../utils';
 import { Icon, Popup, Button } from 'semantic-ui-react';
 import '../Jeopardy/Jeopardy.css';
 
