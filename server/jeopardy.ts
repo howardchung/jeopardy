@@ -346,13 +346,45 @@ export class Jeopardy {
     if (custom) {
       try {
         const parse = Papa.parse(custom, { header: true });
-        const typed = parse.data.map((d: any) => ({
-          ...d,
-          val: Number(d.val),
-          dd: d.dd === 'true',
-          x: Number(d.x),
-          y: Number(d.y),
-        }));
+        const typed = [];
+        let round = '';
+        let cat = '';
+        let curX = 0;
+        let curY = 0;
+        for (let i = 0; i < parse.data.length; i++) {
+          const d = parse.data[i];
+          if (round !== d.round) {
+            // Reset x and y to 1
+            curX = 1;
+            curY = 1;
+          } else if (cat !== d.cat) {
+            // Increment x, reset y to 1, new category
+            curX += 1;
+            curY = 1;
+          } else {
+            curY += 1;
+          }
+          round = d.round;
+          cat = d.cat;
+          let multiplier = 1;
+          if (round === 'double') {
+            multiplier = 2;
+          } else if (round === 'final') {
+            multiplier = 0;
+          }
+          if (d.q && d.a) {
+            typed.push({
+              round: d.round,
+              cat: d.cat,
+              q: d.q,
+              a: d.a,
+              dd: d.dd?.toLowerCase() === 'true',
+              val: curY * 200 * multiplier,
+              x: curX,
+              y: curY,
+            });
+          }
+        }
         loadedData = {
           airDate: new Date().toISOString().split('T')[0],
           epNum: 'Custom',
