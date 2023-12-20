@@ -38,9 +38,12 @@ export default class App extends React.Component<null, AppState> {
 
   async componentDidMount() {
     // Send heartbeat to the server
-    window.setInterval(() => {
-      window.fetch(serverPath + '/ping');
-    }, 10 * 60 * 1000);
+    window.setInterval(
+      () => {
+        window.fetch(serverPath + '/ping');
+      },
+      10 * 60 * 1000,
+    );
 
     this.init();
   }

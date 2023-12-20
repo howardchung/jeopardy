@@ -1,5 +1,5 @@
 export default {
-    build: {
-        outDir: 'build'
-    }
-}
+  build: {
+    outDir: 'build',
+  },
+};

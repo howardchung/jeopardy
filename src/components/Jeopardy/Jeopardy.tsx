@@ -79,7 +79,7 @@ export class Jeopardy extends React.Component<{
 
     this.setState({
       readingDisabled: Boolean(
-        window.localStorage.getItem('jeopardy-readingDisabled')
+        window.localStorage.getItem('jeopardy-readingDisabled'),
       ),
     });
 
@@ -188,13 +188,11 @@ export class Jeopardy extends React.Component<{
     if (!prevState.game?.currentQ && this.state.game?.currentQ) {
       // Run growing clue animation
       const clue = document.getElementById(
-        'clueContainerContainer'
+        'clueContainerContainer',
       ) as HTMLElement;
-      const board = document.getElementById(
-        'board'
-      ) as HTMLElement;
+      const board = document.getElementById('board') as HTMLElement;
       const box = document.getElementById(
-        this.state.game?.currentQ
+        this.state.game?.currentQ,
       ) as HTMLElement;
       clue.style.position = 'absolute';
       clue.style.left = box.offsetLeft + 'px';
@@ -225,7 +223,7 @@ export class Jeopardy extends React.Component<{
   newGame = async (
     episode: string | null,
     filter: string | null,
-    customGame?: string
+    customGame?: string,
   ) => {
     this.setState({ game: null });
     // optionally send an episode number
@@ -342,7 +340,7 @@ export class Jeopardy extends React.Component<{
       // }
       let voices = window.speechSynthesis.getVoices();
       let target = voices.find(
-        (voice) => voice.name === 'Google UK English Male'
+        (voice) => voice.name === 'Google UK English Male',
       );
       if (target) {
         utterThis.voice = target;
@@ -367,7 +365,7 @@ export class Jeopardy extends React.Component<{
       this.props.socket.emit(
         'JPD:answer',
         this.state.game?.currentQ,
-        answer || this.state.localAnswer
+        answer || this.state.localAnswer,
       );
       this.setState({ localAnswer: '', localAnswerSubmitted: true });
     }
@@ -470,7 +468,14 @@ export class Jeopardy extends React.Component<{
           </Modal>
         )}
         {this.state.showJudgingModal && (
-          <BulkJudgeModal game={game} nameMap={this.props.nameMap} participants={participants} judgeAnswer={this.judgeAnswer} onClose={() => this.setState({ showJudgingModal: false })} getBuzzOffset={this.getBuzzOffset} />
+          <BulkJudgeModal
+            game={game}
+            nameMap={this.props.nameMap}
+            participants={participants}
+            judgeAnswer={this.judgeAnswer}
+            onClose={() => this.setState({ showJudgingModal: false })}
+            getBuzzOffset={this.getBuzzOffset}
+          />
         )}
         <div
           style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
@@ -537,29 +542,33 @@ export class Jeopardy extends React.Component<{
                           </div>
                           {
                             <div className={`clue`}>
-                              <ReactMarkdown components={
-                                {
+                              <ReactMarkdown
+                                components={{
                                   //This custom renderer changes how images are rendered
                                   //we use it to constrain the max width of an image to its container
                                   img: ({
-                                      alt,
-                                      src,
-                                      title,
+                                    alt,
+                                    src,
+                                    title,
                                   }: {
-                                      alt?: string;
-                                      src?: string;
-                                      title?: string;
+                                    alt?: string;
+                                    src?: string;
+                                    title?: string;
                                   }) => (
-                                      <img 
-                                          alt={alt} 
-                                          src={src} 
-                                          title={title} 
-                                          style={{ maxWidth: '80%', maxHeight: '350px' }}  />
+                                    <img
+                                      alt={alt}
+                                      src={src}
+                                      title={title}
+                                      style={{
+                                        maxWidth: '80%',
+                                        maxHeight: '350px',
+                                      }}
+                                    />
                                   ),
-                              }
-                              }>
-                              {game.board[game.currentQ] &&
-                                game.board[game.currentQ].question}
+                                }}
+                              >
+                                {game.board[game.currentQ] &&
+                                  game.board[game.currentQ].question}
                               </ReactMarkdown>
                             </div>
                           }
@@ -584,29 +593,29 @@ export class Jeopardy extends React.Component<{
                                   Buzz
                                 </Button>
                                 <div
-                            style={{
-                              position: 'absolute',
-                              top: '0px',
-                              right: '0px',
-                              zIndex: 1,
-                            }}
-                          >
-                                <Button
-                                  disabled={this.state.buzzFrozen}
-                                  color={game.canBuzz ? 'red' : 'grey'}
-                                  onClick={() => {
-                                    if (game.canBuzz) {
-                                      this.submitAnswer(null);
-                                    }
+                                  style={{
+                                    position: 'absolute',
+                                    top: '0px',
+                                    right: '0px',
+                                    zIndex: 1,
                                   }}
-                                  icon
-                                  labelPosition="left"
                                 >
-                                  <Icon
-                                    name={game.canBuzz ? 'forward' : 'lock'}
-                                  />
-                                  Pass
-                                </Button>
+                                  <Button
+                                    disabled={this.state.buzzFrozen}
+                                    color={game.canBuzz ? 'red' : 'grey'}
+                                    onClick={() => {
+                                      if (game.canBuzz) {
+                                        this.submitAnswer(null);
+                                      }
+                                    }}
+                                    icon
+                                    labelPosition="left"
+                                  >
+                                    <Icon
+                                      name={game.canBuzz ? 'forward' : 'lock'}
+                                    />
+                                    Pass
+                                  </Button>
                                 </div>
                               </div>
                             ) : null}
@@ -641,12 +650,12 @@ export class Jeopardy extends React.Component<{
                                 label={`Wager (${
                                   getWagerBounds(
                                     game.round,
-                                    game.scores[this.props.socket.id]
+                                    game.scores[this.props.socket.id],
                                   ).minWager
                                 } to ${
                                   getWagerBounds(
                                     game.round,
-                                    game.scores[this.props.socket.id]
+                                    game.scores[this.props.socket.id],
                                   ).maxWager
                                 })`}
                                 value={this.state.localWager}
@@ -684,42 +693,46 @@ export class Jeopardy extends React.Component<{
                           {Boolean(game.wagerDuration) && (
                             <TimerBar duration={game.wagerDuration} secondary />
                           )}
-                          {game.currentAnswer && <div
-                            style={{
-                              position: 'absolute',
-                              top: '0px',
-                              right: '0px',
-                            }}
-                          >
-                            <Button
-                              onClick={() =>
-                                this.props.socket.emit('JPD:skipQ')
-                              }
-                              icon
-                              labelPosition="left"
+                          {game.currentAnswer && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: '0px',
+                                right: '0px',
+                              }}
                             >
-                              <Icon name="forward" />
-                              Next
-                            </Button>
-                          </div>}
-                          {game.currentAnswer && <div
-                            style={{
-                              position: 'absolute',
-                              bottom: '0px',
-                              right: '0px',
-                            }}
-                          >
-                            <Button
-                              onClick={() =>
-                                this.setState({showJudgingModal: true})
-                              }
-                              icon
-                              labelPosition="left"
+                              <Button
+                                onClick={() =>
+                                  this.props.socket.emit('JPD:skipQ')
+                                }
+                                icon
+                                labelPosition="left"
+                              >
+                                <Icon name="forward" />
+                                Next
+                              </Button>
+                            </div>
+                          )}
+                          {game.currentAnswer && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                bottom: '0px',
+                                right: '0px',
+                              }}
                             >
-                              <Icon name="gavel" />
-                              Bulk Judge
-                            </Button>
-                          </div>}
+                              <Button
+                                onClick={() =>
+                                  this.setState({ showJudgingModal: true })
+                                }
+                                icon
+                                labelPosition="left"
+                              >
+                                <Icon name="gavel" />
+                                Bulk Judge
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -735,7 +748,7 @@ export class Jeopardy extends React.Component<{
                               src={
                                 getDefaultPicture(
                                   this.props.nameMap[winner],
-                                  getColorHex(winner)
+                                  getColorHex(winner),
                                 ) || this.props.pictureMap[winner]
                               }
                             />
@@ -760,7 +773,7 @@ export class Jeopardy extends React.Component<{
                             this.props.pictureMap[p.id] ||
                             getDefaultPicture(
                               this.props.nameMap[p.id],
-                              getColorHex(p.id)
+                              getColorHex(p.id),
                             )
                           }
                         />
@@ -1007,11 +1020,11 @@ export class Jeopardy extends React.Component<{
                     if (checked) {
                       window.localStorage.setItem(
                         'jeopardy-readingDisabled',
-                        '1'
+                        '1',
                       );
                     } else {
                       window.localStorage.removeItem(
-                        'jeopardy-readingDisabled'
+                        'jeopardy-readingDisabled',
                       );
                     }
                   }}
@@ -1026,7 +1039,7 @@ export class Jeopardy extends React.Component<{
                   icon="calculator"
                   text={
                     scoringOptions.find(
-                      (option) => option.value === this.state.game?.scoring
+                      (option) => option.value === this.state.game?.scoring,
                     )?.text
                   }
                 >
@@ -1081,7 +1094,7 @@ class TimerBar extends React.Component<{
     if (this.props.submitAnswer) {
       this.submitTimeout = window.setTimeout(
         this.props.submitAnswer,
-        this.props.duration - 500
+        this.props.duration - 500,
       );
     }
   }
@@ -1131,85 +1144,100 @@ const BulkJudgeModal = ({
   judgeAnswer,
   getBuzzOffset,
 }: {
-  onClose: () => void,
-  game: any,
-  participants: User[],
-  nameMap: StringDict,
-  judgeAnswer: (id: string, correct: boolean | null) => void,
-  getBuzzOffset: (id: string) => number,
+  onClose: () => void;
+  game: any;
+  participants: User[];
+  nameMap: StringDict;
+  judgeAnswer: (id: string, correct: boolean | null) => void;
+  getBuzzOffset: (id: string) => number;
 }) => {
   const [decisions, setDecisions] = useState<StringDict>({});
-  const distinctAnswers: string[] = Array.from(new Set(Object.values<string>(game?.answers ?? {}).map((answer: string) => answer?.toLowerCase())));
-  return <Modal open onClose={onClose}>
-  <Modal.Header>{game?.currentAnswer}</Modal.Header>
-  <Modal.Content>
-    <Table>
-      <TableHeader>
-        <TableHeaderCell>
-          Answer
-        </TableHeaderCell>
-        <TableHeaderCell>
-          Decision
-        </TableHeaderCell>
-        <TableHeaderCell>
-          Responses
-        </TableHeaderCell>
-      </TableHeader>
-      {distinctAnswers.map(answer => {
-        return <TableRow>
-          <TableCell>
-            {answer}
-          </TableCell>
-          <TableCell>
-          <Dropdown
-          placeholder="Select"
-          value={decisions[answer]}
-          options={[
-            { key: 'correct', value: 'true', text: 'Correct' },
-            { key: 'incorrect', value: 'false', text: 'Incorrect' },
-            { key: 'skip', value: 'skip', text: 'Skip' },
-          ]}
-          onChange={(e, data) => {
-            const newDecisions = {...decisions, [answer]: (data.value as string)};
-            setDecisions(newDecisions);
+  const distinctAnswers: string[] = Array.from(
+    new Set(
+      Object.values<string>(game?.answers ?? {}).map(
+        (answer: string) => answer?.toLowerCase(),
+      ),
+    ),
+  );
+  return (
+    <Modal open onClose={onClose}>
+      <Modal.Header>{game?.currentAnswer}</Modal.Header>
+      <Modal.Content>
+        <Table>
+          <TableHeader>
+            <TableHeaderCell>Answer</TableHeaderCell>
+            <TableHeaderCell>Decision</TableHeaderCell>
+            <TableHeaderCell>Responses</TableHeaderCell>
+          </TableHeader>
+          {distinctAnswers.map((answer) => {
+            return (
+              <TableRow>
+                <TableCell>{answer}</TableCell>
+                <TableCell>
+                  <Dropdown
+                    placeholder="Select"
+                    value={decisions[answer]}
+                    options={[
+                      { key: 'correct', value: 'true', text: 'Correct' },
+                      { key: 'incorrect', value: 'false', text: 'Incorrect' },
+                      { key: 'skip', value: 'skip', text: 'Skip' },
+                    ]}
+                    onChange={(e, data) => {
+                      const newDecisions = {
+                        ...decisions,
+                        [answer]: data.value as string,
+                      };
+                      setDecisions(newDecisions);
+                    }}
+                  ></Dropdown>
+                </TableCell>
+                <TableCell>
+                  {participants
+                    .filter(
+                      (p) => game?.answers[p.id]?.toLowerCase() === answer,
+                    )
+                    .map((p) => {
+                      return (
+                        <img
+                          style={{ width: '30px' }}
+                          alt=""
+                          src={getDefaultPicture(
+                            nameMap[p.id],
+                            getColorHex(p.id),
+                          )}
+                        />
+                      );
+                    })}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </Table>
+      </Modal.Content>
+      <Modal.Actions>
+        <Button
+          onClick={() => {
+            // Submit the judging in order of getBuzzOffset
+            const answers = Object.entries<string>(game?.answers);
+            const answersInBuzzOrder = [...answers].sort((a, b) => {
+              return getBuzzOffset(a[0]) - getBuzzOffset(b[0]);
+            });
+            answersInBuzzOrder.forEach((ans) => {
+              // Look up the answer and decision
+              const answer = ans[1]?.toLowerCase();
+              const decision = decisions[answer];
+              judgeAnswer(
+                ans[0],
+                decision === 'skip' ? null : JSON.parse(decision),
+              );
+            });
+            // Close the modal
+            onClose();
           }}
-         >
-                </Dropdown>
-          </TableCell>
-          <TableCell>
-            {participants.filter(p => game?.answers[p.id]?.toLowerCase() === answer).map((p) => {
-              return <img
-              style={{ width: '30px'}}
-              alt=""
-              src={
-                getDefaultPicture(
-                  nameMap[p.id],
-                  getColorHex(p.id)
-                )
-              }
-            />;
-      })}
-          </TableCell>
-        </TableRow>
-      })}
-    </Table>
-  </Modal.Content>
-  <Modal.Actions>
-  <Button onClick={() => {
-    // Submit the judging in order of getBuzzOffset
-    const answers = Object.entries<string>(game?.answers);
-    const answersInBuzzOrder = [...answers].sort((a, b) => {
-      return getBuzzOffset(a[0]) - getBuzzOffset(b[0]);
-    });
-    answersInBuzzOrder.forEach(ans => {
-      // Look up the answer and decision
-      const answer = ans[1]?.toLowerCase();
-      const decision = decisions[answer];
-      judgeAnswer(ans[0], decision === 'skip' ? null : JSON.parse(decision));
-    });
-    // Close the modal
-    onClose();
-  }}>Bulk Judge</Button>
-  </Modal.Actions>
-</Modal>;
-}
+        >
+          Bulk Judge
+        </Button>
+      </Modal.Actions>
+    </Modal>
+  );
+};

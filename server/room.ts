@@ -21,7 +21,7 @@ export class Room {
   constructor(
     io: Server,
     roomId: string,
-    roomData?: string | null | undefined
+    roomData?: string | null | undefined,
   ) {
     this.roomId = roomId;
     this.io = io;
@@ -115,7 +115,7 @@ export class Room {
         this.roomId,
         this.roster,
         this,
-        roomObj.jpd
+        roomObj.jpd,
       );
     }
   };

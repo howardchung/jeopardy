@@ -97,7 +97,7 @@ function getGameState(
   info?: string,
   jeopardy?: Question[],
   double?: Question[],
-  final?: Question[]
+  final?: Question[],
 ) {
   return {
     jeopardy,
@@ -139,7 +139,7 @@ export class Jeopardy {
     roomId: string,
     roster: User[],
     room: Room,
-    gameData?: any
+    gameData?: any,
   ) {
     this.io = io;
     this.roomId = roomId;
@@ -293,7 +293,7 @@ export class Jeopardy {
             if (correct?.toLowerCase() !== submitted?.toLowerCase()) {
               await redis.lpush(
                 'jpd:nonTrivialJudges',
-                `${correct},${submitted},${1}`
+                `${correct},${submitted},${1}`,
               );
               // await redis.ltrim('jpd:nonTrivialJudges', 0, 100000);
             }
@@ -404,13 +404,13 @@ export class Jeopardy {
         // Only load episodes with info matching the filter: kids, teen, college etc.
         nums = nums.filter(
           (num) =>
-            (jData as any)[num].info && (jData as any)[num].info === filter
+            (jData as any)[num].info && (jData as any)[num].info === filter,
         );
       }
       if (number === 'ddtest') {
         loadedData = jData['8000'];
         loadedData['jeopardy'] = loadedData['jeopardy'].filter(
-          (q: any) => q.dd
+          (q: any) => q.dd,
         );
       } else if (number === 'finaltest') {
         loadedData = jData['8000'];
@@ -458,7 +458,9 @@ export class Jeopardy {
       msg: this.jpd.public.currentAnswer,
     });
     // sort the player list by score
-    this.roster.sort((a, b) => this.jpd.public?.scores[b.id] - this.jpd.public?.scores[a.id]);
+    this.roster.sort(
+      (a, b) => this.jpd.public?.scores[b.id] - this.jpd.public?.scores[a.id],
+    );
     this.io.of(this.roomId).emit('roster', this.roster);
     delete this.jpd.public.board[this.jpd.public.currentQ];
     this.resetAfterQuestion();
@@ -501,7 +503,7 @@ export class Jeopardy {
       playerIds.sort(
         (a, b) =>
           Number(this.jpd.public.scores[a] || 0) -
-          Number(this.jpd.public.scores[b] || 0)
+          Number(this.jpd.public.scores[b] || 0),
       );
       playerIds.forEach((pid) => {
         this.jpd.public.buzzes[pid] = now;
@@ -528,7 +530,7 @@ export class Jeopardy {
     ) {
       this.jpd.board = constructBoard((this.jpd as any)[this.jpd.public.round]);
       this.jpd.public.board = constructPublicBoard(
-        (this.jpd as any)[this.jpd.public.round]
+        (this.jpd as any)[this.jpd.public.round],
       );
       if (Object.keys(this.jpd.public.board).length === 0) {
         this.nextRound();
@@ -604,7 +606,7 @@ export class Jeopardy {
     ) {
       console.log(
         '[ADVANCEJUDGING] player not found, moving on:',
-        this.jpd.public.currentJudgeAnswer
+        this.jpd.public.currentJudgeAnswer,
       );
       this.advanceJudging();
     }
@@ -612,7 +614,7 @@ export class Jeopardy {
 
   judgeAnswer(
     { id, correct }: { id: string; correct: boolean | null },
-    socket: Socket | undefined
+    socket: Socket | undefined,
   ) {
     if (id in this.jpd.public.judges) {
       // Already judged this player

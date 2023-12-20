@@ -32,7 +32,9 @@
   line-height: 48px;
   text-transform: uppercase;
   color: white;
-  text-shadow: 1px 1px 4px #fff, 1px 1px 4px #ccc;
+  text-shadow:
+    1px 1px 4px #fff,
+    1px 1px 4px #ccc;
 }
 
 .logo.small {

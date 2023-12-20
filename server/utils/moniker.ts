@@ -25,7 +25,7 @@ export function makeRoomName() {
 
 export function makeUserName() {
   return `${capFirst(randomElement(adjectives))} ${capFirst(
-    randomElement(nouns)
+    randomElement(nouns),
   )}`;
 }
 
