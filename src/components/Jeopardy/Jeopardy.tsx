@@ -737,6 +737,26 @@ export class Jeopardy extends React.Component<{
                               </Button>
                             </div>
                           )}
+                          {game.currentAnswer && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                bottom: '0px',
+                                left: '0px',
+                              }}
+                            >
+                              <Button
+                                onClick={() =>
+                                  this.props.socket.emit('JPD:undo')
+                                }
+                                icon
+                                labelPosition="left"
+                              >
+                                <Icon name="undo" />
+                                Undo
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

@@ -124,6 +124,7 @@ function getGameState(
 
 export class Jeopardy {
   public jpd: ReturnType<typeof getGameState>;
+  private jpdSnapshot: ReturnType<typeof getGameState> | undefined;
   public roomId: string;
   private io: Server;
   private roster: User[];
@@ -284,9 +285,17 @@ export class Jeopardy {
 
       socket.on('JPD:wager', (wager) => this.submitWager(socket.id, wager));
       socket.on('JPD:judge', (data) => this.doJudge(socket, data));
-      socket.on('JPD:bulkJudge', async (data) => {
+      socket.on('JPD:bulkJudge', (data) => {
         for(let i = 0; i < data.length; i++) {
           this.doJudge(socket, data[i]);
+        }
+      });
+      socket.on('JPD:undo', () => {
+        // Reset the game state to the last snapshot
+        // Snapshot updates at each judging step
+        if (this.jpdSnapshot) {
+          this.jpd = JSON.parse(JSON.stringify(this.jpdSnapshot));
+          this.emitState();
         }
       });
       socket.on('JPD:skipQ', () => {
@@ -570,6 +579,7 @@ export class Jeopardy {
     if (!this.jpd.public.currentJudgeAnswer) {
       this.jpd.public.canNextQ = true;
     }
+    this.jpdSnapshot = JSON.parse(JSON.stringify(this.jpd));
     this.emitState();
   }
 
@@ -601,7 +611,7 @@ export class Jeopardy {
     }
   }
 
-  async doJudge(socket: Socket, data: { currentQ: string, id: string; correct: boolean | null }) {
+  doJudge(socket: Socket, data: { currentQ: string, id: string; correct: boolean | null }) {
     const answer = this.jpd.public.currentAnswer;
     const submitted = this.jpd.public.answers[data.id];
     const success = this.judgeAnswer(socket, data);
@@ -631,7 +641,7 @@ export class Jeopardy {
       // Not judging the right question
       return false;
     }
-    if (this.jpd.public.currentJudgeAnswerIndex === undefined) {
+    if (this.jpd.public.currentJudgeAnswer === undefined) {
       // Not in judging step
       return false;
     }
