@@ -631,6 +631,10 @@ export class Jeopardy {
       // Not judging the right question
       return false;
     }
+    if (this.jpd.public.currentJudgeAnswerIndex === undefined) {
+      // Not in judging step
+      return false;
+    }
     this.jpd.public.judges[id] = correct;
     console.log('[JUDGE]', id, correct);
     // Currently anyone can pick the correct answer
