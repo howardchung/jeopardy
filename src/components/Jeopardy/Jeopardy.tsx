@@ -372,7 +372,11 @@ export class Jeopardy extends React.Component<{
   };
 
   judgeAnswer = (id: string, correct: boolean | null) => {
-    this.props.socket.emit('JPD:judge', { id, correct });
+    this.props.socket.emit('JPD:judge', { currentQ: this.state.game.currentQ, id, correct });
+  };
+
+  bulkJudgeAnswer = (data: {id: string, correct: boolean | null}[]) => {
+    this.props.socket.emit('JPD:bulkJudge', data.map(d => ({...d, currentQ: this.state.game.currentQ })));
   };
 
   getCategories = () => {
@@ -472,7 +476,7 @@ export class Jeopardy extends React.Component<{
             game={game}
             nameMap={this.props.nameMap}
             participants={participants}
-            judgeAnswer={this.judgeAnswer}
+            bulkJudge={this.bulkJudgeAnswer}
             onClose={() => this.setState({ showJudgingModal: false })}
             getBuzzOffset={this.getBuzzOffset}
           />
@@ -1141,21 +1145,21 @@ const BulkJudgeModal = ({
   game,
   participants,
   nameMap,
-  judgeAnswer,
+  bulkJudge,
   getBuzzOffset,
 }: {
   onClose: () => void;
   game: any;
   participants: User[];
   nameMap: StringDict;
-  judgeAnswer: (id: string, correct: boolean | null) => void;
+  bulkJudge: (judges: {id: string, correct: boolean | null}[]) => void;
   getBuzzOffset: (id: string) => number;
 }) => {
   const [decisions, setDecisions] = useState<StringDict>({});
   const distinctAnswers: string[] = Array.from(
     new Set(
       Object.values<string>(game?.answers ?? {}).map(
-        (answer: string) => answer?.toLowerCase(),
+        (answer: string) => answer?.toLowerCase()?.trim(),
       ),
     ),
   );
@@ -1194,7 +1198,7 @@ const BulkJudgeModal = ({
                 <TableCell>
                   {participants
                     .filter(
-                      (p) => game?.answers[p.id]?.toLowerCase() === answer,
+                      (p) => game?.answers[p.id]?.toLowerCase()?.trim() === answer,
                     )
                     .map((p) => {
                       return (
@@ -1222,15 +1226,18 @@ const BulkJudgeModal = ({
             const answersInBuzzOrder = [...answers].sort((a, b) => {
               return getBuzzOffset(a[0]) - getBuzzOffset(b[0]);
             });
+            // Assemble the bulk judges
+            const arr: {id: string, correct: boolean | null}[] = [];
             answersInBuzzOrder.forEach((ans) => {
               // Look up the answer and decision
-              const answer = ans[1]?.toLowerCase();
+              const answer = ans[1]?.toLowerCase()?.trim();
               const decision = decisions[answer];
-              judgeAnswer(
-                ans[0],
-                decision === 'skip' ? null : JSON.parse(decision),
-              );
+              arr.push({
+                id: ans[0],
+                correct: decision === 'skip' ? null : JSON.parse(decision),
+              });
             });
+            bulkJudge(arr);
             // Close the modal
             onClose();
           }}

@@ -283,21 +283,10 @@ export class Jeopardy {
       });
 
       socket.on('JPD:wager', (wager) => this.submitWager(socket.id, wager));
-      socket.on('JPD:judge', async (data) => {
-        const correct = this.jpd.public.currentAnswer;
-        const submitted = this.jpd.public.answers[data.id];
-        const success = this.judgeAnswer(data, socket);
-        if (success) {
-          if (data.correct && redis) {
-            // If the answer was judged correct and non-trivial (equal lowercase), log it for analysis
-            if (correct?.toLowerCase() !== submitted?.toLowerCase()) {
-              await redis.lpush(
-                'jpd:nonTrivialJudges',
-                `${correct},${submitted},${1}`,
-              );
-              // await redis.ltrim('jpd:nonTrivialJudges', 0, 100000);
-            }
-          }
+      socket.on('JPD:judge', (data) => this.doJudge(socket, data));
+      socket.on('JPD:bulkJudge', async (data) => {
+        for(let i = 0; i < data.length; i++) {
+          this.doJudge(socket, data[i]);
         }
       });
       socket.on('JPD:skipQ', () => {
@@ -326,7 +315,7 @@ export class Jeopardy {
           // If player being judged leaves, skip their answer
           if (this.jpd.public.currentJudgeAnswer === socket.id) {
             // This is to run the rest of the code around judging
-            this.judgeAnswer({ id: socket.id, correct: null }, undefined);
+            this.judgeAnswer(undefined, { currentQ: this.jpd.public.currentQ, id: socket.id, correct: null });
           }
           // If player who needs to submit wager leaves, submit 0
           if (
@@ -459,7 +448,7 @@ export class Jeopardy {
     });
     // sort the player list by score
     this.roster.sort(
-      (a, b) => this.jpd.public?.scores[b.id] - this.jpd.public?.scores[a.id],
+      (a, b) => (this.jpd.public?.scores[b.id] || 0) - (this.jpd.public?.scores[a.id] || 0),
     );
     this.io.of(this.roomId).emit('roster', this.roster);
     delete this.jpd.public.board[this.jpd.public.currentQ];
@@ -612,16 +601,34 @@ export class Jeopardy {
     }
   }
 
+  async doJudge(socket: Socket, data: { currentQ: string, id: string; correct: boolean | null }) {
+    const answer = this.jpd.public.currentAnswer;
+    const submitted = this.jpd.public.answers[data.id];
+    const success = this.judgeAnswer(socket, data);
+    if (success) {
+      if (data.correct && redis) {
+        // If the answer was judged correct and non-trivial (equal lowercase), log it for analysis
+        if (answer?.toLowerCase() !== submitted?.toLowerCase()) {
+          redis.lpush(
+            'jpd:nonTrivialJudges',
+            `${answer},${submitted},${1}`,
+          );
+          // redis.ltrim('jpd:nonTrivialJudges', 0, 100000);
+        }
+      }
+    }
+  }
+
   judgeAnswer(
-    { id, correct }: { id: string; correct: boolean | null },
     socket: Socket | undefined,
+    { currentQ, id, correct }: { currentQ: string, id: string; correct: boolean | null },
   ) {
     if (id in this.jpd.public.judges) {
       // Already judged this player
       return false;
     }
-    if (!this.jpd.public.currentQ) {
-      // No question picked currently
+    if (currentQ !== this.jpd.public.currentQ) {
+      // Not judging the right question
       return false;
     }
     this.jpd.public.judges[id] = correct;
@@ -662,24 +669,12 @@ export class Jeopardy {
 
     this.advanceJudging();
 
-    if (
-      this.jpd.public.round === 'final' ||
-      this.jpd.public.scoring === 'coryat'
-    ) {
-      // We can have multiple correct answers in final/Coryat scoring, so only move on if everyone is done
-      if (!this.jpd.public.currentJudgeAnswer) {
-        this.jpd.public.canNextQ = true;
-        this.nextQuestion();
-      } else {
-        this.emitState();
-      }
+    const allowMultipleCorrect = this.jpd.public.round === 'final' || this.jpd.public.scoring === 'coryat';
+    if ((!allowMultipleCorrect && correct) || !this.jpd.public.currentJudgeAnswer) {
+      this.jpd.public.canNextQ = true;
+      this.nextQuestion();
     } else {
-      if (correct || !this.jpd.public.currentJudgeAnswer) {
-        this.jpd.public.canNextQ = true;
-        this.nextQuestion();
-      } else {
-        this.emitState();
-      }
+      this.emitState();
     }
     return correct !== null;
   }
