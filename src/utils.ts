@@ -93,7 +93,7 @@ export function shuffle(array: any[]) {
 export const serverPath =
   import.meta.env.VITE_SERVER_HOST ||
   `${window.location.protocol}//${window.location.hostname}${
-    process.env.NODE_ENV === 'production' ? '' : ':8080'
+    process.env.NODE_ENV === 'production' ? '' : ':8081'
   }`;
 
 export async function generateName(): Promise<string> {

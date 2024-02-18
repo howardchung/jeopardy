@@ -71,7 +71,7 @@ async function init() {
     }
   });
 
-  server.listen(process.env.PORT || 8080);
+  server.listen(process.env.PORT || 8081);
 }
 
 app.use(cors());
