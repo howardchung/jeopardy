@@ -82,11 +82,11 @@ export class Chat extends React.Component<ChatProps> {
     } else if (cmd === 'pause') {
       return `paused the video at ${formatTimestamp(msg)}`;
     } else if (cmd === 'judge') {
-      const { id, correct, answer } = JSON.parse(msg);
+      const { id, correct, answer, delta} = JSON.parse(msg);
       return (
         <span style={{ color: correct ? '#21ba45' : '#db2828' }}>{`ruled ${
           this.props.nameMap[id]
-        } ${correct ? 'correct' : 'incorrect'}: ${answer} `}</span>
+        } ${correct ? 'correct' : 'incorrect'}: ${answer} (${delta >= 0 ? '+' : ''}${delta})`}</span>
       );
     } else if (cmd === 'answer') {
       return `Correct answer: ${msg}`;

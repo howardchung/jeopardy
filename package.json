@@ -21,7 +21,7 @@
   },
   "scripts": {
     "server": "node buildServer/server.js",
-    "react": "vite --host",
+    "ui": "vite --host",
     "build": "npm run buildReact && npm run buildServer",
     "buildReact": "vite build && npm run typecheck",
     "buildServer": "tsc --project server/tsconfig.json --outDir buildServer",

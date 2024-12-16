@@ -82,7 +82,6 @@ function getPerQuestionState() {
     submitted: {} as BooleanDict,
     buzzes: {} as NumberDict,
     readings: {} as BooleanDict,
-    skips: {} as BooleanDict,
     judges: {} as BooleanDict,
     wagers: {} as NumberDict,
     canBuzz: false,
@@ -111,8 +110,6 @@ function getGameState(
       airDate,
       info,
       scoring: 'standard',
-      numCorrect: 0,
-      numTotal: 0,
       board: {} as { [key: string]: Question },
       scores: {} as NumberDict, // player scores
       round: '', // jeopardy or double or final
@@ -231,7 +228,7 @@ export class Jeopardy {
           this.jpd.public.currentDailyDouble = true;
           this.jpd.public.dailyDoublePlayer = socket.id;
           this.jpd.public.waitingForWager = { [socket.id]: true };
-          this.setWagerTimeout(15000);
+          this.setWagerTimeout(30000);
           // Autobuzz the player, all others pass
           this.roster.forEach((p) => {
             if (p.id === socket.id) {
@@ -286,29 +283,36 @@ export class Jeopardy {
       socket.on('JPD:wager', (wager) => this.submitWager(socket.id, wager));
       socket.on('JPD:judge', (data) => this.doJudge(socket, data));
       socket.on('JPD:bulkJudge', (data) => {
-        for(let i = 0; i < data.length; i++) {
-          this.doJudge(socket, data[i]);
+        // Check if the next player to be judged is in the input data
+        // If so, doJudge for that player
+        // Check if we advanced to the next question, otherwise keep doing doJudge
+        while (this.jpd.public.currentJudgeAnswer !== undefined) {
+          const id = this.jpd.public.currentJudgeAnswer;
+          const match = data.find((d: any) => d.id === id);
+          if (match) {
+            this.doJudge(socket, match);
+          } else {
+            // Player to be judged isn't in the input
+            // Stop judging and revert to manual (or let the user resubmit, we should prevent duplicates)
+            break;
+          }
         }
       });
       socket.on('JPD:undo', () => {
         // Reset the game state to the last snapshot
-        // Snapshot updates at each judging step
+        // Snapshot updates at each revealAnswer
         if (this.jpdSnapshot) {
           this.jpd = JSON.parse(JSON.stringify(this.jpdSnapshot));
+          this.advanceJudging(false);
           this.emitState();
         }
       });
       socket.on('JPD:skipQ', () => {
-        this.jpd.public.skips[socket.id] = true;
         if (
-          this.jpd.public.canNextQ ||
-          this.roster.every((p) => p.id in this.jpd.public.skips)
+          this.jpd.public.canNextQ
         ) {
-          // If everyone votes to skip move to the next question
-          // Or we are in the post-judging phase and can move on
+          // We are in the post-judging phase and can move on
           this.nextQuestion();
-        } else {
-          this.emitState();
         }
       });
       socket.on('JPD:scoring', (scoreMethod: string) => {
@@ -424,6 +428,7 @@ export class Jeopardy {
       redisCount('newGames');
       const { epNum, airDate, info, jeopardy, double, final } = loadedData;
       this.jpd = getGameState(epNum, airDate, info, jeopardy, double, final);
+      this.jpdSnapshot = undefined;
       if (number === 'finaltest') {
         this.jpd.public.round = 'double';
       }
@@ -544,11 +549,10 @@ export class Jeopardy {
     }
   }
 
-  unlockAnswer(duration = 15000) {
-    const durationMs = Number(duration);
+  unlockAnswer(durationMs: number) {
     this.jpd.public.questionDuration = durationMs;
     this.jpd.public.questionEndTS = Number(new Date()) + durationMs;
-    this.setQuestionAnswerTimeout(duration);
+    this.setQuestionAnswerTimeout(durationMs);
   }
 
   setQuestionAnswerTimeout(durationMs: number) {
@@ -561,7 +565,6 @@ export class Jeopardy {
   }
 
   revealAnswer() {
-    this.jpd.public.numTotal += 1;
     clearTimeout(this.questionAnswerTimeout);
     this.jpd.public.questionDuration = 0;
     this.jpd.public.questionEndTS = 0;
@@ -575,15 +578,12 @@ export class Jeopardy {
     this.jpd.public.canBuzz = false;
     this.jpd.public.answers = { ...this.jpd.answers };
     this.jpd.public.currentAnswer = this.jpd.board[this.jpd.public.currentQ]?.a;
-    this.advanceJudging();
-    if (!this.jpd.public.currentJudgeAnswer) {
-      this.jpd.public.canNextQ = true;
-    }
     this.jpdSnapshot = JSON.parse(JSON.stringify(this.jpd));
+    this.advanceJudging(false);
     this.emitState();
   }
 
-  advanceJudging() {
+  advanceJudging(skipJudging: boolean) {
     console.log('[ADVANCEJUDGING]', this.jpd.public.currentJudgeAnswerIndex);
     if (this.jpd.public.currentJudgeAnswerIndex === undefined) {
       this.jpd.public.currentJudgeAnswerIndex = 0;
@@ -593,10 +593,17 @@ export class Jeopardy {
     this.jpd.public.currentJudgeAnswer = Object.keys(this.jpd.public.buzzes)[
       this.jpd.public.currentJudgeAnswerIndex
     ];
-    this.jpd.public.wagers[this.jpd.public.currentJudgeAnswer] =
-      this.jpd.wagers[this.jpd.public.currentJudgeAnswer];
-    this.jpd.public.answers[this.jpd.public.currentJudgeAnswer] =
-      this.jpd.answers[this.jpd.public.currentJudgeAnswer];
+    // Either we picked a correct answer (in standard mode) or ran out of players to judge
+    if (skipJudging || this.jpd.public.currentJudgeAnswer === undefined) {
+      this.jpd.public.canNextQ = true;
+    }
+    if (this.jpd.public.currentJudgeAnswer) {
+      // Show the player's wager and answer to everyone
+      this.jpd.public.wagers[this.jpd.public.currentJudgeAnswer] =
+        this.jpd.wagers[this.jpd.public.currentJudgeAnswer];
+      this.jpd.public.answers[this.jpd.public.currentJudgeAnswer] =
+        this.jpd.answers[this.jpd.public.currentJudgeAnswer];
+    }
 
     // If the current judge player isn't connected, advance again
     if (
@@ -607,7 +614,7 @@ export class Jeopardy {
         '[ADVANCEJUDGING] player not found, moving on:',
         this.jpd.public.currentJudgeAnswer,
       );
-      this.advanceJudging();
+      this.advanceJudging(skipJudging);
     }
   }
 
@@ -653,18 +660,16 @@ export class Jeopardy {
     if (!this.jpd.public.scores[id]) {
       this.jpd.public.scores[id] = 0;
     }
+    const delta = this.jpd.public.wagers[id] || this.jpd.public.currentValue;
     if (correct === true) {
-      this.jpd.public.numCorrect += 1;
-      this.jpd.public.scores[id] +=
-        this.jpd.public.wagers[id] || this.jpd.public.currentValue;
+      this.jpd.public.scores[id] += delta;
       if (this.jpd.public.scoring !== 'coryat') {
         // Correct answer is next picker
         this.jpd.public.picker = id;
       }
     }
     if (correct === false) {
-      this.jpd.public.scores[id] -=
-        this.jpd.public.wagers[id] || this.jpd.public.currentValue;
+      this.jpd.public.scores[id] -= delta;
     }
     // If null, don't change scores
 
@@ -675,17 +680,17 @@ export class Jeopardy {
         msg: JSON.stringify({
           id: id,
           answer: this.jpd.public.answers[id],
-          correct: correct,
+          correct,
+          delta: correct ? delta : -delta,
         }),
       };
       this.room.addChatMessage(socket, msg);
     }
-
-    this.advanceJudging();
-
     const allowMultipleCorrect = this.jpd.public.round === 'final' || this.jpd.public.scoring === 'coryat';
-    if ((!allowMultipleCorrect && correct) || !this.jpd.public.currentJudgeAnswer) {
-      this.jpd.public.canNextQ = true;
+    const skipJudging = !allowMultipleCorrect && correct === true;
+    this.advanceJudging(skipJudging);
+
+    if (this.jpd.public.canNextQ) {
       this.nextQuestion();
     } else {
       this.emitState();
@@ -746,14 +751,14 @@ export class Jeopardy {
     }
   }
 
-  setWagerTimeout(duration: number, endTS?: number) {
-    this.jpd.public.wagerEndTS = endTS ?? Number(new Date()) + duration;
-    this.jpd.public.wagerDuration = duration;
+  setWagerTimeout(durationMs: number, endTS?: number) {
+    this.jpd.public.wagerEndTS = endTS ?? Number(new Date()) + durationMs;
+    this.jpd.public.wagerDuration = durationMs;
     this.wagerTimeout = setTimeout(() => {
       Object.keys(this.jpd.public.waitingForWager ?? {}).forEach((id) => {
         this.submitWager(id, 0);
       });
-    }, duration);
+    }, durationMs);
   }
 
   triggerPlayClue() {
@@ -783,10 +788,10 @@ export class Jeopardy {
     this.setPlayClueTimeout(speakingTime);
   }
 
-  setPlayClueTimeout(duration: number) {
+  setPlayClueTimeout(durationMs: number) {
     this.playClueTimeout = setTimeout(() => {
       this.playClueDone();
-    }, duration);
+    }, durationMs);
   }
 
   playClueDone() {
@@ -797,14 +802,14 @@ export class Jeopardy {
     this.jpd.public.buzzUnlockTS = Number(new Date());
 
     if (this.jpd.public.currentDailyDouble) {
-      this.unlockAnswer();
+      this.unlockAnswer(15000);
     } else if (this.jpd.public.round === 'final') {
       this.unlockAnswer(30000);
       // Play final jeopardy music
       this.io.of(this.roomId).emit('JPD:playFinalJeopardy');
     } else {
       this.jpd.public.canBuzz = true;
-      this.unlockAnswer();
+      this.unlockAnswer(15000);
     }
     this.emitState();
   }

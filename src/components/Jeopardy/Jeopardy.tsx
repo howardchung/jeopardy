@@ -33,13 +33,6 @@ const scoringOptions = [
     title:
       'All players get a chance to score/lose points. All players can pick the next question. Daily Doubles are disabled.',
   },
-  {
-    key: 'coop',
-    value: 'coop',
-    text: 'Co-Op',
-    title:
-      'Point values are ignored. Score is the same for all players and shows how many questions had a correct answer.',
-  },
 ];
 
 const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
@@ -697,7 +690,7 @@ export class Jeopardy extends React.Component<{
                           {Boolean(game.wagerDuration) && (
                             <TimerBar duration={game.wagerDuration} secondary />
                           )}
-                          {game.currentAnswer && (
+                          {game.canNextQ && (
                             <div
                               style={{
                                 position: 'absolute',
@@ -734,26 +727,6 @@ export class Jeopardy extends React.Component<{
                               >
                                 <Icon name="gavel" />
                                 Bulk Judge
-                              </Button>
-                            </div>
-                          )}
-                          {game.currentAnswer && (
-                            <div
-                              style={{
-                                position: 'absolute',
-                                bottom: '0px',
-                                left: '0px',
-                              }}
-                            >
-                              <Button
-                                onClick={() =>
-                                  this.props.socket.emit('JPD:undo')
-                                }
-                                icon
-                                labelPosition="left"
-                              >
-                                <Icon name="undo" />
-                                Undo
                               </Button>
                             </div>
                           )}
@@ -851,9 +824,6 @@ export class Jeopardy extends React.Component<{
                                 name="pointing up"
                               />
                             ) : null}
-                            {game.skips[p.id] ? (
-                              <Icon title="Voted to skip" name="forward" />
-                            ) : null}
                           </div>
                         )}
                         {game && p.id === game.currentJudgeAnswer ? (
@@ -905,15 +875,12 @@ export class Jeopardy extends React.Component<{
                       </div>
                       <div
                         className={`points ${
-                          game?.scores[p.id] < 0 && game?.scoring !== 'coop'
+                          game?.scores[p.id] < 0
                             ? 'negative'
                             : ''
                         }`}
                       >
-                        {game?.scoring === 'coop' &&
-                          game?.numCorrect + ' / ' + game?.numTotal}
-                        {game?.scoring !== 'coop' &&
-                          (game?.scores[p.id] || 0).toLocaleString()}
+                        {(game?.scores[p.id] || 0).toLocaleString()}
                       </div>
                       <div
                         className={`answerBox ${
@@ -1079,6 +1046,16 @@ export class Jeopardy extends React.Component<{
                     ))}
                   </Dropdown.Menu>
                 </Dropdown>
+                <Button
+                  onClick={() =>
+                    this.props.socket.emit('JPD:undo')
+                  }
+                  icon
+                  labelPosition="left"
+                >
+                  <Icon name="undo" />
+                  Undo Judging
+                </Button>
                 {/* <Button
                   onClick={() => this.props.socket.emit('JPD:cmdIntro')}
                   icon
@@ -1241,21 +1218,16 @@ const BulkJudgeModal = ({
       <Modal.Actions>
         <Button
           onClick={() => {
-            // Submit the judging in order of getBuzzOffset
             const answers = Object.entries<string>(game?.answers);
-            const answersInBuzzOrder = [...answers].sort((a, b) => {
-              return getBuzzOffset(a[0]) - getBuzzOffset(b[0]);
-            });
             // Assemble the bulk judges
-            const arr: {id: string, correct: boolean | null}[] = [];
-            answersInBuzzOrder.forEach((ans) => {
+            const arr = answers.map((ans) => {
               // Look up the answer and decision
               const answer = ans[1]?.toLowerCase()?.trim();
               const decision = decisions[answer];
-              arr.push({
+              return {
                 id: ans[0],
                 correct: decision === 'skip' ? null : JSON.parse(decision),
-              });
+              };
             });
             bulkJudge(arr);
             // Close the modal
