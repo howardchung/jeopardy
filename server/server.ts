@@ -1,4 +1,4 @@
-require('dotenv').config();
+import 'dotenv/config';
 import fs from 'fs';
 import util from 'util';
 import express from 'express';
@@ -123,25 +123,25 @@ app.get('/stats', async (req, res) => {
       rooms: roomData,
     });
   } else {
-    return res.status(403).json({ error: 'Access Denied' });
+    res.status(403).json({ error: 'Access Denied' });
   }
 });
 
 app.get('/jeopardyResults', async (req, res) => {
   if (req.query.key && req.query.key === process.env.STATS_KEY) {
     const data = await redis?.lrange('jpd:results', 0, -1);
-    return res.json(data);
+    res.json(data);
   } else {
-    return res.status(403).json({ error: 'Access Denied' });
+    res.status(403).json({ error: 'Access Denied' });
   }
 });
 
 app.get('/nonTrivialJudges', async (req, res) => {
   if (req.query.key && req.query.key === process.env.STATS_KEY) {
     const data = await redis?.lrange('jpd:nonTrivialJudges', 0, -1);
-    return res.json(data);
+    res.json(data);
   } else {
-    return res.status(403).json({ error: 'Access Denied' });
+    res.status(403).json({ error: 'Access Denied' });
   }
 });
 
@@ -158,6 +158,6 @@ app.post('/createRoom', (req, res) => {
   res.json({ name: name.slice(1) });
 });
 
-app.get('/generateName', async (req, res) => {
-  return res.send(makeUserName());
+app.get('/generateName', (req, res) => {
+  res.send(makeUserName());
 });
