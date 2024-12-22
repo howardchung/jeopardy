@@ -47,7 +47,6 @@ const loadSavedSettings = (): GameSettings => {
 export class Jeopardy extends React.Component<{
   socket: Socket;
   participants: User[];
-  nameMap: StringDict;
 }> {
   public state = {
     game: null as any,
@@ -113,7 +112,7 @@ export class Jeopardy extends React.Component<{
     //     const random =p
     //       selectionText[Math.floor(Math.random() * selectionText.length)];
     //     this.sayText(
-    //       random.replace('{name}', this.props.nameMap[this.state.game.picker])
+    //       random.replace('{name}', this.state.game.picker)
     //     );
     //   }
     // });
@@ -280,10 +279,10 @@ export class Jeopardy extends React.Component<{
   //     await new Promise((resolve) => setTimeout(resolve, 1000));
   //     for (let i = 0; i < this.props.participants.length; i++) {
   //       const p = this.props.participants[i];
-  //       const name = this.props.nameMap[p.id];
+  //       const name = p.name;
   //       const player = document.createElement('img');
   //       player.src =
-  //         getDefaultPicture(this.props.nameMap[p.id], getColorHex(p.id));
+  //         getDefaultPicture(p.name, getColorHex(p.id));
   //       player.style.width = '200px';
   //       player.style.height = '200px';
   //       player.style.position = 'absolute';
@@ -478,7 +477,6 @@ export class Jeopardy extends React.Component<{
         {this.state.showJudgingModal && (
           <BulkJudgeModal
             game={game}
-            nameMap={this.props.nameMap}
             participants={participants}
             bulkJudge={this.bulkJudgeAnswer}
             onClose={() => this.setState({ showJudgingModal: false })}
@@ -755,15 +753,15 @@ export class Jeopardy extends React.Component<{
                       <div id="endgame">
                         <h1 style={{ color: 'white' }}>Winner!</h1>
                         <div style={{ display: 'flex' }}>
-                          {this.getWinners().map((winner: string) => (
+                          {this.getWinners().map((winnerId: string) => (
                             <img
-                              key={winner}
+                              key={winnerId}
                               alt=""
                               style={{ width: '200px', height: '200px' }}
                               src={
                                 getDefaultPicture(
-                                  this.props.nameMap[winner],
-                                  getColorHex(winner),
+                                  participants.find(p => p.id === winnerId)?.name ?? '',
+                                  getColorHex(winnerId),
                                 )
                               }
                             />
@@ -786,7 +784,7 @@ export class Jeopardy extends React.Component<{
                           alt=""
                           src={
                             getDefaultPicture(
-                              this.props.nameMap[p.id],
+                              p.name ?? '',
                               getColorHex(p.id),
                             )
                           }
@@ -806,7 +804,7 @@ export class Jeopardy extends React.Component<{
                           }}
                         >
                           <div
-                            title={this.props.nameMap[p.id] || p.id}
+                            title={p.name || p.id}
                             style={{
                               width: '100%',
                               backdropFilter: 'brightness(80%)',
@@ -817,7 +815,7 @@ export class Jeopardy extends React.Component<{
                               display: 'inline-block',
                             }}
                           >
-                            {this.props.nameMap[p.id] || p.id}
+                            {p.name || p.id}
                           </div>
                         </div>
                         {game && p.id in game.wagers ? (
@@ -1145,14 +1143,12 @@ const BulkJudgeModal = ({
   onClose,
   game,
   participants,
-  nameMap,
   bulkJudge,
   getBuzzOffset,
 }: {
   onClose: () => void;
   game: any;
   participants: User[];
-  nameMap: StringDict;
   bulkJudge: (judges: {id: string, correct: boolean | null}[]) => void;
   getBuzzOffset: (id: string) => number;
 }) => {
@@ -1207,7 +1203,7 @@ const BulkJudgeModal = ({
                           style={{ width: '30px' }}
                           alt=""
                           src={getDefaultPicture(
-                            nameMap[p.id],
+                            p.name ?? '',
                             getColorHex(p.id),
                           )}
                         />

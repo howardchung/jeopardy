@@ -4,9 +4,7 @@ type BooleanDict = { [key: string]: boolean | null };
 
 interface User {
   id: string;
-  isVideoChat?: boolean;
-  isScreenShare?: boolean;
-  isController?: boolean;
+  name?: string;
 }
 
 interface ChatMessage {

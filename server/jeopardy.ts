@@ -177,10 +177,24 @@ export class Jeopardy {
 
     io.of(this.roomId).on('connection', (socket: Socket) => {
       this.jpd.public.scores[socket.id] = 0;
-      this.roster.push({ id: socket.id });
+      this.roster.push({ id: socket.id, name: undefined });
 
       this.emitState();
       this.sendRoster();
+
+      socket.on('CMD:name', (data: string) => {
+        if (!data) {
+          return;
+        }
+        if (data && data.length > 100) {
+          return;
+        }
+        const target = this.roster.find(p => p.id === socket.id);
+        if (target) {
+          target.name = data;
+          this.sendRoster();
+        }
+      });
 
       // socket.on('JPD:cmdIntro', () => {
       //   this.io.of(this.roomId).emit('JPD:playIntro');
@@ -497,6 +511,7 @@ export class Jeopardy {
     // Show the correct answer in the game log
     this.room.addChatMessage(undefined, {
       id: '',
+      name: 'System',
       cmd: 'answer',
       msg: this.jpd.public.currentAnswer,
     });
@@ -558,7 +573,7 @@ export class Jeopardy {
       const scores = Object.entries(this.jpd.public.scores);
       scores.sort((a, b) => b[1] - a[1]);
       const scoresNames = scores.map((score) => [
-        this.room.nameMap[score[0]],
+        this.roster.find(p => p.id === score[0])?.name,
         score[1],
       ]);
       redis?.lpush('jpd:results', JSON.stringify(scoresNames));
@@ -719,9 +734,13 @@ export class Jeopardy {
     if (socket && correct != null) {
       const msg = {
         id: socket.id,
+        // name of judge
+        name: this.roster.find(p => p.id === socket.id)?.name,
         cmd: 'judge',
         msg: JSON.stringify({
           id: id,
+          // name of person being judged
+          name: this.roster.find(p => p.id === id)?.name,
           answer: this.jpd.public.answers[id],
           correct,
           delta: correct ? delta : -delta,

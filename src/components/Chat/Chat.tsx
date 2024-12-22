@@ -6,7 +6,6 @@ import { formatTimestamp, getColorHex, getDefaultPicture } from '../../utils';
 
 interface ChatProps {
   chat: ChatMessage[];
-  nameMap: StringDict;
   socket: Socket;
   scrollTimestamp: number;
   className?: string;
@@ -81,10 +80,10 @@ export class Chat extends React.Component<ChatProps> {
     } else if (cmd === 'pause') {
       return `paused the video at ${formatTimestamp(msg)}`;
     } else if (cmd === 'judge') {
-      const { id, correct, answer, delta} = JSON.parse(msg);
+      const { id, correct, answer, delta, name } = JSON.parse(msg);
       return (
         <span style={{ color: correct ? '#21ba45' : '#db2828' }}>{`ruled ${
-          this.props.nameMap[id]
+          name
         } ${correct ? 'correct' : 'incorrect'}: ${answer} (${delta >= 0 ? '+' : ''}${delta})`}</span>
       );
     } else if (cmd === 'answer') {
@@ -117,7 +116,6 @@ export class Chat extends React.Component<ChatProps> {
               <ChatMessage
                 key={msg.timestamp + msg.id}
                 {...msg}
-                nameMap={this.props.nameMap}
                 formatMessage={this.formatMessage}
               />
             ))}
@@ -162,21 +160,21 @@ export class Chat extends React.Component<ChatProps> {
 
 const ChatMessage = ({
   id,
+  name,
   picture,
   timestamp,
   cmd,
   msg,
-  nameMap,
   formatMessage,
 }: any) => {
   return (
     <Comment>
       <Comment.Avatar
-        src={getDefaultPicture(nameMap[id], getColorHex(id))}
+        src={getDefaultPicture(name, getColorHex(id))}
       />
       <Comment.Content>
         <Comment.Author as="a" className="light">
-          {nameMap[id] || id}
+          {name || id}
         </Comment.Author>
         <Comment.Metadata className="dark">
           <div>{new Date(timestamp).toLocaleTimeString()}</div>

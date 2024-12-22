@@ -13,7 +13,6 @@ interface AppState {
   participants: User[];
   rosterUpdateTS: Number;
   chat: ChatMessage[];
-  nameMap: StringDict;
   myName: string;
   myPicture: string;
   scrollTimestamp: number;
@@ -26,7 +25,6 @@ export default class App extends React.Component<null, AppState> {
     participants: [],
     rosterUpdateTS: Number(new Date()),
     chat: [],
-    nameMap: {},
     myName: '',
     myPicture: '',
     scrollTimestamp: 0,
@@ -81,9 +79,6 @@ export default class App extends React.Component<null, AppState> {
         scrollTimestamp: Number(new Date()),
       });
     });
-    socket.on('REC:nameMap', (data: StringDict) => {
-      this.setState({ nameMap: data });
-    });
     socket.on('roster', (data: User[]) => {
       this.setState({ participants: data, rosterUpdateTS: Number(new Date()) });
     });
@@ -115,7 +110,6 @@ export default class App extends React.Component<null, AppState> {
                   <Jeopardy
                     socket={this.socket}
                     participants={this.state.participants}
-                    nameMap={this.state.nameMap}
                   />
                 )}
               </Grid.Column>
@@ -145,7 +139,6 @@ export default class App extends React.Component<null, AppState> {
                 <Divider inverted horizontal></Divider>
                 <Chat
                   chat={this.state.chat}
-                  nameMap={this.state.nameMap}
                   socket={this.socket}
                   scrollTimestamp={this.state.scrollTimestamp}
                   getMediaDisplayName={() => ''}
