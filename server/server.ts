@@ -85,7 +85,6 @@ app.get('/ping', (req, res) => {
 app.get('/stats', async (req, res) => {
   if (req.query.key && req.query.key === process.env.STATS_KEY) {
     const roomData: any[] = [];
-    const now = Number(new Date());
     let currentUsers = 0;
     rooms.forEach((room) => {
       const obj = {

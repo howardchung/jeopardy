@@ -37,16 +37,16 @@ export async function getRedisCountHour(prefix: string) {
 }
 
 function getStartOfDay() {
-  const now = Number(new Date());
+  const now = Date.now();
   return now - (now % 86400000);
 }
 
 function getStartOfHour() {
-  const now = Number(new Date());
+  const now = Date.now();
   return now - (now % 3600000);
 }
 
 function getStartOfMinute() {
-  const now = Number(new Date());
+  const now = Date.now();
   return now - (now % 60000);
 }
