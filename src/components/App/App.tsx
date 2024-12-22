@@ -47,7 +47,8 @@ export default class App extends React.Component<null, AppState> {
   init = () => {
     // Load room ID from url
     let roomId = '/default';
-    let query = window.location.hash.substring(1);
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('game');
     if (query) {
       roomId = '/' + query;
     }

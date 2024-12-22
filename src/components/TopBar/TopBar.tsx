@@ -14,8 +14,9 @@ export class NewRoomButton extends React.Component<{ size?: string }> {
     });
     const data = await response.json();
     const { name } = data;
-    window.location.hash = '#' + name;
-    window.location.reload();
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set("game", name);
+    window.location.search = searchParams.toString();
   };
   render() {
     return (
@@ -46,7 +47,7 @@ export class JeopardyTopBar extends React.Component<{ hideNewRoom?: boolean }> {
     });
     const data = await response.json();
     const { name } = data;
-    window.location.hash = '#' + name;
+    window.location.pathname = '/game/' + name;
     window.location.reload();
   };
 
