@@ -1,7 +1,6 @@
 type StringDict = { [key: string]: string };
 type NumberDict = { [key: string]: number };
 type BooleanDict = { [key: string]: boolean | null };
-type PCDict = { [key: string]: RTCPeerConnection };
 
 interface User {
   id: string;
@@ -17,3 +16,14 @@ interface ChatMessage {
   cmd: string;
   msg: string;
 }
+
+type GameOptions = {
+  number?: string,
+  filter?: string,
+  makeMeHost?: boolean,
+  allowMultipleCorrect?: boolean,
+  // timeout to use for DD wagers and question answers
+  answerTimeout?: number,
+  // timeout to use for final wagers and answers (all players participate)
+  finalTimeout?: number,
+};

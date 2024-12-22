@@ -1,12 +1,5 @@
 import { Jeopardy } from './jeopardy';
 import { Socket, Server } from 'socket.io';
-import Redis from 'ioredis';
-import { redisCount } from './utils/redis';
-
-// let redis = undefined as unknown as Redis;
-// if (process.env.REDIS_URL) {
-//   redis = new Redis(process.env.REDIS_URL);
-// }
 
 export class Room {
   public roster: User[] = [];
@@ -35,14 +28,10 @@ export class Room {
     }
 
     io.of(roomId).on('connection', (socket: Socket) => {
-      // console.log(socket.id);
-      this.roster.push({ id: socket.id });
-      redisCount('connectStarts');
-
+      // Jeopardy code takes care of sending roster updates since it requires sorted order by score
       socket.emit('REC:nameMap', this.nameMap);
       socket.emit('REC:pictureMap', this.pictureMap);
       socket.emit('chatinit', this.chat);
-      io.of(roomId).emit('roster', this.roster);
 
       socket.on('CMD:name', (data: string) => {
         if (!data) {
@@ -75,13 +64,6 @@ export class Room {
       //   const chatMsg = { id: socket.id, msg: data };
       //   this.addChatMessage(socket, chatMsg);
       // });
-
-      socket.on('disconnect', () => {
-        let index = this.roster.findIndex((user) => user.id === socket.id);
-        this.roster.splice(index, 1)[0];
-        io.of(roomId).emit('roster', this.roster);
-        // delete nameMap[socket.id];
-      });
     });
   }
 

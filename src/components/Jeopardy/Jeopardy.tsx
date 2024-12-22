@@ -12,34 +12,37 @@ import {
   TableCell,
   TableHeader,
   TableHeaderCell,
+  Checkbox,
 } from 'semantic-ui-react';
 import './Jeopardy.css';
 import { getDefaultPicture, getColorHex, shuffle, getColor } from '../../utils';
 import { Socket } from 'socket.io';
 import ReactMarkdown from 'react-markdown';
 
-const scoringOptions = [
-  {
-    key: 'standard',
-    value: 'standard',
-    text: 'Standard',
-    title:
-      'Same as the TV show. First correct answer scores the points. Incorrect answers before the correct answer lose points. The last correct answer picks the next question.',
-  },
-  {
-    key: 'coryat',
-    value: 'coryat',
-    text: 'Coryat',
-    title:
-      'All players get a chance to score/lose points. All players can pick the next question. Daily Doubles are disabled.',
-  },
-];
-
 const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
 const boardFill = new Audio('/jeopardy/jeopardy-board-fill.mp3');
 const think = new Audio('/jeopardy/jeopardy-think.mp3');
 const timesUp = new Audio('/jeopardy/jeopardy-times-up.mp3');
 const rightAnswer = new Audio('/jeopardy/jeopardy-rightanswer.mp3');
+
+type GameSettings = {
+  answerTimeout?: number,
+  finalTimeout?: number,
+  makeMeHost?: boolean,
+  allowMultipleCorrect?: boolean,
+};
+
+const loadSavedSettings = (): GameSettings => {
+  try {
+    const saved = window.localStorage.getItem('jeopardy-gameSettings');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.log(e);
+  }
+  return {};
+};
 
 export class Jeopardy extends React.Component<{
   socket: Socket;
@@ -62,6 +65,8 @@ export class Jeopardy extends React.Component<{
     buzzFrozen: false,
     showCustomModal: false,
     showJudgingModal: false,
+    showSettingsModal: false,
+    settings: loadSavedSettings(),
   };
   buzzLock = 0;
 
@@ -214,17 +219,17 @@ export class Jeopardy extends React.Component<{
   };
 
   newGame = async (
-    episode: string | null,
-    filter: string | null,
+    options: {
+      number?: string,
+      filter?: string,
+    },
     customGame?: string,
   ) => {
     this.setState({ game: null });
-    // optionally send an episode number
-    this.props.socket.emit('JPD:start', episode, filter, customGame);
-  };
-
-  changeScoring = (scoreMethod: string) => {
-    this.props.socket.emit('JPD:scoring', scoreMethod);
+    // optionally send an episode number or game type filter
+    // combine with other custom settings configured by user
+    const combined: GameOptions = { number: options.number, filter: options.filter, ...this.state.settings };
+    this.props.socket.emit('JPD:start', combined, customGame);
   };
 
   customGame = () => {
@@ -246,7 +251,7 @@ export class Jeopardy extends React.Component<{
       reader.readAsText(file);
       reader.onload = (e) => {
         let content = e.target?.result;
-        this.newGame(null, null, content as string);
+        this.newGame({}, content as string);
         this.setState({ showCustomModal: false });
       };
     });
@@ -419,10 +424,18 @@ export class Jeopardy extends React.Component<{
     }
   };
 
+  saveSettings = (settings: GameSettings) => {
+    // serialize to localStorage so settings persist on reload
+    window.localStorage.setItem('jeopardy-gameSettings', JSON.stringify(settings));
+    // update state
+    this.setState({ settings });
+  }
+
   render() {
     const game = this.state.game;
     const categories = this.getCategories();
     const participants = this.props.participants;
+    const canJudge = !game?.host || this.props.socket.id === game?.host;
     return (
       <>
         {this.state.showCustomModal && (
@@ -472,6 +485,13 @@ export class Jeopardy extends React.Component<{
             bulkJudge={this.bulkJudgeAnswer}
             onClose={() => this.setState({ showJudgingModal: false })}
             getBuzzOffset={this.getBuzzOffset}
+          />
+        )}
+        {this.state.showSettingsModal && (
+          <SettingsModal
+            onClose={() => this.setState({showSettingsModal: false})}
+            onSubmit={this.saveSettings}
+            settings={this.state.settings}
           />
         )}
         <div
@@ -710,7 +730,7 @@ export class Jeopardy extends React.Component<{
                               </Button>
                             </div>
                           )}
-                          {game.currentAnswer && (
+                          {game.currentAnswer && canJudge && (
                             <div
                               style={{
                                 position: 'absolute',
@@ -824,9 +844,15 @@ export class Jeopardy extends React.Component<{
                                 name="pointing up"
                               />
                             ) : null}
+                            {game.host && game.host === p.id ? (
+                              <Icon
+                              title="Game host"
+                              name="star"
+                            />
+                            ) : null}
                           </div>
                         )}
-                        {game && p.id === game.currentJudgeAnswer ? (
+                        {game && p.id === game.currentJudgeAnswer && canJudge ? (
                           <div className="judgeButtons">
                             <Popup
                               content="Correct"
@@ -952,7 +978,7 @@ export class Jeopardy extends React.Component<{
                           if (item.value === 'custom') {
                             this.setState({ showCustomModal: true });
                           } else {
-                            this.newGame(null, item.value);
+                            this.newGame({ filter: item.value ?? undefined });
                           }
                         }}
                       >
@@ -966,16 +992,16 @@ export class Jeopardy extends React.Component<{
                   style={{ marginRight: '.25em' }}
                   label="Game #"
                   value={this.state.localEpNum}
-                  onChange={(e) =>
-                    this.setState({ localEpNum: e.target.value })
+                  onChange={(e, data) =>
+                    this.setState({ localEpNum: data.value })
                   }
                   onKeyPress={(e: any) =>
                     e.key === 'Enter' &&
-                    this.newGame(this.state.localEpNum, null)
+                    this.newGame({number: this.state.localEpNum})
                   }
                   icon={
                     <Icon
-                      onClick={() => this.newGame(this.state.localEpNum, null)}
+                      onClick={() => this.newGame({number: this.state.localEpNum})}
                       name="arrow right"
                       inverted
                       circular
@@ -1023,30 +1049,11 @@ export class Jeopardy extends React.Component<{
                   <Icon name="book" />
                   {this.state.readingDisabled ? 'Reading off' : 'Reading on'}
                 </Button>
-                <Dropdown
-                  button
-                  className="icon"
-                  labeled
-                  icon="calculator"
-                  text={
-                    scoringOptions.find(
-                      (option) => option.value === this.state.game?.scoring,
-                    )?.text
-                  }
-                >
-                  <Dropdown.Menu>
-                    {scoringOptions.map((item) => (
-                      <Dropdown.Item
-                        key={item.key}
-                        onClick={() => this.changeScoring(item.value)}
-                        title={item.title}
-                      >
-                        {item.text}
-                      </Dropdown.Item>
-                    ))}
-                  </Dropdown.Menu>
-                </Dropdown>
-                <Button
+                <Button onClick={() => this.setState({ showSettingsModal: true })} icon labelPosition="left">
+                  <Icon name="cog" />
+                  Settings
+                </Button>
+                {canJudge && <Button
                   onClick={() =>
                     this.props.socket.emit('JPD:undo')
                   }
@@ -1055,7 +1062,7 @@ export class Jeopardy extends React.Component<{
                 >
                   <Icon name="undo" />
                   Undo Judging
-                </Button>
+                </Button>}
                 {/* <Button
                   onClick={() => this.props.socket.emit('JPD:cmdIntro')}
                   icon
@@ -1235,6 +1242,55 @@ const BulkJudgeModal = ({
           }}
         >
           Bulk Judge
+        </Button>
+      </Modal.Actions>
+    </Modal>
+  );
+};
+
+const SettingsModal = ({
+  onClose,
+  onSubmit,
+  settings,
+}: {
+  onClose: () => void;
+  onSubmit: (settings: GameSettings) => void;
+  settings: GameSettings;
+}) => {
+  const [answerTimeout, setAnswerTimeout] = useState<number | undefined>(settings.answerTimeout);
+  const [finalTimeout, setFinalTimeout] = useState<number | undefined>(settings.finalTimeout);
+  const [makeMeHost, setMakeMeHost] = useState<boolean | undefined>(settings.makeMeHost);
+  const [allowMultipleCorrect, setAllowMultipleCorrect] = useState<boolean | undefined>(settings.allowMultipleCorrect);
+  return (
+    <Modal open onClose={onClose}>
+      <Modal.Header>Settings</Modal.Header>
+      <Modal.Content>
+        <h4>Settings will be applied to any games you create.</h4>
+        <Checkbox checked={makeMeHost} onChange={(e, props) => setMakeMeHost(props.checked)} label="Make me the host (Only you will be able to select questions and make judging decisions)" slider={true} />
+        <Checkbox checked={allowMultipleCorrect} onChange={(e, props) => setAllowMultipleCorrect(props.checked)} label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)" slider={true} />
+        <div style={{ display: 'flex', gap: '2px' }}>
+        <Input style={{ width: 60 }} type="number" value={answerTimeout} onChange={(e, data) => setAnswerTimeout(Number(data.value))} size="mini" />
+        Seconds for regular answers and Daily Double wagers (Default: 20)
+        </div>
+        <div style={{ display: 'flex', gap: '2px' }}>
+        <Input style={{ width: 60 }} type="number" value={finalTimeout} onChange={(e, data) => setFinalTimeout(Number(data.value))} size="mini" />
+        Seconds for Final Jeopardy answers and wagers (Default: 30)
+        </div>
+      </Modal.Content>
+      <Modal.Actions>
+        <Button
+          onClick={() => {
+            const settings: GameSettings = {
+              makeMeHost: Boolean(makeMeHost),
+              allowMultipleCorrect: Boolean(allowMultipleCorrect),
+              answerTimeout: Number(answerTimeout),
+              finalTimeout: Number(finalTimeout),
+            };
+            onSubmit(settings);
+            onClose();
+          }}
+        >
+          Save
         </Button>
       </Modal.Actions>
     </Modal>
