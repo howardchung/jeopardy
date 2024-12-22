@@ -3,8 +3,13 @@ import Redis from 'ioredis';
 import { Room } from './room';
 //@ts-ignore
 import Papa from 'papaparse';
+import { gunzipSync } from 'zlib';
 import { redisCount } from './utils/redis';
-const jData = require('../jeopardy.json');
+import fs from 'fs';
+
+console.time('load');
+const jData = JSON.parse(gunzipSync(fs.readFileSync('./jeopardy.json.gz')).toString());
+console.timeEnd('load');
 
 let redis = undefined as unknown as Redis;
 if (process.env.REDIS_URL) {

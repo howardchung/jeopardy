@@ -84,5 +84,5 @@ all.forEach((row) => {
     val: row.value,
   });
 });
-fs.writeFileSync('./jeopardy.json', JSON.stringify(output));
+fs.writeFileSync('./jeopardy.json.gz', gzipSync(JSON.stringify(output)));
 console.log('%s eps, %s clues', epCount, qCount);

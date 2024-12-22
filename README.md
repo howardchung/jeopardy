@@ -35,7 +35,7 @@ A website for playing Jeopardy! together with friends over the Internet. Designe
 ## Updating Clues:
 
 - The j-archive-parser project needs to be inside this directory
-- Run that to extract CSV data, then run `node dev/parseJArchiveCsv.js` to generate the single `jeopardy.json` file.
+- Run that to extract CSV data, then run `node dev/parseJArchiveCsv.js` to generate the single `jeopardy.json.gz` file.
 
 ## Environment Variables
 
