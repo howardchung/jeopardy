@@ -27,6 +27,7 @@ export class NewRoomButton extends React.Component<{ size?: string }> {
             color="blue"
             size={this.props.size as any}
             icon
+            fluid
             labelPosition="left"
             onClick={this.createRoom}
             className="toolButton"
@@ -41,16 +42,6 @@ export class NewRoomButton extends React.Component<{ size?: string }> {
 }
 
 export class JeopardyTopBar extends React.Component<{ hideNewRoom?: boolean }> {
-  createRoom = async () => {
-    const response = await window.fetch(serverPath + '/createRoom', {
-      method: 'POST',
-    });
-    const data = await response.json();
-    const { name } = data;
-    window.location.pathname = '/game/' + name;
-    window.location.reload();
-  };
-
   render() {
     return (
       <React.Fragment>
@@ -112,25 +103,7 @@ export class JeopardyTopBar extends React.Component<{ hideNewRoom?: boolean }> {
               marginLeft: 'auto',
             }}
           >
-            {!this.props.hideNewRoom && (
-              <Popup
-                content="Create a new room with a random URL that you can share with friends"
-                trigger={
-                  <Button
-                    fluid
-                    color="blue"
-                    size="medium"
-                    icon
-                    labelPosition="left"
-                    onClick={this.createRoom}
-                    className="toolButton"
-                  >
-                    <Icon name="certificate" />
-                    New Room
-                  </Button>
-                }
-              />
-            )}
+            {!this.props.hideNewRoom && <NewRoomButton />}
           </div>
         </div>
       </React.Fragment>
