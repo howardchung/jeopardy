@@ -5,7 +5,6 @@ export class Room {
   public roster: User[] = [];
   private chat: ChatMessage[] = [];
   public nameMap: StringDict = {};
-  private pictureMap: StringDict = {};
   private io: Server;
   public roomId: string;
   public creationTime: Date = new Date();
@@ -30,7 +29,6 @@ export class Room {
     io.of(roomId).on('connection', (socket: Socket) => {
       // Jeopardy code takes care of sending roster updates since it requires sorted order by score
       socket.emit('REC:nameMap', this.nameMap);
-      socket.emit('REC:pictureMap', this.pictureMap);
       socket.emit('chatinit', this.chat);
 
       socket.on('CMD:name', (data: string) => {
@@ -42,13 +40,6 @@ export class Room {
         }
         this.nameMap[socket.id] = data;
         io.of(roomId).emit('REC:nameMap', this.nameMap);
-      });
-      socket.on('CMD:picture', (data: string) => {
-        if (data && data.length > 10000) {
-          return;
-        }
-        this.pictureMap[socket.id] = data;
-        io.of(roomId).emit('REC:pictureMap', this.pictureMap);
       });
       // socket.on('CMD:chat', (data: string) => {
       //   if (data && data.length > 65536) {
@@ -70,7 +61,6 @@ export class Room {
   serialize = () => {
     return JSON.stringify({
       nameMap: this.nameMap,
-      pictureMap: this.pictureMap,
       chat: this.chat,
       creationTime: this.creationTime,
       jpd: this.jpd,
@@ -84,9 +74,6 @@ export class Room {
     }
     if (roomObj.nameMap) {
       this.nameMap = roomObj.nameMap;
-    }
-    if (roomObj.pictureMap) {
-      this.pictureMap = roomObj.pictureMap;
     }
     if (roomObj.creationTime) {
       this.creationTime = new Date(roomObj.creationTime);

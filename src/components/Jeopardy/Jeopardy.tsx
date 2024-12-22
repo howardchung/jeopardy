@@ -48,7 +48,6 @@ export class Jeopardy extends React.Component<{
   socket: Socket;
   participants: User[];
   nameMap: StringDict;
-  pictureMap: StringDict;
 }> {
   public state = {
     game: null as any,
@@ -284,8 +283,7 @@ export class Jeopardy extends React.Component<{
   //       const name = this.props.nameMap[p.id];
   //       const player = document.createElement('img');
   //       player.src =
-  //         getDefaultPicture(this.props.nameMap[p.id], getColorHex(p.id)) ||
-  //         this.props.pictureMap[p.id];
+  //         getDefaultPicture(this.props.nameMap[p.id], getColorHex(p.id));
   //       player.style.width = '200px';
   //       player.style.height = '200px';
   //       player.style.position = 'absolute';
@@ -766,7 +764,7 @@ export class Jeopardy extends React.Component<{
                                 getDefaultPicture(
                                   this.props.nameMap[winner],
                                   getColorHex(winner),
-                                ) || this.props.pictureMap[winner]
+                                )
                               }
                             />
                           ))}
@@ -787,7 +785,6 @@ export class Jeopardy extends React.Component<{
                         <img
                           alt=""
                           src={
-                            this.props.pictureMap[p.id] ||
                             getDefaultPicture(
                               this.props.nameMap[p.id],
                               getColorHex(p.id),

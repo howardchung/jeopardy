@@ -7,7 +7,6 @@ import { formatTimestamp, getColorHex, getDefaultPicture } from '../../utils';
 interface ChatProps {
   chat: ChatMessage[];
   nameMap: StringDict;
-  pictureMap: StringDict;
   socket: Socket;
   scrollTimestamp: number;
   className?: string;
@@ -118,7 +117,6 @@ export class Chat extends React.Component<ChatProps> {
               <ChatMessage
                 key={msg.timestamp + msg.id}
                 {...msg}
-                pictureMap={this.props.pictureMap}
                 nameMap={this.props.nameMap}
                 formatMessage={this.formatMessage}
               />
@@ -169,13 +167,12 @@ const ChatMessage = ({
   cmd,
   msg,
   nameMap,
-  pictureMap,
   formatMessage,
 }: any) => {
   return (
     <Comment>
       <Comment.Avatar
-        src={pictureMap[id] || getDefaultPicture(nameMap[id], getColorHex(id))}
+        src={getDefaultPicture(nameMap[id], getColorHex(id))}
       />
       <Comment.Content>
         <Comment.Author as="a" className="light">
