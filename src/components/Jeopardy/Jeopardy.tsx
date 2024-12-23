@@ -20,6 +20,7 @@ import { getDefaultPicture, getColorHex, shuffle, getColor, generateName, server
 import { io, type Socket } from 'socket.io-client';
 import { type AppState } from '../App/App';
 import ReactMarkdown from 'react-markdown';
+import { type PublicGameState } from '../../../server/jeopardy';
 
 const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
 const boardFill = new Audio('/jeopardy/jeopardy-board-fill.mp3');
@@ -61,7 +62,7 @@ export class Jeopardy extends React.Component<{
   addChatMessage: (data: ChatMessage) => void;
 }> {
   public state = {
-    game: null as any,
+    game: undefined as (PublicGameState | undefined),
     isIntroPlaying: false,
     localAnswer: '',
     localWager: '',
@@ -123,7 +124,7 @@ export class Jeopardy extends React.Component<{
     socket.on('chatinit', (data: any) => {
       this.props.setAppState({ chat: data, scrollTimestamp: Date.now() });
     });
-    socket.on('JPD:state', (game: any) => {
+    socket.on('JPD:state', (game: PublicGameState) => {
       this.setState({ game, localEpNum: game.epNum });
     });
     // socket.on('JPD:playIntro', () => {
@@ -252,7 +253,7 @@ export class Jeopardy extends React.Component<{
       }
       if (e.key === 'p') {
         e.preventDefault();
-        if (this.state.game.canBuzz) {
+        if (this.state.game?.canBuzz) {
           this.submitAnswer(null);
         }
       }
@@ -410,11 +411,11 @@ export class Jeopardy extends React.Component<{
   };
 
   judgeAnswer = (id: string, correct: boolean | null) => {
-    this.socket?.emit('JPD:judge', { currentQ: this.state.game.currentQ, id, correct });
+    this.socket?.emit('JPD:judge', { currentQ: this.state.game?.currentQ, id, correct });
   };
 
   bulkJudgeAnswer = (data: {id: string, correct: boolean | null}[]) => {
-    this.socket?.emit('JPD:bulkJudge', data.map(d => ({...d, currentQ: this.state.game.currentQ })));
+    this.socket?.emit('JPD:bulkJudge', data.map(d => ({...d, currentQ: this.state.game?.currentQ })));
   };
 
   getCategories = () => {
@@ -434,7 +435,7 @@ export class Jeopardy extends React.Component<{
     const max =
       Math.max(...Object.values<number>(this.state.game?.scores || {})) || 0;
     return this.props.participants
-      .filter((p) => (this.state.game.scores[p.id] || 0) === max)
+      .filter((p) => (this.state.game?.scores[p.id] || 0) === max)
       .map((p) => p.id);
   };
 
@@ -447,7 +448,7 @@ export class Jeopardy extends React.Component<{
 
   onBuzz = () => {
     const game = this.state.game;
-    if (game.canBuzz && !this.buzzLock && !this.state.buzzFrozen) {
+    if (game?.canBuzz && !this.buzzLock && !this.state.buzzFrozen) {
       this.socket?.emit('JPD:buzz');
     } else {
       // Freeze the buzzer for 0.25 seconds
@@ -558,7 +559,7 @@ export class Jeopardy extends React.Component<{
                         <React.Fragment key={i}>
                           {categories.map((cat, j) => {
                             const id = `${j + 1}_${i + 1}`;
-                            const clue = game.board[id];
+                            const clue = game?.board[id];
                             return (
                               <div
                                 key={id}
@@ -681,7 +682,7 @@ export class Jeopardy extends React.Component<{
                             !this.state.localAnswerSubmitted &&
                             this.socket &&
                             game.buzzes[this.socket.id] &&
-                            game.questionDuration ? (
+                            game.questionEndTS ? (
                               <Input
                                 autoFocus
                                 label="Answer"
@@ -740,18 +741,18 @@ export class Jeopardy extends React.Component<{
                           <div className={`answer`} style={{ height: '30px' }}>
                             {game.currentAnswer}
                           </div>
-                          {Boolean(game.playClueDuration) && (
-                            <TimerBar duration={game.playClueDuration} />
+                          {Boolean(game.playClueEndTS) && (
+                            <TimerBar endTS={game.playClueEndTS} />
                           )}
-                          {Boolean(game.questionDuration) && (
+                          {Boolean(game.questionEndTS) && (
                             <TimerBar
-                              duration={game.questionDuration}
+                              endTS={game.questionEndTS}
                               secondary
                               submitAnswer={this.submitAnswer}
                             />
                           )}
-                          {Boolean(game.wagerDuration) && (
-                            <TimerBar duration={game.wagerDuration} secondary />
+                          {Boolean(game.wagerEndTS) && (
+                            <TimerBar endTS={game.wagerEndTS} secondary />
                           )}
                           {game.canNextQ && (
                             <div
@@ -796,7 +797,7 @@ export class Jeopardy extends React.Component<{
                         </div>
                       </div>
                     )}
-                    {Boolean(game) && game.round === 'end' && (
+                    {game && game.round === 'end' && (
                       <div id="endgame">
                         <h1 style={{ color: 'white' }}>Winner!</h1>
                         <div style={{ display: 'flex' }}>
@@ -950,7 +951,7 @@ export class Jeopardy extends React.Component<{
                       </div>
                       <div
                         className={`points ${
-                          game?.scores[p.id] < 0
+                          game && game.scores[p.id] < 0
                             ? 'negative'
                             : ''
                         }`}
@@ -1138,7 +1139,7 @@ export class Jeopardy extends React.Component<{
 }
 
 class TimerBar extends React.Component<{
-  duration: number;
+  endTS: number;
   secondary?: boolean;
   submitAnswer?: Function;
 }> {
@@ -1149,9 +1150,12 @@ class TimerBar extends React.Component<{
       this.setState({ width: '100%' });
     });
     if (this.props.submitAnswer) {
+      // Submit whatever's in the box 0.5s before expected timeout
+      // Bit hacky, but to fix we either need to submit updates on each character
+      // Or have a separate step where the server instructs all clients to submit whatever is in box and accepts it
       this.submitTimeout = window.setTimeout(
         this.props.submitAnswer,
-        this.props.duration - 500,
+        (this.props.endTS - Date.now()) - 500,
       );
     }
   }
@@ -1161,6 +1165,7 @@ class TimerBar extends React.Component<{
     }
   }
   render() {
+    const duration = this.props.endTS - Date.now();
     return (
       <div
         style={{
@@ -1170,7 +1175,7 @@ class TimerBar extends React.Component<{
           height: '10px',
           width: this.state.width,
           backgroundColor: this.props.secondary ? '#16AB39' : '#0E6EB8',
-          transition: `${this.props.duration / 1000}s width linear`,
+          transition: `${duration / 1000}s width linear`,
         }}
       />
     );
@@ -1198,10 +1203,9 @@ const BulkJudgeModal = ({
   game,
   participants,
   bulkJudge,
-  getBuzzOffset,
 }: {
   onClose: () => void;
-  game: any;
+  game: PublicGameState | undefined;
   participants: User[];
   bulkJudge: (judges: {id: string, correct: boolean | null}[]) => void;
   getBuzzOffset: (id: string) => number;
@@ -1272,7 +1276,7 @@ const BulkJudgeModal = ({
       <Modal.Actions>
         <Button
           onClick={() => {
-            const answers = Object.entries<string>(game?.answers);
+            const answers = Object.entries<string>(game?.answers || {});
             // Assemble the bulk judges
             const arr = answers.map((ans) => {
               // Look up the answer and decision
