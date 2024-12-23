@@ -1,7 +1,3 @@
-type StringDict = { [key: string]: string };
-type NumberDict = { [key: string]: number };
-type BooleanDict = { [key: string]: boolean | null };
-
 interface User {
   id: string;
   name?: string;

@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableHeaderCell,
   Checkbox,
+  Header,
 } from 'semantic-ui-react';
 import './Jeopardy.css';
 import { getDefaultPicture, getColorHex, shuffle, getColor, generateName, serverPath, getOrCreateClientId } from '../../utils';
@@ -76,6 +77,7 @@ export class Jeopardy extends React.Component<{
     showJudgingModal: false,
     showSettingsModal: false,
     settings: loadSavedSettings(),
+    overlayMsg: '',
   };
   buzzLock = 0;
   socket: Socket | undefined = undefined;
@@ -99,16 +101,15 @@ export class Jeopardy extends React.Component<{
     this.socket = socket;
     this.props.setAppState({ socket });
     socket.on('connect', async () => {
-      this.setState({ state: 'connected' });
       // Load username from localstorage
       let userName = window.localStorage.getItem('watchparty-username');
       this.props.updateName(userName || await generateName());
-      const savedId = window.localStorage.getItem('jeopardy-savedId');
-      if (savedId) {
-        socket.emit('JPD:reconnect', savedId);
+    });
+    socket.on('connect_error', (err: any) => {
+      console.error(err);
+      if (err.message === 'Invalid namespace') {
+        this.setState({ overlayMsg: "Couldn't load this room." });
       }
-      // Save our current ID to localstorage
-      window.localStorage.setItem('jeopardy-savedId', socket.id);
     });
     socket.on('REC:chat', (data: ChatMessage) => {
       if (document.visibilityState && document.visibilityState !== 'visible') {
@@ -532,6 +533,7 @@ export class Jeopardy extends React.Component<{
             settings={this.state.settings}
           />
         )}
+        {this.state.overlayMsg && <ErrorModal error={this.state.overlayMsg} />}
         <div
           style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
         >
@@ -1197,7 +1199,7 @@ const BulkJudgeModal = ({
   bulkJudge: (judges: {id: string, correct: boolean | null}[]) => void;
   getBuzzOffset: (id: string) => number;
 }) => {
-  const [decisions, setDecisions] = useState<StringDict>({});
+  const [decisions, setDecisions] = useState<Record<string, string>>({});
   const distinctAnswers: string[] = Array.from(
     new Set(
       Object.values<string>(game?.answers ?? {}).map(
@@ -1331,6 +1333,30 @@ const SettingsModal = ({
           Save
         </Button>
       </Modal.Actions>
+    </Modal>
+  );
+};
+
+export const ErrorModal = ({ error }: { error: string }) => {
+  return (
+    <Modal inverted="true" basic open>
+      <Header as="h1" style={{ textAlign: 'center' }}>
+        {error}
+      </Header>
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <Button
+          primary
+          size="huge"
+          onClick={() => {
+            window.location.href = '/';
+          }}
+          icon
+          labelPosition="left"
+        >
+          <Icon name="home" />
+          Go to home page
+        </Button>
+      </div>
     </Modal>
   );
 };

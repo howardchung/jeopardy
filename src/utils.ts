@@ -27,7 +27,7 @@ export function hashString(input: string) {
   return hash;
 }
 
-let colorCache = {} as NumberDict;
+let colorCache: Record<string, number> = {};
 export function getColor(id: string) {
   let colors = [
     'red',
@@ -51,7 +51,7 @@ export function getColor(id: string) {
 }
 
 export function getColorHex(id: string) {
-  let mappings: StringDict = {
+  let mappings: Record<string, string> = {
     red: 'B03060',
     orange: 'FE9A76',
     yellow: 'FFD700',

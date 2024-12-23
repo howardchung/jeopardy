@@ -110,6 +110,7 @@ app.get('/stats', async (req, res) => {
     const jeopardyResults = await redis?.llen('jpd:results');
 
     res.json({
+      uptime: process.uptime(),
       roomCount: rooms.size,
       cpuUsage,
       redisUsage,

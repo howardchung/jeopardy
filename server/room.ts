@@ -3,6 +3,7 @@ import { Socket, Server } from 'socket.io';
 
 export class Room {
   public roster: User[] = [];
+  public clientIds: Record<string, string> = {};
   private chat: ChatMessage[] = [];
   private io: Server;
   public roomId: string;
@@ -22,7 +23,7 @@ export class Room {
     }
 
     if (!this.jpd) {
-      this.jpd = new Jeopardy(io, roomId, this.roster, this);
+      this.jpd = new Jeopardy(io, roomId, this);
     }
 
     io.of(roomId).on('connection', (socket: Socket) => {
@@ -48,6 +49,7 @@ export class Room {
   serialize = () => {
     return JSON.stringify({
       chat: this.chat,
+      clientIds: this.clientIds,
       creationTime: this.creationTime,
       jpd: this.jpd,
     });
@@ -58,6 +60,9 @@ export class Room {
     if (roomObj.chat) {
       this.chat = roomObj.chat;
     }
+    if (roomObj.clientIds) {
+      this.clientIds = roomObj.clientIds;
+    }
     if (roomObj.creationTime) {
       this.creationTime = new Date(roomObj.creationTime);
     }
@@ -65,7 +70,6 @@ export class Room {
       this.jpd = new Jeopardy(
         this.io,
         this.roomId,
-        this.roster,
         this,
         roomObj.jpd,
       );
