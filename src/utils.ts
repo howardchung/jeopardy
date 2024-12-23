@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 
 export function formatTimestamp(input: any) {
   if (
@@ -99,4 +100,14 @@ export const serverPath =
 export async function generateName(): Promise<string> {
   const response = await axios.get<string>(serverPath + '/generateName');
   return response.data;
+}
+
+export function getOrCreateClientId() {
+  let clientId = window.localStorage.getItem('jeopardy-clientid');
+  if (!clientId) {
+    // Generate a new clientID and save it
+    clientId = uuidv4();
+    window.localStorage.setItem('jeopardy-clientid', clientId);
+  }
+  return clientId;
 }

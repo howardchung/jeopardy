@@ -1,36 +1,30 @@
 import './App.css';
 import React from 'react';
 import { Divider, Grid, Icon, Input } from 'semantic-ui-react';
-//@ts-ignore
-import io from 'socket.io-client';
 import { serverPath, generateName } from '../../utils';
 import { Chat } from '../Chat/Chat';
 import { JeopardyTopBar } from '../TopBar/TopBar';
 import { Jeopardy } from '../Jeopardy/Jeopardy';
+import { type Socket } from 'socket.io-client';
 
-interface AppState {
-  state: 'init' | 'starting' | 'connected';
+export interface AppState {
   participants: User[];
   rosterUpdateTS: Number;
   chat: ChatMessage[];
   myName: string;
-  myPicture: string;
   scrollTimestamp: number;
-  error: string;
+  socket: Socket | undefined;
 }
 
 export default class App extends React.Component<null, AppState> {
   state: AppState = {
-    state: 'starting',
     participants: [],
-    rosterUpdateTS: Number(new Date()),
+    rosterUpdateTS: Date.now(),
     chat: [],
     myName: '',
-    myPicture: '',
     scrollTimestamp: 0,
-    error: '',
+    socket: undefined,
   };
-  socket: any = null;
 
   async componentDidMount() {
     // Send heartbeat to the server
@@ -40,64 +34,23 @@ export default class App extends React.Component<null, AppState> {
       },
       10 * 60 * 1000,
     );
-
-    this.init();
   }
 
-  init = () => {
-    // Load room ID from url
-    let roomId = '/default';
-    const urlParams = new URLSearchParams(window.location.search);
-    const query = urlParams.get('game');
-    if (query) {
-      roomId = '/' + query;
+  updateName = (name: string) => {
+    if (this.state.socket) {
+      this.setState({ myName: name });
+      this.state.socket.emit('CMD:name', name);
+      window.localStorage.setItem('watchparty-username', name);
     }
-    this.join(roomId);
   };
 
-  join = async (roomId: string) => {
-    const socket = io(serverPath + roomId);
-    this.socket = socket;
-    socket.on('connect', async () => {
-      this.setState({ state: 'connected' });
-      // Load username from localstorage
-      let userName = window.localStorage.getItem('watchparty-username');
-      this.updateName(null, { value: userName || (await generateName()) });
-      const savedId = window.localStorage.getItem('jeopardy-savedId');
-      if (savedId) {
-        socket.emit('JPD:reconnect', savedId);
-      }
-      // Save our current ID to localstorage
-      window.localStorage.setItem('jeopardy-savedId', socket.id);
+  addChatMessage = (data: ChatMessage) => {
+    this.state.chat.push(data);
+    this.setState({
+      chat: this.state.chat,
+      scrollTimestamp: Number(new Date()),
     });
-    socket.on('REC:chat', (data: ChatMessage) => {
-      if (document.visibilityState && document.visibilityState !== 'visible') {
-        new Audio('/clearly.mp3').play();
-      }
-      this.state.chat.push(data);
-      this.setState({
-        chat: this.state.chat,
-        scrollTimestamp: Number(new Date()),
-      });
-    });
-    socket.on('roster', (data: User[]) => {
-      this.setState({ participants: data, rosterUpdateTS: Number(new Date()) });
-    });
-    socket.on('chatinit', (data: any) => {
-      this.setState({ chat: data, scrollTimestamp: Number(new Date()) });
-    });
-  };
-
-  updateName = (e: any, data: { value: string }) => {
-    this.setState({ myName: data.value });
-    this.socket.emit('CMD:name', data.value);
-    window.localStorage.setItem('watchparty-username', data.value);
-  };
-
-  updatePicture = (url: string) => {
-    this.setState({ myPicture: url });
-    this.socket.emit('CMD:picture', url);
-  };
+  }
 
   render() {
     return (
@@ -107,12 +60,12 @@ export default class App extends React.Component<null, AppState> {
           <Grid stackable celled="internally">
             <Grid.Row>
               <Grid.Column width={12}>
-                {this.state.state === 'connected' && (
-                  <Jeopardy
-                    socket={this.socket}
-                    participants={this.state.participants}
-                  />
-                )}
+                <Jeopardy
+                  setAppState={(state) => this.setState(state as AppState)}
+                  participants={this.state.participants}
+                  updateName={this.updateName}
+                  addChatMessage={this.addChatMessage}
+                />
               </Grid.Column>
               <Grid.Column
                 width={4}
@@ -124,11 +77,11 @@ export default class App extends React.Component<null, AppState> {
                   fluid
                   label={'My name is:'}
                   value={this.state.myName}
-                  onChange={this.updateName}
+                  onChange={(e, data) => this.updateName(data.value)}
                   icon={
                     <Icon
                       onClick={async () =>
-                        this.updateName(null, { value: await generateName() })
+                        this.updateName(await generateName())
                       }
                       name="random"
                       inverted
@@ -140,7 +93,6 @@ export default class App extends React.Component<null, AppState> {
                 <Divider inverted horizontal></Divider>
                 <Chat
                   chat={this.state.chat}
-                  socket={this.socket}
                   scrollTimestamp={this.state.scrollTimestamp}
                   getMediaDisplayName={() => ''}
                 />

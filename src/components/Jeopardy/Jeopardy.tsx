@@ -15,8 +15,9 @@ import {
   Checkbox,
 } from 'semantic-ui-react';
 import './Jeopardy.css';
-import { getDefaultPicture, getColorHex, shuffle, getColor } from '../../utils';
-import { Socket } from 'socket.io';
+import { getDefaultPicture, getColorHex, shuffle, getColor, generateName, serverPath, getOrCreateClientId } from '../../utils';
+import { io, type Socket } from 'socket.io-client';
+import { type AppState } from '../App/App';
 import ReactMarkdown from 'react-markdown';
 
 const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
@@ -44,9 +45,19 @@ const loadSavedSettings = (): GameSettings => {
   return {};
 };
 
+// room ID from url
+let roomId = '/default';
+const urlParams = new URLSearchParams(window.location.search);
+const query = urlParams.get('game');
+if (query) {
+  roomId = '/' + query;
+}
+
 export class Jeopardy extends React.Component<{
-  socket: Socket;
+  setAppState: (state: Partial<AppState>) => void;
   participants: User[];
+  updateName: (name: string) => void;
+  addChatMessage: (data: ChatMessage) => void;
 }> {
   public state = {
     game: null as any,
@@ -67,6 +78,7 @@ export class Jeopardy extends React.Component<{
     settings: loadSavedSettings(),
   };
   buzzLock = 0;
+  socket: Socket | undefined = undefined;
 
   async componentDidMount() {
     window.speechSynthesis.getVoices();
@@ -78,29 +90,59 @@ export class Jeopardy extends React.Component<{
         window.localStorage.getItem('jeopardy-readingDisabled'),
       ),
     });
-
-    this.props.socket.emit('JPD:init');
-    this.props.socket.on('JPD:state', (game: any) => {
+    const socket = io(serverPath + roomId, {
+      transports: ['websocket'],
+      query: {
+        clientId: getOrCreateClientId(),
+      },
+    });
+    this.socket = socket;
+    this.props.setAppState({ socket });
+    socket.on('connect', async () => {
+      this.setState({ state: 'connected' });
+      // Load username from localstorage
+      let userName = window.localStorage.getItem('watchparty-username');
+      this.props.updateName(userName || await generateName());
+      const savedId = window.localStorage.getItem('jeopardy-savedId');
+      if (savedId) {
+        socket.emit('JPD:reconnect', savedId);
+      }
+      // Save our current ID to localstorage
+      window.localStorage.setItem('jeopardy-savedId', socket.id);
+    });
+    socket.on('REC:chat', (data: ChatMessage) => {
+      if (document.visibilityState && document.visibilityState !== 'visible') {
+        new Audio('/clearly.mp3').play();
+      }
+      this.props.addChatMessage(data);
+    });
+    socket.on('roster', (data: User[]) => {
+      this.props.setAppState({ participants: data, rosterUpdateTS: Date.now()});
+    });
+    socket.on('chatinit', (data: any) => {
+      this.props.setAppState({ chat: data, scrollTimestamp: Date.now() });
+    });
+    socket.on('JPD:state', (game: any) => {
       this.setState({ game, localEpNum: game.epNum });
     });
-    // this.props.socket.on('JPD:playIntro', () => {
+    // socket.on('JPD:playIntro', () => {
     //   this.playIntro();
     // });
-    this.props.socket.on('JPD:playTimesUp', () => {
+    socket.on('JPD:playTimesUp', () => {
       timesUp.play();
     });
-    this.props.socket.on('JPD:playDailyDouble', () => {
+    socket.on('JPD:playDailyDouble', () => {
       dailyDouble.volume = 0.5;
       dailyDouble.play();
     });
-    this.props.socket.on('JPD:playFinalJeopardy', async () => {
+    socket.on('JPD:playFinalJeopardy', async () => {
       think.volume = 0.5;
       think.play();
     });
-    this.props.socket.on('JPD:playRightanswer', () => {
+    socket.on('JPD:playRightanswer', () => {
       rightAnswer.play();
     });
-    // this.props.socket.on('JPD:playMakeSelection', () => {
+    // socket.on('JPD:playMakeSelection', () => {
     //   if (this.state.game.picker) {
     //     const selectionText = [
     //       'Make a selection, {name}',
@@ -116,7 +158,7 @@ export class Jeopardy extends React.Component<{
     //     );
     //   }
     // });
-    this.props.socket.on('JPD:playClue', async (qid: string, text: string) => {
+    socket.on('JPD:playClue', async (qid: string, text: string) => {
       this.setState({
         localAnswer: '',
         localWager: '',
@@ -128,8 +170,8 @@ export class Jeopardy extends React.Component<{
       // Remove parenthetical starts and blanks
       await this.sayText(text.replace(/^\(.*\)/, '').replace(/_+/g, ' blank '));
     });
-    this.props.socket.on('JPD:playCategories', async () => {
-      const now = Number(new Date());
+    socket.on('JPD:playCategories', async () => {
+      const now = Date.now();
       const clueMask: any = {};
       const clueMaskOrder = [];
       for (let i = 1; i <= 6; i++) {
@@ -227,7 +269,7 @@ export class Jeopardy extends React.Component<{
     // optionally send an episode number or game type filter
     // combine with other custom settings configured by user
     const combined: GameOptions = { number: options.number, filter: options.filter, ...this.state.settings };
-    this.props.socket.emit('JPD:start', combined, customGame);
+    this.socket?.emit('JPD:start', combined, customGame);
   };
 
   customGame = () => {
@@ -347,17 +389,17 @@ export class Jeopardy extends React.Component<{
   };
 
   pickQ = (id: string) => {
-    this.props.socket.emit('JPD:pickQ', id);
+    this.socket?.emit('JPD:pickQ', id);
   };
 
   submitWager = () => {
-    this.props.socket.emit('JPD:wager', this.state.localWager);
+    this.socket?.emit('JPD:wager', this.state.localWager);
     this.setState({ localWager: '', localWagerSubmitted: true });
   };
 
   submitAnswer = (answer = null) => {
     if (!this.state.localAnswerSubmitted) {
-      this.props.socket.emit(
+      this.socket?.emit(
         'JPD:answer',
         this.state.game?.currentQ,
         answer || this.state.localAnswer,
@@ -367,11 +409,11 @@ export class Jeopardy extends React.Component<{
   };
 
   judgeAnswer = (id: string, correct: boolean | null) => {
-    this.props.socket.emit('JPD:judge', { currentQ: this.state.game.currentQ, id, correct });
+    this.socket?.emit('JPD:judge', { currentQ: this.state.game.currentQ, id, correct });
   };
 
   bulkJudgeAnswer = (data: {id: string, correct: boolean | null}[]) => {
-    this.props.socket.emit('JPD:bulkJudge', data.map(d => ({...d, currentQ: this.state.game.currentQ })));
+    this.socket?.emit('JPD:bulkJudge', data.map(d => ({...d, currentQ: this.state.game.currentQ })));
   };
 
   getCategories = () => {
@@ -405,7 +447,7 @@ export class Jeopardy extends React.Component<{
   onBuzz = () => {
     const game = this.state.game;
     if (game.canBuzz && !this.buzzLock && !this.state.buzzFrozen) {
-      this.props.socket.emit('JPD:buzz');
+      this.socket?.emit('JPD:buzz');
     } else {
       // Freeze the buzzer for 0.25 seconds
       // setState takes a little bit, so also set a local var to prevent spam
@@ -432,7 +474,7 @@ export class Jeopardy extends React.Component<{
     const game = this.state.game;
     const categories = this.getCategories();
     const participants = this.props.participants;
-    const canJudge = !game?.host || this.props.socket.id === game?.host;
+    const canJudge = !game?.host || this.socket?.id === game?.host;
     return (
       <>
         {this.state.showCustomModal && (
@@ -587,8 +629,9 @@ export class Jeopardy extends React.Component<{
                           }
                           <div className="" style={{ height: '60px' }}>
                             {!game.currentAnswer &&
-                            !game.buzzes[this.props.socket.id] &&
-                            !game.submitted[this.props.socket.id] &&
+                            this.socket &&
+                            !game.buzzes[this.socket.id] &&
+                            !game.submitted[this.socket.id] &&
                             !game.currentDailyDouble &&
                             game.round !== 'final' ? (
                               <div style={{ display: 'flex' }}>
@@ -634,7 +677,8 @@ export class Jeopardy extends React.Component<{
                             ) : null}
                             {!game.currentAnswer &&
                             !this.state.localAnswerSubmitted &&
-                            game.buzzes[this.props.socket.id] &&
+                            this.socket &&
+                            game.buzzes[this.socket.id] &&
                             game.questionDuration ? (
                               <Input
                                 autoFocus
@@ -658,17 +702,18 @@ export class Jeopardy extends React.Component<{
                               />
                             ) : null}
                             {game.waitingForWager &&
-                            game.waitingForWager[this.props.socket.id] ? (
+                            this.socket &&
+                            game.waitingForWager[this.socket.id] ? (
                               <Input
                                 label={`Wager (${
                                   getWagerBounds(
                                     game.round,
-                                    game.scores[this.props.socket.id],
+                                    game.scores[this.socket.id],
                                   ).minWager
                                 } to ${
                                   getWagerBounds(
                                     game.round,
-                                    game.scores[this.props.socket.id],
+                                    game.scores[this.socket.id],
                                   ).maxWager
                                 })`}
                                 value={this.state.localWager}
@@ -716,7 +761,7 @@ export class Jeopardy extends React.Component<{
                             >
                               <Button
                                 onClick={() =>
-                                  this.props.socket.emit('JPD:skipQ')
+                                  this.socket?.emit('JPD:skipQ')
                                 }
                                 icon
                                 labelPosition="left"
@@ -1050,7 +1095,7 @@ export class Jeopardy extends React.Component<{
                 </Button>
                 {canJudge && <Button
                   onClick={() =>
-                    this.props.socket.emit('JPD:undo')
+                    this.socket?.emit('JPD:undo')
                   }
                   icon
                   labelPosition="left"
@@ -1059,7 +1104,7 @@ export class Jeopardy extends React.Component<{
                   Undo Judging
                 </Button>}
                 {/* <Button
-                  onClick={() => this.props.socket.emit('JPD:cmdIntro')}
+                  onClick={() => this.socket?.emit('JPD:cmdIntro')}
                   icon
                   labelPosition="left"
                   color="blue"

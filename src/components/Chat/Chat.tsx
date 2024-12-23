@@ -6,7 +6,6 @@ import { formatTimestamp, getColorHex, getDefaultPicture } from '../../utils';
 
 interface ChatProps {
   chat: ChatMessage[];
-  socket: Socket;
   scrollTimestamp: number;
   className?: string;
   getMediaDisplayName: Function;
