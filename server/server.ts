@@ -37,7 +37,7 @@ async function saveRoomsToRedis() {
     // console.time('roomSave');
     const roomArr = Array.from(rooms.values());
     for (let i = 0; i < roomArr.length; i++) {
-      if (roomArr[i].roster.length) {
+      if (roomArr[i].getConnectedRoster().length) {
         const roomData = roomArr[i].serialize();
         const key = roomArr[i].roomId;
         await redis?.setex(key, 24 * 60 * 60, roomData);
@@ -90,7 +90,7 @@ app.get('/stats', async (req, res) => {
       const obj = {
         creationTime: room.creationTime,
         roomId: room.roomId,
-        rosterLength: room.roster.length,
+        rosterLength: room.getConnectedRoster().length,
       };
       currentUsers += obj.rosterLength;
       roomData.push(obj);

@@ -892,6 +892,13 @@ export class Jeopardy extends React.Component<{
                               name="star"
                             />
                             ) : null}
+                            {!p.connected ? (
+                              <Icon
+                                color="red"
+                                title="Disconnected"
+                                name="plug"
+                              />
+                            ) : null}
                           </div>
                         )}
                         {game && p.id === game.currentJudgeAnswer && canJudge ? (

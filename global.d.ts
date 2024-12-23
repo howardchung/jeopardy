@@ -1,6 +1,7 @@
 interface User {
   id: string;
   name?: string;
+  connected: boolean;
 }
 
 interface ChatMessage {

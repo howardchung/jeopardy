@@ -138,9 +138,8 @@ export class Jeopardy {
   public jpd: ReturnType<typeof getGameState>;
   // Note: snapshot is not persisted so undo is not possible if server restarts
   private jpdSnapshot: ReturnType<typeof getGameState> | undefined;
-  public roomId: string;
   private io: Server;
-  private roster: User[];
+  public roomId: string;
   private room: Room;
   private playClueTimeout: NodeJS.Timeout =
     undefined as unknown as NodeJS.Timeout;
@@ -150,14 +149,16 @@ export class Jeopardy {
 
   constructor(
     io: Server,
-    roomId: string,
     room: Room,
     gameData?: any,
   ) {
     this.io = io;
-    this.roomId = roomId;
-    this.roster = room.roster;
+    this.roomId = room.roomId;
     this.room = room;
+    // We keep disconnected players in roster (for some time limit?)
+    // Goal is to avoid auto-skipping disconnected players for wagers and judging
+    // roster is persisted so players can reconnect after server restart
+    // state transfer should do answers and buzzes, and replace the roster member
 
     if (gameData) {
       this.jpd = gameData;
@@ -183,7 +184,6 @@ export class Jeopardy {
 
     io.of(this.roomId).on('connection', (socket: Socket) => {
       this.jpd.public.scores[socket.id] = 0;
-      this.roster.push({ id: socket.id, name: undefined });
 
       const clientId = socket.handshake.query?.clientId as string;
       // clientid map keeps track of the unique clients we've seen
@@ -193,6 +193,9 @@ export class Jeopardy {
         const newId = socket.id;
         const oldId = this.room.clientIds[clientId];
         this.handleReconnect(newId, oldId);
+      } else {
+        // New client joining, add to roster
+        this.room.roster.push({ id: socket.id, name: undefined, connected: true });
       }
       this.room.clientIds[clientId] = socket.id;
 
@@ -206,7 +209,7 @@ export class Jeopardy {
         if (data && data.length > 100) {
           return;
         }
-        const target = this.roster.find(p => p.id === socket.id);
+        const target = this.room.roster.find(p => p.id === socket.id);
         if (target) {
           target.name = data;
           this.sendRoster();
@@ -231,7 +234,8 @@ export class Jeopardy {
         }
         if (
           this.jpd.public.picker &&
-          this.roster.find((p) => p.id === this.jpd.public.picker) &&
+          // If the picker is disconnected, allow anyone to pick to avoid blocking game
+          this.room.getConnectedRoster().find((p) => p.id === this.jpd.public.picker) &&
           this.jpd.public.picker !== socket.id
         ) {
           return;
@@ -251,8 +255,11 @@ export class Jeopardy {
           this.jpd.public.dailyDoublePlayer = socket.id;
           this.jpd.public.waitingForWager = { [socket.id]: true };
           this.setWagerTimeout(this.jpd.answerTimeout);
-          // Autobuzz the player, all others pass
-          this.roster.forEach((p) => {
+          // Autobuzz the player who picked the DD, all others pass
+          // Note: if a player joins during wagering, they might not be marked as passed (submitted)
+          // Currently client doesn't show the answer box because it checks for buzzed in players
+          // But there's probably no server block on them submitting answers
+          this.room.roster.forEach((p) => {
             if (p.id === socket.id) {
               this.jpd.public.buzzes[p.id] = Date.now();
             } else {
@@ -299,7 +306,8 @@ export class Jeopardy {
         this.emitState();
         if (
           this.jpd.public.round !== 'final' &&
-          this.roster.every((p) => p.id in this.jpd.public.submitted)
+          // If a player disconnects, don't wait for their answer
+          this.room.getConnectedRoster().every((p) => p.id in this.jpd.public.submitted)
         ) {
           this.revealAnswer();
         }
@@ -346,11 +354,6 @@ export class Jeopardy {
       });
       socket.on('disconnect', () => {
         if (this.jpd && this.jpd.public) {
-          // If player being judged leaves, skip their answer
-          if (this.jpd.public.currentJudgeAnswer === socket.id) {
-            // This is to run the rest of the code around judging
-            this.judgeAnswer(undefined, { currentQ: this.jpd.public.currentQ, id: socket.id, correct: null });
-          }
           // If player who needs to submit wager leaves, submit 0
           if (
             this.jpd.public.waitingForWager &&
@@ -359,8 +362,11 @@ export class Jeopardy {
             this.submitWager(socket.id, 0);
           }
         }
-        let index = this.roster.findIndex((user) => user.id === socket.id);
-        this.roster.splice(index, 1)[0];
+        // Mark the user disconnected
+        let target = this.room.roster.find((p) => p.id === socket.id);
+        if (target) {
+          target.connected = false;
+        }
         this.sendRoster();
       });
     });
@@ -466,29 +472,48 @@ export class Jeopardy {
 
   sendRoster() {
     // Sort by score and resend the list of players to everyone
-    this.roster.sort(
+    this.room.roster.sort(
       (a, b) => (this.jpd.public?.scores[b.id] || 0) - (this.jpd.public?.scores[a.id] || 0),
     );
-    this.io.of(this.roomId).emit('roster', this.roster);
+    this.io.of(this.roomId).emit('roster', this.room.roster);
   }
 
   handleReconnect(newId: string, oldId: string) {
     console.log('reconnect: transfer %s to %s', oldId, newId);
-    if (this.jpd.public.scores && this.jpd.public.scores[oldId]) {
+    // Update the roster with the new ID and connected state
+    const target = this.room.roster.find(p => p.id === oldId);
+    if (target) {
+      target.id = newId;
+      target.connected = true;
+    }
+    if (this.jpd.public.scores?.[oldId]) {
       this.jpd.public.scores[newId] = this.jpd.public.scores[oldId];
       delete this.jpd.public.scores[oldId];
     }
-    if (this.jpd.wagers && this.jpd.wagers[oldId]) {
+    if (this.jpd.wagers?.[oldId]) {
       this.jpd.wagers[newId] = this.jpd.wagers[oldId];
       delete this.jpd.wagers[oldId];
     }
-    if (this.jpd.public.buzzes && this.jpd.public.buzzes[oldId]) {
+    if (this.jpd.public.buzzes?.[oldId]) {
       this.jpd.public.buzzes[newId] = this.jpd.public.buzzes[oldId];
       delete this.jpd.public.buzzes[oldId];
     }
-    // Not currently transferred: judges, answers, waitingforwager, submitted
-    // Current behavior is to auto-skip or submit wager 0 if disconnecting
-    // Also if a player reconnects undo will not properly allow their answer to be re-judged since their ID has changed
+    if (this.jpd.public.judges?.[oldId]) {
+      this.jpd.public.judges[newId] = this.jpd.public.judges[oldId];
+      delete this.jpd.public.judges[oldId];
+    }
+    if (this.jpd.public.answers?.[oldId]) {
+      this.jpd.public.answers[newId] = this.jpd.public.answers[oldId];
+      delete this.jpd.public.answers[oldId];
+    }
+    if (this.jpd.public.submitted?.[oldId]) {
+      this.jpd.public.submitted[newId] = this.jpd.public.submitted[oldId];
+      delete this.jpd.public.submitted[oldId];
+    }
+    // Not currently transferred: waitingforwager
+    // Current behavior is to submit wager 0 if disconnecting
+    // Note: if a player reconnects undo will not properly allow their answer to be re-judged since their ID has changed
+    // TODO: Check code that checks if "all players judged" to see if we could get stuck
     if (this.jpd.public.dailyDoublePlayer === oldId) {
       this.jpd.public.dailyDoublePlayer = newId;
     }
@@ -548,7 +573,8 @@ export class Jeopardy {
       // Unless we are allowing multiple corrects or there's a host
       // This is nlogn rather than n, but prob ok for small numbers of players
       if (!this.jpd.public.allowMultipleCorrect && !this.jpd.public.host) {
-        const playersWithScores = this.roster.map((p) => ({
+        // Pick the lowest score out of the currently connected players
+        const playersWithScores = this.room.getConnectedRoster().map((p) => ({
           id: p.id,
           score: this.jpd.public.scores[p.id] || 0,
         }));
@@ -559,14 +585,15 @@ export class Jeopardy {
       this.jpd.public.round = 'final';
       const now = Date.now();
       this.jpd.public.waitingForWager = {};
-      this.roster.forEach((p) => {
+      // Ask all players for wager (including disconnected since they might come back)
+      this.room.roster.forEach((p) => {
         this.jpd.public.waitingForWager![p.id] = true;
       });
       this.setWagerTimeout(this.jpd.finalTimeout);
       // autopick the question
       this.jpd.public.currentQ = '1_1';
       // autobuzz the players in ascending score order
-      let playerIds = this.roster.map((p) => p.id);
+      let playerIds = this.room.roster.map((p) => p.id);
       playerIds.sort(
         (a, b) =>
           Number(this.jpd.public.scores[a] || 0) -
@@ -583,7 +610,7 @@ export class Jeopardy {
       const scores = Object.entries(this.jpd.public.scores);
       scores.sort((a, b) => b[1] - a[1]);
       const scoresNames = scores.map((score) => [
-        this.roster.find(p => p.id === score[0])?.name,
+        this.room.roster.find(p => p.id === score[0])?.name,
         score[1],
       ]);
       redis?.lpush('jpd:results', JSON.stringify(scoresNames));
@@ -668,11 +695,13 @@ export class Jeopardy {
       this.jpd.public.answers[this.jpd.public.currentJudgeAnswer] =
         this.jpd.answers[this.jpd.public.currentJudgeAnswer];
     }
-
-    // If the current judge player isn't connected, advance again
+    // Undo snapshots the current state of jpd
+    // So if a player has reconnected since with a new ID the ID from buzzes might not be there anymore
+    // If so, we skip that answer (not optimal but easiest)
+    // TODO To fix this we probably have to use clientId instead of socket id to index the submitted answers
     if (
       this.jpd.public.currentJudgeAnswer &&
-      !this.roster.find((p) => p.id === this.jpd.public.currentJudgeAnswer)
+      !this.room.roster.find((p) => p.id === this.jpd.public.currentJudgeAnswer)
     ) {
       console.log(
         '[ADVANCEJUDGING] player not found, moving on:',
@@ -745,12 +774,12 @@ export class Jeopardy {
       const msg = {
         id: socket.id,
         // name of judge
-        name: this.roster.find(p => p.id === socket.id)?.name,
+        name: this.room.roster.find(p => p.id === socket.id)?.name,
         cmd: 'judge',
         msg: JSON.stringify({
           id: id,
           // name of person being judged
-          name: this.roster.find(p => p.id === id)?.name,
+          name: this.room.roster.find(p => p.id === id)?.name,
           answer: this.jpd.public.answers[id],
           correct,
           delta: correct ? delta : -delta,

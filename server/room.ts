@@ -23,11 +23,10 @@ export class Room {
     }
 
     if (!this.jpd) {
-      this.jpd = new Jeopardy(io, roomId, this);
+      this.jpd = new Jeopardy(io, this);
     }
 
     io.of(roomId).on('connection', (socket: Socket) => {
-      // Jeopardy code takes care of sending roster updates since it requires sorted order by score
       socket.emit('chatinit', this.chat);
       // socket.on('CMD:chat', (data: string) => {
       //   if (data && data.length > 65536) {
@@ -50,6 +49,7 @@ export class Room {
     return JSON.stringify({
       chat: this.chat,
       clientIds: this.clientIds,
+      roster: this.roster,
       creationTime: this.creationTime,
       jpd: this.jpd,
     });
@@ -66,10 +66,12 @@ export class Room {
     if (roomObj.creationTime) {
       this.creationTime = new Date(roomObj.creationTime);
     }
+    if (roomObj.rostser) {
+      this.roster = roomObj.roster;
+    }
     if (roomObj.jpd) {
       this.jpd = new Jeopardy(
         this.io,
-        this.roomId,
         this,
         roomObj.jpd,
       );
@@ -84,5 +86,9 @@ export class Room {
     this.chat.push(chatWithTime);
     this.chat = this.chat.splice(-100);
     this.io.of(this.roomId).emit('REC:chat', chatWithTime);
+  };
+
+  getConnectedRoster = () => {
+    return this.roster.filter(p => p.connected);
   };
 }
