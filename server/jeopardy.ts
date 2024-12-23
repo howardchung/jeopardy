@@ -193,7 +193,7 @@ export class Jeopardy {
         this.handleReconnect(newId, oldId);
       } else {
         // New client joining, add to roster
-        this.room.roster.push({ id: socket.id, name: undefined, connected: true });
+        this.room.roster.push({ id: socket.id, name: undefined, connected: true, disconnectTime: 0 });
       }
       this.room.clientIds[clientId] = socket.id;
 
@@ -364,10 +364,16 @@ export class Jeopardy {
         let target = this.room.roster.find((p) => p.id === socket.id);
         if (target) {
           target.connected = false;
+          target.disconnectTime = Date.now();
         }
         this.sendRoster();
       });
     });
+
+    setInterval(() => {
+      // Remove players that have been disconnected for a long time
+      this.room.roster = this.room.roster.filter(p => !p.connected && p.disconnectTime && (Date.now() - p.disconnectTime) > 60 * 60 * 1000);
+    }, 60000);
   }
 
   loadEpisode(socket: Socket, options: GameOptions, custom: string) {
@@ -483,6 +489,7 @@ export class Jeopardy {
     if (target) {
       target.id = newId;
       target.connected = true;
+      target.disconnectTime = 0;
     }
     if (this.jpd.public.scores?.[oldId]) {
       this.jpd.public.scores[newId] = this.jpd.public.scores[oldId];

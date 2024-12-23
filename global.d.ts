@@ -2,6 +2,7 @@ interface User {
   id: string;
   name?: string;
   connected: boolean;
+  disconnectTime: number;
 }
 
 interface ChatMessage {
