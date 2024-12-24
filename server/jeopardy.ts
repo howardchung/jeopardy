@@ -373,7 +373,7 @@ export class Jeopardy {
 
     setInterval(() => {
       // Remove players that have been disconnected for a long time
-      this.room.roster = this.room.roster.filter(p => !p.connected && p.disconnectTime && (Date.now() - p.disconnectTime) > 60 * 60 * 1000);
+      this.room.roster = this.room.roster.filter(p => p.connected || (Date.now() - p.disconnectTime) < 60 * 60 * 1000);
     }, 60000);
   }
 
