@@ -191,7 +191,8 @@ export class Jeopardy {
         const newId = socket.id;
         const oldId = this.room.clientIds[clientId];
         this.handleReconnect(newId, oldId);
-      } else {
+      }
+      if (!this.room.roster.find(p => p.id === socket.id)) {
         // New client joining, add to roster
         this.room.roster.push({ id: socket.id, name: undefined, connected: true, disconnectTime: 0 });
       }
