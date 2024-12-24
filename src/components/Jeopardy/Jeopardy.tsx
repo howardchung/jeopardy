@@ -33,6 +33,7 @@ type GameSettings = {
   finalTimeout?: number,
   makeMeHost?: boolean,
   allowMultipleCorrect?: boolean,
+  enableAIJudge?: boolean,
 };
 
 const loadSavedSettings = (): GameSettings => {
@@ -1312,6 +1313,7 @@ const SettingsModal = ({
   const [finalTimeout, setFinalTimeout] = useState<number | undefined>(settings.finalTimeout);
   const [makeMeHost, setMakeMeHost] = useState<boolean | undefined>(settings.makeMeHost);
   const [allowMultipleCorrect, setAllowMultipleCorrect] = useState<boolean | undefined>(settings.allowMultipleCorrect);
+  const [enableAIJudge, setEnableAIJudge] = useState<boolean | undefined>(settings.enableAIJudge);
   return (
     <Modal open onClose={onClose}>
       <Modal.Header>Settings</Modal.Header>
@@ -1319,6 +1321,7 @@ const SettingsModal = ({
         <h4>Settings will be applied to any games you create.</h4>
         <Checkbox checked={makeMeHost} onChange={(e, props) => setMakeMeHost(props.checked)} label="Make me the host (Only you will be able to select questions and make judging decisions)" slider={true} />
         <Checkbox checked={allowMultipleCorrect} onChange={(e, props) => setAllowMultipleCorrect(props.checked)} label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)" slider={true} />
+        <Checkbox checked={enableAIJudge} onChange={(e, props) => setEnableAIJudge(props.checked)} label="Automatically judge answers using AI" slider={true} />
         <div style={{ display: 'flex', gap: '2px' }}>
         <Input style={{ width: 60 }} type="number" value={answerTimeout} onChange={(e, data) => setAnswerTimeout(Number(data.value))} size="mini" />
         Seconds for regular answers and Daily Double wagers (Default: 20)
@@ -1334,6 +1337,7 @@ const SettingsModal = ({
             const settings: GameSettings = {
               makeMeHost: Boolean(makeMeHost),
               allowMultipleCorrect: Boolean(allowMultipleCorrect),
+              enableAIJudge: Boolean(enableAIJudge),
               answerTimeout: Number(answerTimeout),
               finalTimeout: Number(finalTimeout),
             };

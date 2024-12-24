@@ -18,6 +18,7 @@ type GameOptions = {
   filter?: string,
   makeMeHost?: boolean,
   allowMultipleCorrect?: boolean,
+  enableAIJudge?: boolean,
   // timeout to use for DD wagers and question answers
   answerTimeout?: number,
   // timeout to use for final wagers and answers (all players participate)

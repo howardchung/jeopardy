@@ -6,6 +6,73 @@ import Papa from 'papaparse';
 import { gunzipSync } from 'zlib';
 import { redisCount } from './utils/redis';
 import fs from 'fs';
+import OpenAI from 'openai';
+
+const openai = process.env.OPENAI_SECRET_KEY ? new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY }) : undefined;
+
+// Notes on AI judging:
+// Using Threads/Assistant is inefficient because OpenAI sends the entire conversation history with each subsequent request
+// We don't care about the conversation history since we judge each answer independently
+// Use the Completions API instead and supply the instructions on each request
+// If the instructions are at least 1024 tokens long, it will be cached and we get 50% off pricing (and maybe faster)
+// If we can squeeze the instructions into 512 tokens it'll probably be cheaper to not use cache
+// Currently, consumes about 250 input tokens and 6 output tokens per answer (depends on the question length)
+const prompt = `
+Your job is to decide whether a response to a trivia question was correct or not, given the question, the correct answer, and the response.
+If the response is a misspelling of the correct answer, consider it correct.
+If the response is an abbreviation of the correct answer, consider it correct.
+If the response could be pronounced the same way as the correct answer, consider it correct.
+If the correct answer is someone's name and the response is only the surname, consider it correct.
+If the response includes the correct answer but also other incorrect answers, consider it incorrect.
+The response might start with "what is" or "who is", if so, you should ignore this prefix when making your decision.
+The correct answer may contain text in parentheses, if so, this text is an optional part of the answer and does not need to be included in the response to be considered correct.
+Only if there is no way the response could be construed to be the correct answer should you consider it incorrect.
+`;
+// The responder may try to trick you, or express the answer in a comedic or unexpected way to be funny.
+// If the response is phrased differently than than the correct answer, but is clearly referring to the same thing or things, it should be considered correct.
+
+async function getOpenAIDecision(question: string, answer: string, response: string): Promise<{ correct: boolean } | null> {
+  if (!openai) {
+    return null;
+  }
+  const suffix = `question: '${question}', correct: '${answer}', response: '${response}'`;
+  console.log('[AIINPUT]', suffix);
+  // Concatenate the prompt and the suffix for AI completion
+  const result = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [{ role: "developer", content: prompt + suffix }],
+    response_format: {
+      type: 'json_schema',
+      json_schema: {
+        "name": "trivia_judgment",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "correct": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "correct"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  });
+  console.log(result);
+  const text = result.choices[0].message.content;
+  // The text might be invalid JSON e.g. if the model refused to respond
+  try {
+    if (text) {
+      return JSON.parse(text);
+    }
+  } catch (e) {
+    console.log(e);
+  }
+  return null;
+}
 
 console.time('load');
 const jData = JSON.parse(gunzipSync(fs.readFileSync('./jeopardy.json.gz')).toString());
@@ -72,23 +139,24 @@ const getPerQuestionState = () => {
     currentQ: '',
     currentAnswer: undefined as string | undefined,
     currentValue: 0,
-    currentJudgeAnswer: undefined as string | undefined,
-    currentJudgeAnswerIndex: undefined as number | undefined,
-    currentDailyDouble: false,
-    waitingForWager: undefined as Record<string, boolean> | undefined,
     playClueEndTS: 0,
     questionEndTS: 0,
     wagerEndTS: 0,
     buzzUnlockTS: 0,
-    answers: {} as Record<string, string>,
-    submitted: {} as Record<string, boolean>,
-    buzzes: {} as Record<string, number>,
-    readings: {} as Record<string, boolean>,
-    judges: {} as Record<string, boolean | null>,
-    wagers: {} as Record<string, number>,
+    currentDailyDouble: false,
     canBuzz: false,
     canNextQ: false,
-    dailyDoublePlayer: undefined as string | undefined,
+    currentJudgeAnswerIndex: undefined as number | undefined,
+    currentJudgeAnswer: undefined as string | undefined, //socket.id
+    dailyDoublePlayer: undefined as string | undefined, //socket.id
+    answers: {} as Record<string, string>,
+    submitted: {} as Record<string, boolean>,
+    judges: {} as Record<string, boolean | null>,
+    buzzes: {} as Record<string, number>,
+    wagers: {} as Record<string, number>,
+    // We track this separately from wagers because the list of people to wait for is different depending on context
+    // e.g. for Double we only need to wait for 1 player, for final we have to wait for everyone
+    waitingForWager: undefined as Record<string, boolean> | undefined,
   };
 };
 
@@ -102,6 +170,7 @@ const getGameState = (
     finalTimeout?: number,
     allowMultipleCorrect?: boolean,
     host?: string,
+    enableAIJudge?: boolean,
   },
   jeopardy?: Question[],
   double?: Question[],
@@ -116,6 +185,7 @@ const getGameState = (
     board: {} as { [key: string]: RawQuestion },
     answerTimeout: (Number(options.answerTimeout) * 1000) || 20000,
     finalTimeout: (Number(options.finalTimeout) * 1000) || 30000,
+    enableAIJudge: options.enableAIJudge,
     public: {
       epNum: options.epNum,
       airDate: options.airDate,
@@ -136,6 +206,7 @@ export class Jeopardy {
   public jpd: ReturnType<typeof getGameState>;
   // Note: snapshot is not persisted so undo is not possible if server restarts
   private jpdSnapshot: ReturnType<typeof getGameState> | undefined;
+  private undoActivated: boolean | undefined = undefined;
   private io: Server;
   public roomId: string;
   private room: Room;
@@ -272,6 +343,9 @@ export class Jeopardy {
             this.jpd.board[this.jpd.public.currentQ].q;
           this.triggerPlayClue();
         }
+        // Undo no longer possible after next question is picked
+        this.jpdSnapshot = undefined;
+        this.undoActivated = undefined;
         this.emitState();
       });
       socket.on('JPD:buzz', () => {
@@ -313,7 +387,7 @@ export class Jeopardy {
       });
 
       socket.on('JPD:wager', (wager) => this.submitWager(socket.id, wager));
-      socket.on('JPD:judge', (data) => this.doJudge(socket, data));
+      socket.on('JPD:judge', (data) => this.doHumanJudge(socket, data));
       socket.on('JPD:bulkJudge', (data) => {
         // Check if the next player to be judged is in the input data
         // If so, doJudge for that player
@@ -322,7 +396,7 @@ export class Jeopardy {
           const id = this.jpd.public.currentJudgeAnswer;
           const match = data.find((d: any) => d.id === id);
           if (match) {
-            this.doJudge(socket, match);
+            this.doHumanJudge(socket, match);
           } else {
             // Player to be judged isn't in the input
             // Stop judging and revert to manual (or let the user resubmit, we should prevent duplicates)
@@ -338,6 +412,7 @@ export class Jeopardy {
         // Reset the game state to the last snapshot
         // Snapshot updates at each revealAnswer
         if (this.jpdSnapshot) {
+          this.undoActivated = true;
           this.jpd = JSON.parse(JSON.stringify(this.jpdSnapshot));
           this.advanceJudging(false);
           this.emitState();
@@ -373,12 +448,18 @@ export class Jeopardy {
 
     setInterval(() => {
       // Remove players that have been disconnected for a long time
-      this.room.roster = this.room.roster.filter(p => p.connected || (Date.now() - p.disconnectTime) < 60 * 60 * 1000);
+      const beforeLength = this.room.roster.length;
+      const now = Date.now();
+      this.room.roster = this.room.roster.filter(p => p.connected || (now - p.disconnectTime) < 60 * 60 * 1000);
+      const afterLength = this.room.roster.length;
+      if (beforeLength !== afterLength) {
+        this.sendRoster();
+      }
     }, 60000);
   }
 
   loadEpisode(socket: Socket, options: GameOptions, custom: string) {
-    let { number, filter, answerTimeout, finalTimeout, makeMeHost, allowMultipleCorrect } = options;
+    let { number, filter, answerTimeout, finalTimeout, makeMeHost, allowMultipleCorrect, enableAIJudge } = options;
     console.log('[LOADEPISODE]', number, filter, Boolean(custom));
     let loadedData = null;
     if (custom) {
@@ -462,7 +543,7 @@ export class Jeopardy {
     if (loadedData) {
       redisCount('newGames');
       const { epNum, airDate, info, jeopardy, double, final } = loadedData;
-      this.jpd = getGameState({ epNum, airDate, info, finalTimeout, answerTimeout, host: makeMeHost ? socket.id : undefined, allowMultipleCorrect }, jeopardy, double, final);
+      this.jpd = getGameState({ epNum, airDate, info, finalTimeout, answerTimeout, host: makeMeHost ? socket.id : undefined, allowMultipleCorrect, enableAIJudge }, jeopardy, double, final);
       this.jpdSnapshot = undefined;
       if (number === 'finaltest') {
         this.jpd.public.round = 'double';
@@ -484,7 +565,7 @@ export class Jeopardy {
   }
 
   handleReconnect(newId: string, oldId: string) {
-    console.log('reconnect: transfer %s to %s', oldId, newId);
+    console.log('[RECONNECT] transfer %s to %s', oldId, newId);
     // Update the roster with the new ID and connected state
     const target = this.room.roster.find(p => p.id === oldId);
     if (target) {
@@ -496,10 +577,6 @@ export class Jeopardy {
       this.jpd.public.scores[newId] = this.jpd.public.scores[oldId];
       delete this.jpd.public.scores[oldId];
     }
-    if (this.jpd.wagers?.[oldId]) {
-      this.jpd.wagers[newId] = this.jpd.wagers[oldId];
-      delete this.jpd.wagers[oldId];
-    }
     if (this.jpd.public.buzzes?.[oldId]) {
       this.jpd.public.buzzes[newId] = this.jpd.public.buzzes[oldId];
       delete this.jpd.public.buzzes[oldId];
@@ -508,18 +585,37 @@ export class Jeopardy {
       this.jpd.public.judges[newId] = this.jpd.public.judges[oldId];
       delete this.jpd.public.judges[oldId];
     }
-    if (this.jpd.public.answers?.[oldId]) {
-      this.jpd.public.answers[newId] = this.jpd.public.answers[oldId];
-      delete this.jpd.public.answers[oldId];
-    }
     if (this.jpd.public.submitted?.[oldId]) {
       this.jpd.public.submitted[newId] = this.jpd.public.submitted[oldId];
       delete this.jpd.public.submitted[oldId];
     }
-    // Not currently transferred: waitingforwager
-    // Current behavior is to submit wager 0 if disconnecting
-    // Note: if a player reconnects undo will not properly allow their answer to be re-judged since their ID has changed
-    // TODO: Check code that checks if "all players judged" to see if we could get stuck
+    if (this.jpd.public.answers?.[oldId]) {
+      this.jpd.public.answers[newId] = this.jpd.public.answers[oldId];
+      delete this.jpd.public.answers[oldId];
+    }
+    if (this.jpd.public.wagers?.[oldId]) {
+      this.jpd.public.wagers[newId] = this.jpd.public.wagers[oldId];
+      delete this.jpd.public.wagers[oldId];
+    }
+    // Note: two copies of answers and wagers exist, a public and non-public version, so we need to copy both
+    // Alternatively, we can just have some state to tracks whether to emit the answers and wagers and keep both in public only
+    if (this.jpd.answers?.[oldId]) {
+      this.jpd.answers[newId] = this.jpd.answers[oldId];
+      delete this.jpd.answers[oldId];
+    }
+    if (this.jpd.wagers?.[oldId]) {
+      this.jpd.wagers[newId] = this.jpd.wagers[oldId];
+      delete this.jpd.wagers[oldId];
+    }
+    if (this.jpd.public.waitingForWager?.[oldId]) {
+      // Current behavior is to submit wager 0 if disconnecting
+      // So there should be no state to transfer
+      this.jpd.public.waitingForWager[newId] = true;
+      delete this.jpd.public.waitingForWager[oldId];
+    }
+    if (this.jpd.public.currentJudgeAnswer === oldId) {
+      this.jpd.public.currentJudgeAnswer = newId;
+    }
     if (this.jpd.public.dailyDoublePlayer === oldId) {
       this.jpd.public.dailyDoublePlayer = newId;
     }
@@ -671,6 +767,7 @@ export class Jeopardy {
       }
     });
     this.jpd.public.canBuzz = false;
+    // Show everyone's answers
     this.jpd.public.answers = { ...this.jpd.answers };
     this.jpd.public.currentAnswer = this.jpd.board[this.jpd.public.currentQ]?.a;
     this.jpdSnapshot = JSON.parse(JSON.stringify(this.jpd));
@@ -679,7 +776,6 @@ export class Jeopardy {
   }
 
   advanceJudging(skipJudging: boolean) {
-    console.log('[ADVANCEJUDGING]', this.jpd.public.currentJudgeAnswerIndex);
     if (this.jpd.public.currentJudgeAnswerIndex === undefined) {
       this.jpd.public.currentJudgeAnswerIndex = 0;
     } else {
@@ -693,7 +789,8 @@ export class Jeopardy {
       this.jpd.public.canNextQ = true;
     }
     if (this.jpd.public.currentJudgeAnswer) {
-      // Show the player's wager and answer to everyone
+      // In Final, reveal one at a time rather than all at once (for dramatic purposes)
+      // Note: Looks like we just bulk reveal answers elsewhere, so this is just wagers
       this.jpd.public.wagers[this.jpd.public.currentJudgeAnswer] =
         this.jpd.wagers[this.jpd.public.currentJudgeAnswer];
       this.jpd.public.answers[this.jpd.public.currentJudgeAnswer] =
@@ -712,10 +809,43 @@ export class Jeopardy {
         this.jpd.public.currentJudgeAnswer,
       );
       this.advanceJudging(skipJudging);
+      return;
+    }
+    // If user undoes, disable AI judge to prevent loop
+    if (openai && this.jpd.enableAIJudge && !this.undoActivated && this.jpd.public.currentJudgeAnswer) {
+      // We don't await here since AI judging shouldn't block UI
+      // But we want to trigger it whenever we move on to the next answer
+      // The result might come back after we already manually judged, in that case we just log it and ignore
+      this.doAiJudge({ currentQ: this.jpd.public.currentQ, id: this.jpd.public.currentJudgeAnswer });
     }
   }
 
-  doJudge(socket: Socket, data: { currentQ: string, id: string; correct: boolean | null }) {
+  async doAiJudge(data: { currentQ: string, id: string; }) {
+    // currentQ: The board coordinates of the current question, e.g. 1_3
+    // id: socket id of the person being judged
+    const { currentQ, id } = data;
+    // The question text
+    const q = this.jpd.board[currentQ]?.q ?? '';
+    const a = this.jpd.public.currentAnswer ?? '';
+    const response = this.jpd.public.answers[id];
+    const decision = await getOpenAIDecision(q, a, response);
+    console.log('[AIDECISION]', id, q, a, response, decision);
+    const correct = decision?.correct;
+    if (correct != null) {
+      // Log the AI decision along with whether the user agreed with it (accuracy)
+      // If the user undoes and then chooses differently than AI, then that's a failed decision
+      // Alternative: we can just highlight what the AI thinks is correct instead of auto-applying the decision, then we'll have user feedback for sure
+      if (redis) {
+        redis.lpush(
+          'jpd:aiJudges',
+          JSON.stringify({ q, a, response, correct }),
+        );
+      }
+      this.judgeAnswer(undefined, { currentQ, id, correct });
+    }
+  }
+
+  doHumanJudge(socket: Socket, data: { currentQ: string, id: string; correct: boolean | null }) {
     const answer = this.jpd.public.currentAnswer;
     const submitted = this.jpd.public.answers[data.id];
     const success = this.judgeAnswer(socket, data);
@@ -755,9 +885,6 @@ export class Jeopardy {
     }
     this.jpd.public.judges[id] = correct;
     console.log('[JUDGE]', id, correct);
-    // Currently anyone can pick the correct answer
-    // Can turn this into a vote or make a non-player the host
-    // MAYBE attempt auto-judging using fuzzy string match
     if (!this.jpd.public.scores[id]) {
       this.jpd.public.scores[id] = 0;
     }
@@ -772,13 +899,12 @@ export class Jeopardy {
     if (correct === false) {
       this.jpd.public.scores[id] -= delta;
     }
-    // If null, don't change scores
-
-    if (socket && correct != null) {
+    // If null/undefined, don't change scores
+    if (correct != null) {
       const msg = {
-        id: socket.id,
+        id: socket?.id ?? '',
         // name of judge
-        name: this.room.roster.find(p => p.id === socket.id)?.name,
+        name: this.room.roster.find(p => p.id === socket?.id)?.name ?? 'System',
         cmd: 'judge',
         msg: JSON.stringify({
           id: id,

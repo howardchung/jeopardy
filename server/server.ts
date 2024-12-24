@@ -108,6 +108,7 @@ app.get('/stats', async (req, res) => {
     const customGames = await getRedisCountDay('customGames');
     const nonTrivialJudges = await redis?.llen('jpd:nonTrivialJudges');
     const jeopardyResults = await redis?.llen('jpd:results');
+    const aiJudges = await redis?.llen('jpd:aiJudges');
 
     res.json({
       uptime: process.uptime(),
@@ -119,6 +120,7 @@ app.get('/stats', async (req, res) => {
       newGames,
       customGames,
       nonTrivialJudges,
+      aiJudges,
       jeopardyResults,
       rooms: roomData,
     });
@@ -139,6 +141,15 @@ app.get('/jeopardyResults', async (req, res) => {
 app.get('/nonTrivialJudges', async (req, res) => {
   if (req.query.key && req.query.key === process.env.STATS_KEY) {
     const data = await redis?.lrange('jpd:nonTrivialJudges', 0, -1);
+    res.json(data);
+  } else {
+    res.status(403).json({ error: 'Access Denied' });
+  }
+});
+
+app.get('/aiJudges', async (req, res) => {
+  if (req.query.key && req.query.key === process.env.STATS_KEY) {
+    const data = await redis?.lrange('jpd:aiJudges', 0, -1);
     res.json(data);
   } else {
     res.status(403).json({ error: 'Access Denied' });
