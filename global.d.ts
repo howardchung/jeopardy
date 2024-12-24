@@ -14,13 +14,13 @@ interface ChatMessage {
 }
 
 type GameOptions = {
-  number?: string,
-  filter?: string,
-  makeMeHost?: boolean,
-  allowMultipleCorrect?: boolean,
-  enableAIJudge?: boolean,
+  number?: string;
+  filter?: string;
+  makeMeHost?: boolean;
+  allowMultipleCorrect?: boolean;
+  enableAIJudge?: boolean;
   // timeout to use for DD wagers and question answers
-  answerTimeout?: number,
+  answerTimeout?: number;
   // timeout to use for final wagers and answers (all players participate)
-  finalTimeout?: number,
+  finalTimeout?: number;
 };

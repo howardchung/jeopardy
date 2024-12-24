@@ -70,11 +70,7 @@ export class Room {
       this.roster = roomObj.roster;
     }
     if (roomObj.jpd) {
-      this.jpd = new Jeopardy(
-        this.io,
-        this,
-        roomObj.jpd,
-      );
+      this.jpd = new Jeopardy(this.io, this, roomObj.jpd);
     }
   };
 
@@ -89,6 +85,6 @@ export class Room {
   };
 
   getConnectedRoster = () => {
-    return this.roster.filter(p => p.connected);
+    return this.roster.filter((p) => p.connected);
   };
 }

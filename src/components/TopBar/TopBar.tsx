@@ -15,7 +15,7 @@ export class NewRoomButton extends React.Component<{ size?: string }> {
     const data = await response.json();
     const { name } = data;
     const searchParams = new URLSearchParams(window.location.search);
-    searchParams.set("game", name);
+    searchParams.set('game', name);
     window.location.search = searchParams.toString();
   };
   render() {

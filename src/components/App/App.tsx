@@ -50,7 +50,7 @@ export default class App extends React.Component<null, AppState> {
       chat: this.state.chat,
       scrollTimestamp: Number(new Date()),
     });
-  }
+  };
 
   render() {
     return (

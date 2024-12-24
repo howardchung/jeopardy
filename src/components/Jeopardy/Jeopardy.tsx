@@ -16,7 +16,15 @@ import {
   Header,
 } from 'semantic-ui-react';
 import './Jeopardy.css';
-import { getDefaultPicture, getColorHex, shuffle, getColor, generateName, serverPath, getOrCreateClientId } from '../../utils';
+import {
+  getDefaultPicture,
+  getColorHex,
+  shuffle,
+  getColor,
+  generateName,
+  serverPath,
+  getOrCreateClientId,
+} from '../../utils';
 import { io, type Socket } from 'socket.io-client';
 import { type AppState } from '../App/App';
 import ReactMarkdown from 'react-markdown';
@@ -29,11 +37,11 @@ const timesUp = new Audio('/jeopardy/jeopardy-times-up.mp3');
 const rightAnswer = new Audio('/jeopardy/jeopardy-rightanswer.mp3');
 
 type GameSettings = {
-  answerTimeout?: number,
-  finalTimeout?: number,
-  makeMeHost?: boolean,
-  allowMultipleCorrect?: boolean,
-  enableAIJudge?: boolean,
+  answerTimeout?: number;
+  finalTimeout?: number;
+  makeMeHost?: boolean;
+  allowMultipleCorrect?: boolean;
+  enableAIJudge?: boolean;
 };
 
 const loadSavedSettings = (): GameSettings => {
@@ -63,7 +71,7 @@ export class Jeopardy extends React.Component<{
   addChatMessage: (data: ChatMessage) => void;
 }> {
   public state = {
-    game: undefined as (PublicGameState | undefined),
+    game: undefined as PublicGameState | undefined,
     isIntroPlaying: false,
     localAnswer: '',
     localWager: '',
@@ -105,7 +113,7 @@ export class Jeopardy extends React.Component<{
     socket.on('connect', async () => {
       // Load username from localstorage
       let userName = window.localStorage.getItem('watchparty-username');
-      this.props.updateName(userName || await generateName());
+      this.props.updateName(userName || (await generateName()));
     });
     socket.on('connect_error', (err: any) => {
       console.error(err);
@@ -120,7 +128,10 @@ export class Jeopardy extends React.Component<{
       this.props.addChatMessage(data);
     });
     socket.on('roster', (data: User[]) => {
-      this.props.setAppState({ participants: data, rosterUpdateTS: Date.now()});
+      this.props.setAppState({
+        participants: data,
+        rosterUpdateTS: Date.now(),
+      });
     });
     socket.on('chatinit', (data: any) => {
       this.props.setAppState({ chat: data, scrollTimestamp: Date.now() });
@@ -263,15 +274,19 @@ export class Jeopardy extends React.Component<{
 
   newGame = async (
     options: {
-      number?: string,
-      filter?: string,
+      number?: string;
+      filter?: string;
     },
     customGame?: string,
   ) => {
     this.setState({ game: null });
     // optionally send an episode number or game type filter
     // combine with other custom settings configured by user
-    const combined: GameOptions = { number: options.number, filter: options.filter, ...this.state.settings };
+    const combined: GameOptions = {
+      number: options.number,
+      filter: options.filter,
+      ...this.state.settings,
+    };
     this.socket?.emit('JPD:start', combined, customGame);
   };
 
@@ -412,11 +427,18 @@ export class Jeopardy extends React.Component<{
   };
 
   judgeAnswer = (id: string, correct: boolean | null) => {
-    this.socket?.emit('JPD:judge', { currentQ: this.state.game?.currentQ, id, correct });
+    this.socket?.emit('JPD:judge', {
+      currentQ: this.state.game?.currentQ,
+      id,
+      correct,
+    });
   };
 
-  bulkJudgeAnswer = (data: {id: string, correct: boolean | null}[]) => {
-    this.socket?.emit('JPD:bulkJudge', data.map(d => ({...d, currentQ: this.state.game?.currentQ })));
+  bulkJudgeAnswer = (data: { id: string; correct: boolean | null }[]) => {
+    this.socket?.emit(
+      'JPD:bulkJudge',
+      data.map((d) => ({ ...d, currentQ: this.state.game?.currentQ })),
+    );
   };
 
   getCategories = () => {
@@ -468,10 +490,13 @@ export class Jeopardy extends React.Component<{
 
   saveSettings = (settings: GameSettings) => {
     // serialize to localStorage so settings persist on reload
-    window.localStorage.setItem('jeopardy-gameSettings', JSON.stringify(settings));
+    window.localStorage.setItem(
+      'jeopardy-gameSettings',
+      JSON.stringify(settings),
+    );
     // update state
     this.setState({ settings });
-  }
+  };
 
   render() {
     const game = this.state.game;
@@ -530,7 +555,7 @@ export class Jeopardy extends React.Component<{
         )}
         {this.state.showSettingsModal && (
           <SettingsModal
-            onClose={() => this.setState({showSettingsModal: false})}
+            onClose={() => this.setState({ showSettingsModal: false })}
             onSubmit={this.saveSettings}
             settings={this.state.settings}
           />
@@ -764,9 +789,7 @@ export class Jeopardy extends React.Component<{
                               }}
                             >
                               <Button
-                                onClick={() =>
-                                  this.socket?.emit('JPD:skipQ')
-                                }
+                                onClick={() => this.socket?.emit('JPD:skipQ')}
                                 icon
                                 labelPosition="left"
                               >
@@ -807,12 +830,11 @@ export class Jeopardy extends React.Component<{
                               key={winnerId}
                               alt=""
                               style={{ width: '200px', height: '200px' }}
-                              src={
-                                getDefaultPicture(
-                                  participants.find(p => p.id === winnerId)?.name ?? '',
-                                  getColorHex(winnerId),
-                                )
-                              }
+                              src={getDefaultPicture(
+                                participants.find((p) => p.id === winnerId)
+                                  ?.name ?? '',
+                                getColorHex(winnerId),
+                              )}
                             />
                           ))}
                         </div>
@@ -831,12 +853,10 @@ export class Jeopardy extends React.Component<{
                       <div className="picture" style={{ position: 'relative' }}>
                         <img
                           alt=""
-                          src={
-                            getDefaultPicture(
-                              p.name ?? '',
-                              getColorHex(p.id),
-                            )
-                          }
+                          src={getDefaultPicture(
+                            p.name ?? '',
+                            getColorHex(p.id),
+                          )}
                         />
                         <div
                           style={{
@@ -889,10 +909,7 @@ export class Jeopardy extends React.Component<{
                               />
                             ) : null}
                             {game.host && game.host === p.id ? (
-                              <Icon
-                              title="Game host"
-                              name="star"
-                            />
+                              <Icon title="Game host" name="star" />
                             ) : null}
                             {!p.connected ? (
                               <Icon
@@ -903,7 +920,9 @@ export class Jeopardy extends React.Component<{
                             ) : null}
                           </div>
                         )}
-                        {game && p.id === game.currentJudgeAnswer && canJudge ? (
+                        {game &&
+                        p.id === game.currentJudgeAnswer &&
+                        canJudge ? (
                           <div className="judgeButtons">
                             <Popup
                               content="Correct"
@@ -952,9 +971,7 @@ export class Jeopardy extends React.Component<{
                       </div>
                       <div
                         className={`points ${
-                          game && game.scores[p.id] < 0
-                            ? 'negative'
-                            : ''
+                          game && game.scores[p.id] < 0 ? 'negative' : ''
                         }`}
                       >
                         {(game?.scores[p.id] || 0).toLocaleString()}
@@ -1048,11 +1065,13 @@ export class Jeopardy extends React.Component<{
                   }
                   onKeyPress={(e: any) =>
                     e.key === 'Enter' &&
-                    this.newGame({number: this.state.localEpNum})
+                    this.newGame({ number: this.state.localEpNum })
                   }
                   icon={
                     <Icon
-                      onClick={() => this.newGame({number: this.state.localEpNum})}
+                      onClick={() =>
+                        this.newGame({ number: this.state.localEpNum })
+                      }
                       name="arrow right"
                       inverted
                       circular
@@ -1100,20 +1119,24 @@ export class Jeopardy extends React.Component<{
                   <Icon name="book" />
                   {this.state.readingDisabled ? 'Reading off' : 'Reading on'}
                 </Button>
-                <Button onClick={() => this.setState({ showSettingsModal: true })} icon labelPosition="left">
-                  <Icon name="cog" />
-                  Settings
-                </Button>
-                {canJudge && <Button
-                  onClick={() =>
-                    this.socket?.emit('JPD:undo')
-                  }
+                <Button
+                  onClick={() => this.setState({ showSettingsModal: true })}
                   icon
                   labelPosition="left"
                 >
-                  <Icon name="undo" />
-                  Undo Judging
-                </Button>}
+                  <Icon name="cog" />
+                  Settings
+                </Button>
+                {canJudge && (
+                  <Button
+                    onClick={() => this.socket?.emit('JPD:undo')}
+                    icon
+                    labelPosition="left"
+                  >
+                    <Icon name="undo" />
+                    Undo Judging
+                  </Button>
+                )}
                 {/* <Button
                   onClick={() => this.socket?.emit('JPD:cmdIntro')}
                   icon
@@ -1156,7 +1179,7 @@ class TimerBar extends React.Component<{
       // Or have a separate step where the server instructs all clients to submit whatever is in box and accepts it
       this.submitTimeout = window.setTimeout(
         this.props.submitAnswer,
-        (this.props.endTS - Date.now()) - 500,
+        this.props.endTS - Date.now() - 500,
       );
     }
   }
@@ -1208,7 +1231,7 @@ const BulkJudgeModal = ({
   onClose: () => void;
   game: PublicGameState | undefined;
   participants: User[];
-  bulkJudge: (judges: {id: string, correct: boolean | null}[]) => void;
+  bulkJudge: (judges: { id: string; correct: boolean | null }[]) => void;
   getBuzzOffset: (id: string) => number;
 }) => {
   const [decisions, setDecisions] = useState<Record<string, string>>({});
@@ -1254,7 +1277,8 @@ const BulkJudgeModal = ({
                 <TableCell>
                   {participants
                     .filter(
-                      (p) => game?.answers[p.id]?.toLowerCase()?.trim() === answer,
+                      (p) =>
+                        game?.answers[p.id]?.toLowerCase()?.trim() === answer,
                     )
                     .map((p) => {
                       return (
@@ -1309,26 +1333,63 @@ const SettingsModal = ({
   onSubmit: (settings: GameSettings) => void;
   settings: GameSettings;
 }) => {
-  const [answerTimeout, setAnswerTimeout] = useState<number | undefined>(settings.answerTimeout);
-  const [finalTimeout, setFinalTimeout] = useState<number | undefined>(settings.finalTimeout);
-  const [makeMeHost, setMakeMeHost] = useState<boolean | undefined>(settings.makeMeHost);
-  const [allowMultipleCorrect, setAllowMultipleCorrect] = useState<boolean | undefined>(settings.allowMultipleCorrect);
-  const [enableAIJudge, setEnableAIJudge] = useState<boolean | undefined>(settings.enableAIJudge);
+  const [answerTimeout, setAnswerTimeout] = useState<number | undefined>(
+    settings.answerTimeout,
+  );
+  const [finalTimeout, setFinalTimeout] = useState<number | undefined>(
+    settings.finalTimeout,
+  );
+  const [makeMeHost, setMakeMeHost] = useState<boolean | undefined>(
+    settings.makeMeHost,
+  );
+  const [allowMultipleCorrect, setAllowMultipleCorrect] = useState<
+    boolean | undefined
+  >(settings.allowMultipleCorrect);
+  const [enableAIJudge, setEnableAIJudge] = useState<boolean | undefined>(
+    settings.enableAIJudge,
+  );
   return (
     <Modal open onClose={onClose}>
       <Modal.Header>Settings</Modal.Header>
       <Modal.Content>
         <h4>Settings will be applied to any games you create.</h4>
-        <Checkbox checked={makeMeHost} onChange={(e, props) => setMakeMeHost(props.checked)} label="Make me the host (Only you will be able to select questions and make judging decisions)" slider={true} />
-        <Checkbox checked={allowMultipleCorrect} onChange={(e, props) => setAllowMultipleCorrect(props.checked)} label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)" slider={true} />
-        <Checkbox checked={enableAIJudge} onChange={(e, props) => setEnableAIJudge(props.checked)} label="Automatically judge answers using AI" slider={true} />
+        <Checkbox
+          checked={makeMeHost}
+          onChange={(e, props) => setMakeMeHost(props.checked)}
+          label="Make me the host (Only you will be able to select questions and make judging decisions)"
+          slider={true}
+        />
+        <Checkbox
+          checked={allowMultipleCorrect}
+          onChange={(e, props) => setAllowMultipleCorrect(props.checked)}
+          label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)"
+          slider={true}
+        />
+        <Checkbox
+          checked={enableAIJudge}
+          onChange={(e, props) => setEnableAIJudge(props.checked)}
+          label="Automatically judge answers using AI"
+          slider={true}
+        />
         <div style={{ display: 'flex', gap: '2px' }}>
-        <Input style={{ width: 60 }} type="number" value={answerTimeout} onChange={(e, data) => setAnswerTimeout(Number(data.value))} size="mini" />
-        Seconds for regular answers and Daily Double wagers (Default: 20)
+          <Input
+            style={{ width: 60 }}
+            type="number"
+            value={answerTimeout}
+            onChange={(e, data) => setAnswerTimeout(Number(data.value))}
+            size="mini"
+          />
+          Seconds for regular answers and Daily Double wagers (Default: 20)
         </div>
         <div style={{ display: 'flex', gap: '2px' }}>
-        <Input style={{ width: 60 }} type="number" value={finalTimeout} onChange={(e, data) => setFinalTimeout(Number(data.value))} size="mini" />
-        Seconds for Final Jeopardy answers and wagers (Default: 30)
+          <Input
+            style={{ width: 60 }}
+            type="number"
+            value={finalTimeout}
+            onChange={(e, data) => setFinalTimeout(Number(data.value))}
+            size="mini"
+          />
+          Seconds for Final Jeopardy answers and wagers (Default: 30)
         </div>
       </Modal.Content>
       <Modal.Actions>

@@ -81,9 +81,11 @@ export class Chat extends React.Component<ChatProps> {
     } else if (cmd === 'judge') {
       const { id, correct, answer, delta, name } = JSON.parse(msg);
       return (
-        <span style={{ color: correct ? '#21ba45' : '#db2828' }}>{`ruled ${
-          name
-        } ${correct ? 'correct' : 'incorrect'}: ${answer} (${delta >= 0 ? '+' : ''}${delta})`}</span>
+        <span
+          style={{ color: correct ? '#21ba45' : '#db2828' }}
+        >{`ruled ${name} ${correct ? 'correct' : 'incorrect'}: ${answer} (${
+          delta >= 0 ? '+' : ''
+        }${delta})`}</span>
       );
     } else if (cmd === 'answer') {
       return `Correct answer: ${msg}`;
@@ -168,9 +170,7 @@ const ChatMessage = ({
 }: any) => {
   return (
     <Comment>
-      <Comment.Avatar
-        src={getDefaultPicture(name, getColorHex(id))}
-      />
+      <Comment.Avatar src={getDefaultPicture(name, getColorHex(id))} />
       <Comment.Content>
         <Comment.Author as="a" className="light">
           {name || id}
