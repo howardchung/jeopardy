@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid';
 
 export function formatTimestamp(input: any) {
   if (
@@ -106,8 +105,17 @@ export function getOrCreateClientId() {
   let clientId = window.localStorage.getItem('jeopardy-clientid');
   if (!clientId) {
     // Generate a new clientID and save it
-    clientId = uuidv4();
+    clientId = crypto.randomUUID ? crypto.randomUUID() : uuidv4();
     window.localStorage.setItem('jeopardy-clientid', clientId);
   }
   return clientId;
+}
+
+function uuidv4() {
+  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) =>
+    (
+      +c ^
+      (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (+c / 4)))
+    ).toString(16),
+  );
 }
