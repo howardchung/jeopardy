@@ -81,11 +81,22 @@ async function getOpenAIDecision(
   return null;
 }
 
+// On boot, start with the initial data included in repo
 console.time('load');
-const jData = JSON.parse(
+let jData = JSON.parse(
   gunzipSync(fs.readFileSync('./jeopardy.json.gz')).toString(),
 );
 console.timeEnd('load');
+
+async function refreshEpisodes() {
+  console.time('reload');
+  const response = await fetch('https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz');
+  jData = JSON.parse(gunzipSync(await response.arrayBuffer()).toString());
+  console.timeEnd('reload');
+}
+// Periodically refetch the latest episode data and replace it in memory
+setInterval(refreshEpisodes, 24 * 60 * 60 * 1000);
+refreshEpisodes();
 
 let redis = undefined as unknown as Redis;
 if (process.env.REDIS_URL) {
