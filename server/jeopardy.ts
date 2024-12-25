@@ -90,8 +90,12 @@ console.timeEnd('load');
 
 async function refreshEpisodes() {
   console.time('reload');
-  const response = await fetch('https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz');
-  jData = JSON.parse(gunzipSync(await response.arrayBuffer()).toString());
+  try {
+    const response = await fetch('https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz');
+    jData = JSON.parse(gunzipSync(await response.arrayBuffer()).toString());
+  } catch (e) {
+    console.log(e);
+  }
   console.timeEnd('reload');
 }
 // Periodically refetch the latest episode data and replace it in memory
