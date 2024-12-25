@@ -18,6 +18,7 @@ type GameOptions = {
   filter?: string;
   makeMeHost?: boolean;
   allowMultipleCorrect?: boolean;
+  // Turns on AI judge by default (otherwise needs to be enabled per game)
   enableAIJudge?: boolean;
   // timeout to use for DD wagers and question answers
   answerTimeout?: number;

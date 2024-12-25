@@ -1,8 +1,7 @@
 import React from 'react';
 import { Button, Comment, Icon, Input, Segment } from 'semantic-ui-react';
-import { Socket } from 'socket.io';
 
-import { formatTimestamp, getColorHex, getDefaultPicture } from '../../utils';
+import { getColorHex, getDefaultPicture } from '../../utils';
 
 interface ChatProps {
   chat: ChatMessage[];
@@ -63,29 +62,14 @@ export class Chat extends React.Component<ChatProps> {
   };
 
   formatMessage = (cmd: string, msg: string): React.ReactNode | string => {
-    if (cmd === 'host') {
-      return (
-        <React.Fragment>
-          {`changed the video to `}
-          <span style={{ textTransform: 'initial' }}>
-            {this.props.getMediaDisplayName(msg)}
-          </span>
-        </React.Fragment>
-      );
-    } else if (cmd === 'seek') {
-      return `jumped to ${formatTimestamp(msg)}`;
-    } else if (cmd === 'play') {
-      return `started the video at ${formatTimestamp(msg)}`;
-    } else if (cmd === 'pause') {
-      return `paused the video at ${formatTimestamp(msg)}`;
-    } else if (cmd === 'judge') {
-      const { id, correct, answer, delta, name } = JSON.parse(msg);
+    if (cmd === 'judge') {
+      const { id, correct, answer, delta, name, confidence } = JSON.parse(msg);
       return (
         <span
           style={{ color: correct ? '#21ba45' : '#db2828' }}
         >{`ruled ${name} ${correct ? 'correct' : 'incorrect'}: ${answer} (${
           delta >= 0 ? '+' : ''
-        }${delta})`}</span>
+        }${delta}) ${confidence != null ? `(${(confidence * 100).toFixed(0)}% conf.)` : ''}`}</span>
       );
     } else if (cmd === 'answer') {
       return `Correct answer: ${msg}`;
@@ -162,7 +146,6 @@ export class Chat extends React.Component<ChatProps> {
 const ChatMessage = ({
   id,
   name,
-  picture,
   timestamp,
   cmd,
   msg,
@@ -176,7 +159,7 @@ const ChatMessage = ({
           {name || id}
         </Comment.Author>
         <Comment.Metadata className="dark">
-          <div>{new Date(timestamp).toLocaleTimeString()}</div>
+          <div title={new Date(timestamp).toDateString()}>{new Date(timestamp).toLocaleTimeString()}</div>
         </Comment.Metadata>
         <Comment.Text className="light system">
           {cmd && formatMessage(cmd, msg)}

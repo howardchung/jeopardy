@@ -767,18 +767,18 @@ export class Jeopardy extends React.Component<{
                           <div className={`answer`} style={{ height: '30px' }}>
                             {game.currentAnswer}
                           </div>
-                          {Boolean(game.playClueEndTS) && (
-                            <TimerBar endTS={game.playClueEndTS} />
-                          )}
+                          {/* {Boolean(game.playClueEndTS) && (
+                            <TimerBar duration={game.playClueEndTS - game.serverTime} />
+                          )} */}
                           {Boolean(game.questionEndTS) && (
                             <TimerBar
-                              endTS={game.questionEndTS}
+                              duration={game.questionEndTS - game.serverTime}
                               secondary
                               submitAnswer={this.submitAnswer}
                             />
                           )}
                           {Boolean(game.wagerEndTS) && (
-                            <TimerBar endTS={game.wagerEndTS} secondary />
+                            <TimerBar duration={game.wagerEndTS - game.serverTime} secondary />
                           )}
                           {game.canNextQ && (
                             <div
@@ -1120,6 +1120,17 @@ export class Jeopardy extends React.Component<{
                   {this.state.readingDisabled ? 'Reading off' : 'Reading on'}
                 </Button>
                 <Button
+                  icon
+                  labelPosition="left"
+                  color={game?.enableAIJudge ? 'green' : 'red'}
+                  onClick={() => {
+                    this.socket?.emit('JPD:enableAiJudge', !Boolean(game?.enableAIJudge));
+                  }}
+                >
+                  <Icon name="lightbulb" />
+                  {game?.enableAIJudge ? 'AI Judge on' : 'AI Judge off'}
+                </Button>
+                <Button
                   onClick={() => this.setState({ showSettingsModal: true })}
                   icon
                   labelPosition="left"
@@ -1163,7 +1174,7 @@ export class Jeopardy extends React.Component<{
 }
 
 class TimerBar extends React.Component<{
-  endTS: number;
+  duration: number;
   secondary?: boolean;
   submitAnswer?: Function;
 }> {
@@ -1179,7 +1190,7 @@ class TimerBar extends React.Component<{
       // Or have a separate step where the server instructs all clients to submit whatever is in box and accepts it
       this.submitTimeout = window.setTimeout(
         this.props.submitAnswer,
-        this.props.endTS - Date.now() - 500,
+        this.props.duration - 500,
       );
     }
   }
@@ -1189,20 +1200,17 @@ class TimerBar extends React.Component<{
     }
   }
   render() {
-    const duration = this.props.endTS - Date.now();
-    return (
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '0px',
-          left: '0px',
-          height: '10px',
-          width: this.state.width,
-          backgroundColor: this.props.secondary ? '#16AB39' : '#0E6EB8',
-          transition: `${duration / 1000}s width linear`,
-        }}
-      />
-    );
+    return <div
+      style={{
+        position: 'absolute',
+        bottom: '0px',
+        left: '0px',
+        height: '10px',
+        width: this.state.width,
+        backgroundColor: this.props.secondary ? '#16AB39' : '#0E6EB8',
+        transition: `${this.props.duration / 1000}s width linear`,
+      }}
+    />;
   }
 }
 
@@ -1368,10 +1376,10 @@ const SettingsModal = ({
         <Checkbox
           checked={enableAIJudge}
           onChange={(e, props) => setEnableAIJudge(props.checked)}
-          label="Automatically judge answers using AI"
+          label="Enable AI judge for each game by default"
           slider={true}
         />
-        <div style={{ display: 'flex', gap: '2px' }}>
+        <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
           <Input
             style={{ width: 60 }}
             type="number"
@@ -1381,7 +1389,7 @@ const SettingsModal = ({
           />
           Seconds for regular answers and Daily Double wagers (Default: 20)
         </div>
-        <div style={{ display: 'flex', gap: '2px' }}>
+        <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
           <Input
             style={{ width: 60 }}
             type="number"

@@ -20,24 +20,24 @@ const openai = process.env.OPENAI_SECRET_KEY
 // If we can squeeze the instructions into 512 tokens it'll probably be cheaper to not use cache
 // Currently, consumes about 250 input tokens and 6 output tokens per answer (depends on the question length)
 const prompt = `
-Your job is to decide whether a response to a trivia question was correct or not, given the question, the correct answer, and the response.
-If the response is a misspelling of the correct answer, consider it correct.
-If the response is an abbreviation of the correct answer, consider it correct.
-If the response could be pronounced the same way as the correct answer, consider it correct.
-If the correct answer is someone's name and the response is only the surname, consider it correct.
+Decide whether a response to a trivia question is correct, given the question, the correct answer, and the response.
+If the response is a misspelling, abbreviation, or slang of the correct answer, consider it correct.
+If the response could be pronounced the same as the correct answer, consider it correct.
+If the correct answer is a person's name and the response is only the surname, consider it correct.
 If the response includes the correct answer but also other incorrect answers, consider it incorrect.
-The response might start with "what is" or "who is", if so, you should ignore this prefix when making your decision.
-The correct answer may contain text in parentheses, if so, this text is an optional part of the answer and does not need to be included in the response to be considered correct.
+Ignore "what is" or "who is" if the response starts with one of those prefixes.
+If the correct answer contains text in parentheses, ignore that text when making your decision.
 Only if there is no way the response could be construed to be the correct answer should you consider it incorrect.
 `;
 // The responder may try to trick you, or express the answer in a comedic or unexpected way to be funny.
-// If the response is phrased differently than than the correct answer, but is clearly referring to the same thing or things, it should be considered correct.
+// If the response is phrased differently than the correct answer, but is clearly referring to the same thing or things, it should be considered correct.
+// Also return a number between 0 and 1 indicating how confident you are in your decision.
 
 async function getOpenAIDecision(
   question: string,
   answer: string,
   response: string,
-): Promise<{ correct: boolean } | null> {
+): Promise<{ correct: boolean; confidence: number; } | null> {
   if (!openai) {
     return null;
   }
@@ -58,6 +58,9 @@ async function getOpenAIDecision(
             correct: {
               type: 'boolean',
             },
+            // confidence: {
+            //   type: 'number',
+            // },
           },
           required: ['correct'],
           additionalProperties: false,
@@ -190,8 +193,8 @@ const getGameState = (
     board: {} as { [key: string]: RawQuestion },
     answerTimeout: Number(options.answerTimeout) * 1000 || 20000,
     finalTimeout: Number(options.finalTimeout) * 1000 || 30000,
-    enableAIJudge: options.enableAIJudge,
     public: {
+      serverTime: Date.now(),
       epNum: options.epNum,
       airDate: options.airDate,
       info: options.info,
@@ -200,6 +203,7 @@ const getGameState = (
       round: '', // jeopardy or double or final
       picker: undefined as string | undefined, // If null let anyone pick, otherwise last correct answer
       host: options.host,
+      enableAIJudge: options.enableAIJudge,
       allowMultipleCorrect: options.allowMultipleCorrect,
       ...getPerQuestionState(),
     },
@@ -434,6 +438,10 @@ export class Jeopardy {
           this.nextQuestion();
         }
       });
+      socket.on('JPD:enableAiJudge', (enable: boolean) => {
+        this.jpd.public.enableAIJudge = Boolean(enable);
+        this.emitState();
+      });
       socket.on('disconnect', () => {
         if (this.jpd && this.jpd.public) {
           // If player who needs to submit wager leaves, submit 0
@@ -585,6 +593,7 @@ export class Jeopardy {
   }
 
   emitState() {
+    this.jpd.public.serverTime = Date.now();
     this.io.of(this.roomId).emit('JPD:state', this.jpd.public);
   }
 
@@ -848,7 +857,7 @@ export class Jeopardy {
     // If user undoes, disable AI judge to prevent loop
     if (
       openai &&
-      this.jpd.enableAIJudge &&
+      this.jpd.public.enableAIJudge &&
       !this.undoActivated &&
       this.jpd.public.currentJudgeAnswer
     ) {
@@ -873,6 +882,7 @@ export class Jeopardy {
     const decision = await getOpenAIDecision(q, a, response);
     console.log('[AIDECISION]', id, q, a, response, decision);
     const correct = decision?.correct;
+    const confidence = decision?.confidence;
     if (correct != null) {
       // Log the AI decision along with whether the user agreed with it (accuracy)
       // If the user undoes and then chooses differently than AI, then that's a failed decision
@@ -880,10 +890,10 @@ export class Jeopardy {
       if (redis) {
         redis.lpush(
           'jpd:aiJudges',
-          JSON.stringify({ q, a, response, correct }),
+          JSON.stringify({ q, a, response, correct, confidence }),
         );
       }
-      this.judgeAnswer(undefined, { currentQ, id, correct });
+      this.judgeAnswer(undefined, { currentQ, id, correct, confidence });
     }
   }
 
@@ -911,7 +921,8 @@ export class Jeopardy {
       currentQ,
       id,
       correct,
-    }: { currentQ: string; id: string; correct: boolean | null },
+      confidence,
+    }: { currentQ: string; id: string; correct: boolean | null, confidence?: number },
   ) {
     if (id in this.jpd.public.judges) {
       // Already judged this player
@@ -960,6 +971,7 @@ export class Jeopardy {
           answer: this.jpd.public.answers[id],
           correct,
           delta: correct ? delta : -delta,
+          confidence,
         }),
       };
       this.room.addChatMessage(socket, msg);
