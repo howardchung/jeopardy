@@ -23,9 +23,8 @@ A website for playing Jeopardy! together with friends over the Internet. Designe
 
 ### Judging:
 
-- Players judge answer correctness themselves.
-- Auto-judging is quite a difficult problem to solve, due to the number of ways answers can be represented, and spelling errors.
-- Rule-based approaches will not scale sufficiently, and probably something ML/AI-powered is required for a usable/non-frustrating experience.
+- Players can judge answer correctness themselves.
+- An experimental AI judge powered by ChatGPT is in testing.
 
 ### Data:
 
@@ -33,13 +32,11 @@ A website for playing Jeopardy! together with friends over the Internet. Designe
 - Games might be incomplete if some clues weren't revealed on the show.
 
 ## Updating Clues:
-
-- The j-archive-parser project needs to be inside this directory
-- Run that to extract CSV data, then run `node dev/parseJArchiveCsv.js` to generate the single `jeopardy.json.gz` file.
+- Game data is collected using a separate j-archive-parser project and collected into a single gzipped JSON file, which this project can retrieve.
 
 ## Environment Variables
-
 - `REDIS_URL`: Provide to allow persisting rooms to Redis so they survive server reboots
+- `OPENAI_SECRET_KEY`: Provide to allow using OpenAI's ChatGPT to judge answers
 
 ## Tech
 
