@@ -231,6 +231,7 @@ export class Jeopardy {
   // Note: snapshot is not persisted so undo is not possible if server restarts
   private jpdSnapshot: ReturnType<typeof getGameState> | undefined;
   private undoActivated: boolean | undefined = undefined;
+  private aiJudged: boolean | undefined = undefined;
   private io: Server;
   public roomId: string;
   private room: Room;
@@ -373,6 +374,7 @@ export class Jeopardy {
         // Undo no longer possible after next question is picked
         this.jpdSnapshot = undefined;
         this.undoActivated = undefined;
+        this.aiJudged = undefined;
         this.emitState();
       });
       socket.on('JPD:buzz', () => {
@@ -441,7 +443,11 @@ export class Jeopardy {
         // Reset the game state to the last snapshot
         // Snapshot updates at each revealAnswer
         if (this.jpdSnapshot) {
-          this.undoActivated = true;
+          redisCount('undo');
+          if (this.aiJudged) {
+            redisCount('aiUndo');
+            this.aiJudged = undefined;
+          }
           this.jpd = JSON.parse(JSON.stringify(this.jpdSnapshot));
           this.advanceJudging(false);
           this.emitState();
@@ -869,10 +875,10 @@ export class Jeopardy {
       this.advanceJudging(skipJudging);
       return;
     }
-    // If user undoes, disable AI judge to prevent loop
     if (
       openai &&
       this.jpd.public.enableAIJudge &&
+      // Don't use AI if the user undid
       !this.undoActivated &&
       this.jpd.public.currentJudgeAnswer
     ) {
@@ -990,6 +996,9 @@ export class Jeopardy {
         }),
       };
       this.room.addChatMessage(socket, msg);
+      if (!socket) {
+        this.aiJudged = true;
+      }
     }
     const allowMultipleCorrect =
       this.jpd.public.round === 'final' || this.jpd.public.allowMultipleCorrect;
@@ -1001,7 +1010,7 @@ export class Jeopardy {
     } else {
       this.emitState();
     }
-    return correct !== null;
+    return correct != null;
   }
 
   submitWager(id: string, wager: number) {

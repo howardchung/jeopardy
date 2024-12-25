@@ -109,6 +109,8 @@ app.get('/stats', async (req, res) => {
     const nonTrivialJudges = await redis?.llen('jpd:nonTrivialJudges');
     const jeopardyResults = await redis?.llen('jpd:results');
     const aiJudges = await redis?.llen('jpd:aiJudges');
+    const undo = await getRedisCountDay('undo');
+    const aiUndo = await getRedisCountDay('aiUndo');
 
     res.json({
       uptime: process.uptime(),
@@ -121,6 +123,8 @@ app.get('/stats', async (req, res) => {
       customGames,
       nonTrivialJudges,
       aiJudges,
+      undo,
+      aiUndo,
       jeopardyResults,
       rooms: roomData,
     });
