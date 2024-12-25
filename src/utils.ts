@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 export function formatTimestamp(input: any) {
   if (
     input === null ||
@@ -97,8 +95,8 @@ export const serverPath =
   }`;
 
 export async function generateName(): Promise<string> {
-  const response = await axios.get<string>(serverPath + '/generateName');
-  return response.data;
+  const response = await fetch(serverPath + '/generateName');
+  return response.text();
 }
 
 export function getOrCreateClientId() {
