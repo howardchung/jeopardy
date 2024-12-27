@@ -153,10 +153,12 @@ async function genAITextToSpeech(text: string): Promise<string | undefined> {
 
 // On boot, start with the initial data included in repo
 console.time('load');
-let gzData = fs.readFileSync('./jeopardy.json.gz');
+let fileData: Buffer | undefined = fs.readFileSync('./jeopardy.json.gz');
 let jData = JSON.parse(
-  gunzipSync(gzData).toString(),
+  gunzipSync(fileData).toString(),
 );
+let hash = nodeCrypto.createHash('md5').update(fileData).digest('hex');
+fileData = undefined;
 console.timeEnd('load');
 console.log('loaded %d episodes', Object.keys(jData).length);
 
@@ -168,11 +170,12 @@ async function refreshEpisodes() {
   try {
     const response = await fetch('https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz');
     const arrayBuf = await response.arrayBuffer();
-    const newData = Buffer.from(arrayBuf);
+    const buf = Buffer.from(arrayBuf);
+    const newHash = nodeCrypto.createHash('md5').update(buf).digest('hex');
     // Check if new compressed data matches current
-    if (!newData.equals(gzData)) {
-      jData = JSON.parse(gunzipSync(newData).toString());
-      gzData = newData;
+    if (newHash !== hash) {
+      jData = JSON.parse(gunzipSync(buf).toString());
+      hash = newHash;
       console.log('reloaded %d episodes', Object.keys(jData).length);
     } else {
       console.log('skipping reload since data is the same');
