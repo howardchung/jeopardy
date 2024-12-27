@@ -384,7 +384,7 @@ export class Jeopardy extends React.Component<{
     }
     // if enabled, attempt using pregen AI voice
     // Always checking first is kind of slow due to http request needed
-    if (this.state.game?.useAIVoices) {
+    if (this.state.game?.enableAIVoices) {
       try {
         await new Promise(async (resolve, reject) => {
           const hash = MD5.hash(text);

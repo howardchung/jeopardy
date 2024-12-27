@@ -304,10 +304,12 @@ const getGameState = (
       scores: {} as Record<string, number>, // player scores
       round: '', // jeopardy or double or final
       picker: undefined as string | undefined, // If null let anyone pick, otherwise last correct answer
+      // Non-changeable settings during a game
       host: options.host,
-      enableAIJudge: options.enableAIJudge,
       allowMultipleCorrect: options.allowMultipleCorrect,
-      useAIVoices: false,
+      // Changeable settings during a game
+      enableAIJudge: options.enableAIJudge,
+      enableAIVoices: false,
       ...getPerQuestionState(),
     },
   };
@@ -537,7 +539,13 @@ export class Jeopardy {
             this.aiJudged = undefined;
           }
           this.undoActivated = true;
+          const enableAIJudge = this.jpd.public.enableAIJudge;
+          const enableAIVoices = this.jpd.public.enableAIVoices;
           this.jpd = JSON.parse(JSON.stringify(this.jpdSnapshot));
+          // These settings are "live-changeable", so we don't want to reset them on undo
+          // We could store them outside of jpd state but then need to take care of serialization separately
+          this.jpd.public.enableAIJudge = enableAIJudge;
+          this.jpd.public.enableAIVoices = enableAIVoices;
           this.advanceJudging(false);
           this.emitState();
         }
@@ -551,6 +559,8 @@ export class Jeopardy {
       socket.on('JPD:enableAiJudge', (enable: boolean) => {
         this.jpd.public.enableAIJudge = Boolean(enable);
         this.emitState();
+        // optional: If we're in the judging phase, trigger the AI judge here
+        // That way we can decide to use AI judge after the first answer has already been revealed
       });
       socket.on('disconnect', () => {
         if (this.jpd && this.jpd.public) {
@@ -1221,7 +1231,7 @@ export class Jeopardy {
 
   async pregenAIVoices() {
     // Indicate we should use AI voices for this game
-    this.jpd.public.useAIVoices = true;
+    this.jpd.public.enableAIVoices = true;
     this.emitState();
     // For the current game, get all category names and clues (61 clues + 12 category names)
     // Final category doesn't get read right now
