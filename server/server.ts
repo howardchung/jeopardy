@@ -109,6 +109,7 @@ app.get('/stats', async (req, res) => {
     const aiJudgeLastDay = await getRedisCountDay('aiJudge');
     const undoLastDay = await getRedisCountDay('undo');
     const aiUndoLastDay = await getRedisCountDay('aiUndo');
+    const aiVoiceLastDay = await getRedisCountDay('aiVoice');
     const nonTrivialJudges = await redis?.llen('jpd:nonTrivialJudges');
     const jeopardyResults = await redis?.llen('jpd:results');
     const aiJudges = await redis?.llen('jpd:aiJudges');
@@ -125,6 +126,7 @@ app.get('/stats', async (req, res) => {
       aiJudgeLastDay,
       undoLastDay,
       aiUndoLastDay,
+      aiVoiceLastDay,
       nonTrivialJudges,
       jeopardyResults,
       aiJudges,
@@ -177,4 +179,24 @@ app.post('/createRoom', (req, res) => {
 
 app.get('/generateName', (req, res) => {
   res.send(makeUserName());
+});
+
+// Proxy to the RVC voice clips, since it doesn't use https
+const RVC_HOST = 'http://azure.howardchung.net:8082';
+app.get('/aiVoice/:hash', async (req, res) => {
+  const { hash } = req.params;
+  const { headers, body }= await fetch(RVC_HOST + '/gradio_api/file=/datadrive/ultimate-rvc/audio/output/' + hash + '.mp3');
+  body?.pipeTo(
+    new WritableStream({
+      start() {
+        headers.forEach((v, n) => res.setHeader(n, v));
+      },
+      write(chunk) {
+        res.write(chunk);
+      },
+      close() {
+        res.end();
+      },
+    })
+  );
 });

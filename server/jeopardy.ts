@@ -1223,7 +1223,7 @@ export class Jeopardy {
     // Indicate we should use AI voices for this game
     this.jpd.public.useAIVoices = true;
     this.emitState();
-    // For the current game, get all category names and clues (61 clues + 10 category names)
+    // For the current game, get all category names and clues (61 clues + 12 category names)
     // Final category doesn't get read right now
     const strings = new Set([
       ...this.jpd.jeopardy?.map(item => item.q) ?? [],
@@ -1246,6 +1246,7 @@ export class Jeopardy {
             name: 'System',
             msg: 'generated ai voice ' + i + ': ' + url,
           });
+          redisCount('aiVoice');
         }
       } catch (e) {
         console.log(e);

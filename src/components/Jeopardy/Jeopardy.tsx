@@ -387,9 +387,8 @@ export class Jeopardy extends React.Component<{
     if (this.state.game?.useAIVoices) {
       try {
         await new Promise(async (resolve, reject) => {
-          const RVC_HOST = 'http://azure.howardchung.net:8082';
           const hash = MD5.hash(text);
-          const aiVoice = new Audio(RVC_HOST + '/gradio_api/file=/datadrive/ultimate-rvc/audio/output/' + hash + '.mp3');
+          const aiVoice = new Audio(serverPath + '/aiVoice/' + hash);
           aiVoice.onended = resolve;
           aiVoice.onerror = reject;
           try {
