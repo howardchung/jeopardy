@@ -24,12 +24,12 @@ const prompt = `
 Decide whether a response to a trivia question is correct, given the question, the correct answer, and the response.
 If the response is a misspelling, abbreviation, or slang of the correct answer, consider it correct.
 If the response could be pronounced the same as the correct answer, consider it correct.
-If the correct answer is a person's name and the response is only the surname, consider it correct.
 If the response includes the correct answer but also other incorrect answers, consider it incorrect.
-Ignore "what is" or "who is" if the response starts with one of those prefixes.
-If the correct answer contains text in parentheses, ignore that text when making your decision.
 Only if there is no way the response could be construed to be the correct answer should you consider it incorrect.
 `;
+// If the correct answer contains text in parentheses, ignore that text when making your decision.
+// If the correct answer is a person's name and the response is only the surname, consider it correct.
+// Ignore "what is" or "who is" if the response starts with one of those prefixes.
 // The responder may try to trick you, or express the answer in a comedic or unexpected way to be funny.
 // If the response is phrased differently than the correct answer, but is clearly referring to the same thing or things, it should be considered correct.
 // Also return a number between 0 and 1 indicating how confident you are in your decision.
@@ -536,6 +536,7 @@ export class Jeopardy {
             redisCount('aiUndo');
             this.aiJudged = undefined;
           }
+          this.undoActivated = true;
           this.jpd = JSON.parse(JSON.stringify(this.jpdSnapshot));
           this.advanceJudging(false);
           this.emitState();
