@@ -1,3 +1,5 @@
+import { cyrb53 } from "./hash";
+
 export function formatTimestamp(input: any) {
   if (
     input === null ||
@@ -13,15 +15,6 @@ export function formatTimestamp(input: any) {
     .toString()
     .padStart(2, '0');
   return `${minutes}:${seconds}`;
-}
-
-export function hashString(input: string) {
-  var hash = 0;
-  for (var i = 0; i < input.length; i++) {
-    var charCode = input.charCodeAt(i);
-    hash += charCode;
-  }
-  return hash;
 }
 
 let colorCache: Record<string, number> = {};
@@ -43,7 +36,7 @@ export function getColor(id: string) {
   if (colorCache[id]) {
     return colors[colorCache[id]];
   }
-  colorCache[id] = Math.abs(hashString(id)) % colors.length;
+  colorCache[id] = Math.abs(cyrb53(id)) % colors.length;
   return colors[colorCache[id]];
 }
 
@@ -91,7 +84,7 @@ export function shuffle(array: any[]) {
 export const serverPath =
   import.meta.env.VITE_SERVER_HOST ||
   `${window.location.protocol}//${window.location.hostname}${
-    process.env.NODE_ENV === 'production' ? '' : ':8082'
+    process.env.NODE_ENV === 'production' ? '' : ':8083'
   }`;
 
 export async function generateName(): Promise<string> {

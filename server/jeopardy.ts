@@ -7,6 +7,7 @@ import { gunzipSync } from 'zlib';
 import { redisCount } from './utils/redis';
 import fs from 'fs';
 import OpenAI from 'openai';
+import nodeCrypto from 'node:crypto';
 
 const openai = process.env.OPENAI_SECRET_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY })
@@ -81,18 +82,104 @@ async function getOpenAIDecision(
   return null;
 }
 
+// Given input text, gets back an mp3 file URL
+// We can send this to each client and have it be read
+// The RVC server caches for repeated inputs, so duplicate requests are fast
+// Without GPU acceleration this is kinda slow to do in real time, so we may need to add support to pre-generate audio clips for specific game
+const RVC_HOST = 'http://azure.howardchung.net:8082';
+async function genAITextToSpeech(text: string): Promise<string | undefined> {
+  if (text.length > 10000 || !text.length) {
+    return;
+  }
+  const resp = await fetch(RVC_HOST + '/gradio_api/call/partial_36',
+    {
+      method: 'POST', 
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+    "data": [
+      text,
+      "Trebek",
+      "en-US-ChristopherNeural",
+      0,
+      0,
+      0,
+      0,
+      0,
+      ["rmvpe"],
+      0.5,
+      3,
+      0.25,
+      0.33,
+      128,
+      true,
+      false,
+      1,
+      true,
+      0.7,
+      "contentvec",
+      "",
+      0,
+      0,
+      44100,
+      "mp3",
+      nodeCrypto.createHash('md5').update(text).digest('hex'),
+      ]
+  }),
+  });
+  const info = await resp.json();
+  // console.log(info);
+  // Fetch the result
+  const fetchUrl = RVC_HOST + '/gradio_api/call/partial_36/' + info.event_id;
+  // console.log(fetchUrl);
+  const resp2 = await fetch(fetchUrl);
+  const info2 = await resp2.text();
+  // console.log(info2);
+  const lines = info2.split('\n');
+  // Find the line after complete
+  const completeIndex = lines.indexOf('event: complete');
+  const target = lines[completeIndex + 1];
+  if (target.startsWith('data: ')) {
+      // Take off the prefix, parse the array as json and get the first element
+      const arr = JSON.parse(target.slice(6));
+      // Fix the path /grad/gradio_api/file to /gradio_api/file
+      const url = arr[0].url.replace('/grad/gradio_api/file', '/gradio_api/file');
+      // console.log(url);
+      return url;
+  }
+  return;
+}
+
 // On boot, start with the initial data included in repo
 console.time('load');
+const fileData = fs.readFileSync('./jeopardy.json.gz');
 let jData = JSON.parse(
-  gunzipSync(fs.readFileSync('./jeopardy.json.gz')).toString(),
+  gunzipSync(fileData).toString(),
 );
 console.timeEnd('load');
+console.time('hash');
+let gzHash = nodeCrypto.createHash('md5').update(fileData).digest("hex");
+console.timeEnd('hash');
+console.log('loaded %d episodes with hash %s', Object.keys(jData).length, gzHash);
 
 async function refreshEpisodes() {
+  if (process.env.NODE_ENV === 'development') {
+    return;
+  }
   console.time('reload');
   try {
     const response = await fetch('https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz');
-    jData = JSON.parse(gunzipSync(await response.arrayBuffer()).toString());
+    const newData = await response.arrayBuffer();
+    // Check if md5 matches between new file and old file
+    const newHash = nodeCrypto.createHash('md5').update(Buffer.from(newData)).digest('hex');
+    if (gzHash !== newHash) {
+      jData = JSON.parse(gunzipSync(newData).toString());
+      gzHash = newHash;
+      console.log('reloaded %d episodes with hash %s', Object.keys(jData).length, gzHash);
+    } else {
+      console.log('skipping reload due to matching hash %s', newHash);
+    }
   } catch (e) {
     console.log(e);
   }
@@ -195,9 +282,9 @@ const getGameState = (
     host?: string;
     enableAIJudge?: boolean;
   },
-  jeopardy?: Question[],
-  double?: Question[],
-  final?: Question[],
+  jeopardy?: RawQuestion[],
+  double?: RawQuestion[],
+  final?: RawQuestion[],
 ) => {
   return {
     jeopardy,
@@ -220,6 +307,7 @@ const getGameState = (
       host: options.host,
       enableAIJudge: options.enableAIJudge,
       allowMultipleCorrect: options.allowMultipleCorrect,
+      useAIVoices: false,
       ...getPerQuestionState(),
     },
   };
@@ -732,14 +820,15 @@ export class Jeopardy {
 
   nextRound() {
     this.resetAfterQuestion();
+    // host is made picker in resetAfterQuestion, so any picker changes here should be behind host check
     // advance round counter
     if (this.jpd.public.round === 'jeopardy') {
       this.jpd.public.round = 'double';
       // If double, person with lowest score is picker
       // Unless we are allowing multiple corrects or there's a host
-      // This is nlogn rather than n, but prob ok for small numbers of players
       if (!this.jpd.public.allowMultipleCorrect && !this.jpd.public.host) {
         // Pick the lowest score out of the currently connected players
+        // This is nlogn rather than n, but prob ok for small numbers of players
         const playersWithScores = this.room.getConnectedRoster().map((p) => ({
           id: p.id,
           score: this.jpd.public.scores[p.id] || 0,
@@ -751,6 +840,8 @@ export class Jeopardy {
       this.jpd.public.round = 'final';
       const now = Date.now();
       this.jpd.public.waitingForWager = {};
+      // There's no picker for final. In host mode we set one above
+      this.jpd.public.picker = undefined;
       // Ask all players for wager (including disconnected since they might come back)
       this.room.roster.forEach((p) => {
         this.jpd.public.waitingForWager![p.id] = true;
@@ -801,7 +892,6 @@ export class Jeopardy {
       this.jpd.public.round === 'jeopardy' ||
       this.jpd.public.round === 'double'
     ) {
-      console.log('[PLAYCATEGORIES]', this.jpd.public.round);
       this.playCategories();
     }
   }
@@ -839,7 +929,7 @@ export class Jeopardy {
     this.emitState();
   }
 
-  advanceJudging(skipJudging: boolean) {
+  advanceJudging(skipRemaining: boolean) {
     if (this.jpd.public.currentJudgeAnswerIndex === undefined) {
       this.jpd.public.currentJudgeAnswerIndex = 0;
     } else {
@@ -849,7 +939,7 @@ export class Jeopardy {
       this.jpd.public.currentJudgeAnswerIndex
     ];
     // Either we picked a correct answer (in standard mode) or ran out of players to judge
-    if (skipJudging || this.jpd.public.currentJudgeAnswer === undefined) {
+    if (skipRemaining || this.jpd.public.currentJudgeAnswer === undefined) {
       this.jpd.public.canNextQ = true;
     }
     if (this.jpd.public.currentJudgeAnswer) {
@@ -872,11 +962,12 @@ export class Jeopardy {
         '[ADVANCEJUDGING] player not found, moving on:',
         this.jpd.public.currentJudgeAnswer,
       );
-      this.advanceJudging(skipJudging);
+      this.advanceJudging(skipRemaining);
       return;
     }
     if (
       openai &&
+      !this.jpd.public.canNextQ &&
       this.jpd.public.enableAIJudge &&
       // Don't use AI if the user undid
       !this.undoActivated &&
@@ -913,6 +1004,7 @@ export class Jeopardy {
           'jpd:aiJudges',
           JSON.stringify({ q, a, response, correct, confidence }),
         );
+        redisCount('aiJudge');
       }
       this.judgeAnswer(undefined, { currentQ, id, correct, confidence });
     }
@@ -1002,8 +1094,8 @@ export class Jeopardy {
     }
     const allowMultipleCorrect =
       this.jpd.public.round === 'final' || this.jpd.public.allowMultipleCorrect;
-    const skipJudging = !allowMultipleCorrect && correct === true;
-    this.advanceJudging(skipJudging);
+    const skipRemaining = !allowMultipleCorrect && correct === true;
+    this.advanceJudging(skipRemaining);
 
     if (this.jpd.public.canNextQ) {
       this.nextQuestion();
@@ -1124,6 +1216,40 @@ export class Jeopardy {
       this.unlockAnswer(this.jpd.answerTimeout);
     }
     this.emitState();
+  }
+
+  async pregenAIVoices() {
+    // Indicate we should use AI voices for this game
+    this.jpd.public.useAIVoices = true;
+    this.emitState();
+    // For the current game, get all category names and clues (61 clues + 10 category names)
+    // Final category doesn't get read right now
+    const strings = new Set([
+      ...this.jpd.jeopardy?.map(item => item.q) ?? [],
+      ...this.jpd.double?.map(item => item.q) ?? [],
+      ...this.jpd.final?.map(item => item.q) ?? [],
+      ...this.jpd.jeopardy?.map(item => item.cat) ?? [],
+      ...this.jpd.double?.map(item => item.cat) ?? [],
+    ].filter(Boolean));
+    console.log('%s strings to generate', strings.size);
+    const arr = Array.from(strings);
+    // console.log(arr);
+    for (let i = 0; i < arr.length; i++) {
+      try {
+        // Call the API to pregenerate the voice clips
+        const url = await genAITextToSpeech(arr[i] ?? '');
+        // Report progress back in chat messages
+        if (url) {
+          this.room.addChatMessage(undefined, {
+            id: '',
+            name: 'System',
+            msg: 'generated ai voice ' + i + ': ' + url,
+          });
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    }
   }
 
   toJSON() {

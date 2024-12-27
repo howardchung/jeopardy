@@ -14,6 +14,7 @@ import {
   TableHeaderCell,
   Checkbox,
   Header,
+  SemanticCOLORS,
 } from 'semantic-ui-react';
 import './Jeopardy.css';
 import {
@@ -29,6 +30,8 @@ import { io, type Socket } from 'socket.io-client';
 import { type AppState } from '../App/App';
 import ReactMarkdown from 'react-markdown';
 import { type PublicGameState } from '../../../server/jeopardy';
+import { resolve } from 'node:path';
+import { MD5 } from '../../md5';
 
 const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
 const boardFill = new Audio('/jeopardy/jeopardy-board-fill.mp3');
@@ -379,6 +382,28 @@ export class Jeopardy extends React.Component<{
       // This is probably markdown
       return;
     }
+    // if enabled, attempt using pregen AI voice
+    // Always checking first is kind of slow due to http request needed
+    if (this.state.game?.useAIVoices) {
+      try {
+        await new Promise(async (resolve, reject) => {
+          const RVC_HOST = 'http://azure.howardchung.net:8082';
+          const hash = MD5.hash(text);
+          const aiVoice = new Audio(RVC_HOST + '/gradio_api/file=/datadrive/ultimate-rvc/audio/output/' + hash + '.mp3');
+          aiVoice.onended = resolve;
+          aiVoice.onerror = reject;
+          try {
+            await aiVoice.play();
+          } catch (e) {
+            reject(e);
+          }
+        });
+        return;
+      } catch (e) {
+        console.log(e);
+      }
+    }
+    // If we errored, fallback to browser TTS
     let isIOS = /iPad|iPhone|iPod/.test(navigator.platform);
     if (isIOS) {
       // on iOS speech synthesis just never returns
@@ -562,7 +587,7 @@ export class Jeopardy extends React.Component<{
         )}
         {this.state.overlayMsg && <ErrorModal error={this.state.overlayMsg} />}
         <div
-          style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+          style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '4px' }}
         >
           {
             <React.Fragment>
@@ -843,7 +868,6 @@ export class Jeopardy extends React.Component<{
                   </div>
                 </div>
               }
-              <div style={{ height: '8px' }} />
               <div
                 style={{ display: 'flex', overflowX: 'auto', flexShrink: 0 }}
               >
@@ -993,7 +1017,6 @@ export class Jeopardy extends React.Component<{
                   );
                 })}
               </div>
-              <div style={{ height: '8px' }} />
               <div
                 style={{
                   display: 'flex',
@@ -1058,7 +1081,7 @@ export class Jeopardy extends React.Component<{
                 <Input
                   className="gameSelector"
                   style={{ marginRight: '.25em' }}
-                  label="Game #"
+                  label="#"
                   value={this.state.localEpNum}
                   onChange={(e, data) =>
                     this.setState({ localEpNum: data.value })
@@ -1081,6 +1104,7 @@ export class Jeopardy extends React.Component<{
                 {game && game.airDate && (
                   <Label
                     style={{ display: 'flex', alignItems: 'center' }}
+                    color={getColor((game && game.info) || 'regular') as SemanticCOLORS}
                     size="medium"
                   >
                     {new Date(game.airDate + 'T00:00').toLocaleDateString([], {
@@ -1088,15 +1112,9 @@ export class Jeopardy extends React.Component<{
                       month: 'long',
                       day: 'numeric',
                     })}
+                    {(game && game.info) ? ' - ' + game.info : ''}
                   </Label>
                 )}
-                <Label
-                  style={{ display: 'flex', alignItems: 'center' }}
-                  size="medium"
-                  color={getColor((game && game.info) || 'standard') as any}
-                >
-                  {(game && game.info) || 'standard'}
-                </Label>
                 <Button
                   icon
                   labelPosition="left"
@@ -1145,7 +1163,7 @@ export class Jeopardy extends React.Component<{
                     labelPosition="left"
                   >
                     <Icon name="undo" />
-                    Undo Judging
+                    Undo Judge
                   </Button>
                 )}
                 {/* <Button
@@ -1361,23 +1379,24 @@ const SettingsModal = ({
       <Modal.Header>Settings</Modal.Header>
       <Modal.Content>
         <h4>Settings will be applied to any games you create.</h4>
+        <div style={{ gap: '4px', display: 'flex', flexDirection: 'column' }}>
         <Checkbox
           checked={makeMeHost}
           onChange={(e, props) => setMakeMeHost(props.checked)}
           label="Make me the host (Only you will be able to select questions and make judging decisions)"
-          slider={true}
+          toggle={true}
         />
         <Checkbox
           checked={allowMultipleCorrect}
           onChange={(e, props) => setAllowMultipleCorrect(props.checked)}
           label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)"
-          slider={true}
+          toggle={true}
         />
         <Checkbox
           checked={enableAIJudge}
           onChange={(e, props) => setEnableAIJudge(props.checked)}
-          label="Enable AI judge for each game by default"
-          slider={true}
+          label="Enable AI judge by default"
+          toggle={true}
         />
         <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
           <Input
@@ -1398,6 +1417,7 @@ const SettingsModal = ({
             size="mini"
           />
           Seconds for Final Jeopardy answers and wagers (Default: 30)
+        </div>
         </div>
       </Modal.Content>
       <Modal.Actions>

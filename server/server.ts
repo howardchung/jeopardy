@@ -71,7 +71,7 @@ async function init() {
     }
   });
 
-  server.listen(process.env.PORT || 8082);
+  server.listen(process.env.PORT || 8083);
 }
 
 app.use(cors());
@@ -106,11 +106,12 @@ app.get('/stats', async (req, res) => {
     const chatMessages = await getRedisCountDay('chatMessages');
     const newGames = await getRedisCountDay('newGames');
     const customGames = await getRedisCountDay('customGames');
+    const aiJudgeLastDay = await getRedisCountDay('aiJudge');
+    const undoLastDay = await getRedisCountDay('undo');
+    const aiUndoLastDay = await getRedisCountDay('aiUndo');
     const nonTrivialJudges = await redis?.llen('jpd:nonTrivialJudges');
     const jeopardyResults = await redis?.llen('jpd:results');
     const aiJudges = await redis?.llen('jpd:aiJudges');
-    const undo = await getRedisCountDay('undo');
-    const aiUndo = await getRedisCountDay('aiUndo');
 
     res.json({
       uptime: process.uptime(),
@@ -121,11 +122,12 @@ app.get('/stats', async (req, res) => {
       currentUsers,
       newGames,
       customGames,
+      aiJudgeLastDay,
+      undoLastDay,
+      aiUndoLastDay,
       nonTrivialJudges,
-      aiJudges,
-      undo,
-      aiUndo,
       jeopardyResults,
+      aiJudges,
       rooms: roomData,
     });
   } else {

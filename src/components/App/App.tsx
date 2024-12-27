@@ -52,6 +52,10 @@ export default class App extends React.Component<null, AppState> {
     });
   };
 
+  sendChatMessage = (msg: string) => {
+    this.state.socket?.emit('CMD:chat', msg);
+  };
+
   render() {
     return (
       <React.Fragment>
@@ -94,7 +98,7 @@ export default class App extends React.Component<null, AppState> {
                 <Chat
                   chat={this.state.chat}
                   scrollTimestamp={this.state.scrollTimestamp}
-                  getMediaDisplayName={() => ''}
+                  sendChatMessage={this.sendChatMessage}
                 />
               </Grid.Column>
             </Grid.Row>

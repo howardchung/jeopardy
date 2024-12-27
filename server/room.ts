@@ -28,20 +28,23 @@ export class Room {
 
     io.of(roomId).on('connection', (socket: Socket) => {
       socket.emit('chatinit', this.chat);
-      // socket.on('CMD:chat', (data: string) => {
-      //   if (data && data.length > 65536) {
-      //     // TODO add some validation on client side too so we don't just drop long messages
-      //     return;
-      //   }
-      //   if (process.env.NODE_ENV === 'development' && data === '/clear') {
-      //     this.chat.length = 0;
-      //     io.of(roomId).emit('chatinit', this.chat);
-      //     return;
-      //   }
-      //   redisCount('chatMessages');
-      //   const chatMsg = { id: socket.id, msg: data };
-      //   this.addChatMessage(socket, chatMsg);
-      // });
+      socket.on('CMD:chat', (data: string) => {
+        if (data && data.length > 10000) {
+          // TODO add some validation on client side too so we don't just drop long messages
+          return;
+        }
+        if (data === '/clear') {
+          this.chat.length = 0;
+          io.of(roomId).emit('chatinit', this.chat);
+          return;
+        }
+        if (data === '/aivoices') {
+          this.jpd?.pregenAIVoices();
+        }
+        const sender = this.roster.find(p => p.id === socket.id);
+        const chatMsg = { id: socket.id, name: sender?.name, msg: data };
+        this.addChatMessage(socket, chatMsg);
+      });
     });
   }
 
