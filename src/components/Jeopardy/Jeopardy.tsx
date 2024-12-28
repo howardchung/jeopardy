@@ -388,7 +388,7 @@ export class Jeopardy extends React.Component<{
       try {
         await new Promise(async (resolve, reject) => {
           const hash = MD5.hash(text);
-          const aiVoice = new Audio(serverPath + '/aiVoice/' + hash);
+          const aiVoice = new Audio(this.state.game?.enableAIVoices + '/gradio_api/file=audio/output/{hash}.mp3'.replace('{hash}', hash));
           aiVoice.onended = resolve;
           aiVoice.onerror = reject;
           try {

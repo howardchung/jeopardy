@@ -38,8 +38,9 @@ export class Room {
           io.of(roomId).emit('chatinit', this.chat);
           return;
         }
-        if (data === '/aivoices') {
-          this.jpd?.pregenAIVoices();
+        if (data.startsWith('/aivoices')) {
+          const rvcServer = data.split(' ')[1] ?? 'https://azure.howardchung.net/rvc';
+          this.jpd?.pregenAIVoices(rvcServer);
         }
         const sender = this.roster.find(p => p.id === socket.id);
         const chatMsg = { id: socket.id, name: sender?.name, msg: data };
@@ -55,6 +56,7 @@ export class Room {
       roster: this.roster,
       creationTime: this.creationTime,
       jpd: this.jpd,
+      settings: this.jpd?.settings,
     });
   };
 
@@ -69,11 +71,14 @@ export class Room {
     if (roomObj.creationTime) {
       this.creationTime = new Date(roomObj.creationTime);
     }
-    if (roomObj.rostser) {
+    if (roomObj.roster) {
       this.roster = roomObj.roster;
     }
     if (roomObj.jpd) {
       this.jpd = new Jeopardy(this.io, this, roomObj.jpd);
+    }
+    if (roomObj.settings && this.jpd) {
+      this.jpd.settings = roomObj.settings;
     }
   };
 

@@ -86,12 +86,11 @@ async function getOpenAIDecision(
 // We can send this to each client and have it be read
 // The RVC server caches for repeated inputs, so duplicate requests are fast
 // Without GPU acceleration this is kinda slow to do in real time, so we may need to add support to pre-generate audio clips for specific game
-const RVC_HOST = 'http://azure.howardchung.net:8082';
-async function genAITextToSpeech(text: string): Promise<string | undefined> {
+async function genAITextToSpeech(rvcHost: string, text: string): Promise<string | undefined> {
   if (text.length > 10000 || !text.length) {
     return;
   }
-  const resp = await fetch(RVC_HOST + '/gradio_api/call/partial_36',
+  const resp = await fetch(rvcHost + '/gradio_api/call/partial_36',
     {
       method: 'POST', 
       headers: {
@@ -131,7 +130,7 @@ async function genAITextToSpeech(text: string): Promise<string | undefined> {
   const info = await resp.json();
   // console.log(info);
   // Fetch the result
-  const fetchUrl = RVC_HOST + '/gradio_api/call/partial_36/' + info.event_id;
+  const fetchUrl = rvcHost + '/gradio_api/call/partial_36/' + info.event_id;
   // console.log(fetchUrl);
   const resp2 = await fetch(fetchUrl);
   const info2 = await resp2.text();
@@ -293,8 +292,6 @@ const getGameState = (
     answers: {} as Record<string, string>,
     wagers: {} as Record<string, number>,
     board: {} as { [key: string]: RawQuestion },
-    answerTimeout: Number(options.answerTimeout) * 1000 || 20000,
-    finalTimeout: Number(options.finalTimeout) * 1000 || 30000,
     public: {
       serverTime: Date.now(),
       epNum: options.epNum,
@@ -304,12 +301,10 @@ const getGameState = (
       scores: {} as Record<string, number>, // player scores
       round: '', // jeopardy or double or final
       picker: undefined as string | undefined, // If null let anyone pick, otherwise last correct answer
-      // Non-changeable settings during a game
-      host: options.host,
-      allowMultipleCorrect: options.allowMultipleCorrect,
-      // Changeable settings during a game
-      enableAIJudge: options.enableAIJudge,
-      enableAIVoices: false,
+      // below is populated in emitstate from settings
+      host: undefined as string | undefined,
+      enableAIJudge: false,
+      enableAIVoices: undefined as string | undefined,
       ...getPerQuestionState(),
     },
   };
@@ -318,6 +313,14 @@ export type PublicGameState = ReturnType<typeof getGameState>['public'];
 
 export class Jeopardy {
   public jpd: ReturnType<typeof getGameState>;
+  public settings = {
+    answerTimeout: 20000,
+    finalTimeout: 30000,
+    host: undefined as string | undefined,
+    allowMultipleCorrect: false,
+    enableAIJudge: false,
+    enableAIVoices: undefined as string | undefined,
+  }
   // Note: snapshot is not persisted so undo is not possible if server restarts
   private jpdSnapshot: ReturnType<typeof getGameState> | undefined;
   private undoActivated: boolean | undefined = undefined;
@@ -415,7 +418,7 @@ export class Jeopardy {
         this.loadEpisode(socket, options, data);
       });
       socket.on('JPD:pickQ', (id: string) => {
-        if (this.jpd.public.host && socket.id !== this.jpd.public.host) {
+        if (this.settings.host && socket.id !== this.settings.host) {
           return;
         }
         if (
@@ -437,12 +440,12 @@ export class Jeopardy {
         this.jpd.public.currentQ = id;
         this.jpd.public.currentValue = this.jpd.public.board[id].value;
         // check if it's a daily double
-        if (this.jpd.board[id].dd && !this.jpd.public.allowMultipleCorrect) {
+        if (this.jpd.board[id].dd && !this.settings.allowMultipleCorrect) {
           // if it is, don't show it yet, we need to collect wager info based only on category
           this.jpd.public.currentDailyDouble = true;
           this.jpd.public.dailyDoublePlayer = socket.id;
           this.jpd.public.waitingForWager = { [socket.id]: true };
-          this.setWagerTimeout(this.jpd.answerTimeout);
+          this.setWagerTimeout(this.settings.answerTimeout);
           // Autobuzz the player who picked the DD, all others pass
           // Note: if a player joins during wagering, they might not be marked as passed (submitted)
           // Currently client doesn't show the answer box because it checks for buzzed in players
@@ -526,7 +529,7 @@ export class Jeopardy {
         }
       });
       socket.on('JPD:undo', () => {
-        if (this.jpd.public.host && socket.id !== this.jpd.public.host) {
+        if (this.settings.host && socket.id !== this.settings.host) {
           // Not the host
           return;
         }
@@ -539,13 +542,7 @@ export class Jeopardy {
             this.aiJudged = undefined;
           }
           this.undoActivated = true;
-          const enableAIJudge = this.jpd.public.enableAIJudge;
-          const enableAIVoices = this.jpd.public.enableAIVoices;
           this.jpd = JSON.parse(JSON.stringify(this.jpdSnapshot));
-          // These settings are "live-changeable", so we don't want to reset them on undo
-          // We could store them outside of jpd state but then need to take care of serialization separately
-          this.jpd.public.enableAIJudge = enableAIJudge;
-          this.jpd.public.enableAIVoices = enableAIVoices;
           this.advanceJudging(false);
           this.emitState();
         }
@@ -557,7 +554,7 @@ export class Jeopardy {
         }
       });
       socket.on('JPD:enableAiJudge', (enable: boolean) => {
-        this.jpd.public.enableAIJudge = Boolean(enable);
+        this.settings.enableAIJudge = Boolean(enable);
         this.emitState();
         // optional: If we're in the judging phase, trigger the AI judge here
         // That way we can decide to use AI judge after the first answer has already been revealed
@@ -694,17 +691,25 @@ export class Jeopardy {
           epNum,
           airDate,
           info,
-          finalTimeout,
-          answerTimeout,
-          host: makeMeHost ? socket.id : undefined,
-          allowMultipleCorrect,
-          enableAIJudge,
         },
         jeopardy,
         double,
         final,
       );
       this.jpdSnapshot = undefined;
+      this.settings.host = makeMeHost ? socket.id : undefined;
+      if (allowMultipleCorrect) {
+        this.settings.allowMultipleCorrect = allowMultipleCorrect;
+      }
+      if (enableAIJudge) {
+        this.settings.enableAIJudge = enableAIJudge;
+      }
+      if (Number(finalTimeout)) {
+        this.settings.finalTimeout = Number(finalTimeout) * 1000;
+      }
+      if (Number(answerTimeout)) {
+        this.settings.answerTimeout = Number(answerTimeout) * 1000;
+      }
       if (number === 'finaltest') {
         this.jpd.public.round = 'double';
       }
@@ -714,6 +719,9 @@ export class Jeopardy {
 
   emitState() {
     this.jpd.public.serverTime = Date.now();
+    this.jpd.public.host = this.settings.host;
+    this.jpd.public.enableAIJudge = this.settings.enableAIJudge;
+    this.jpd.public.enableAIVoices = this.settings.enableAIVoices;
     this.io.of(this.roomId).emit('JPD:state', this.jpd.public);
   }
 
@@ -785,8 +793,8 @@ export class Jeopardy {
     if (this.jpd.public.picker === oldId) {
       this.jpd.public.picker = newId;
     }
-    if (this.jpd.public.host === oldId) {
-      this.jpd.public.host = newId;
+    if (this.settings.host === oldId) {
+      this.settings.host = newId;
     }
   }
 
@@ -802,8 +810,8 @@ export class Jeopardy {
     clearTimeout(this.wagerTimeout);
     this.jpd.public = { ...this.jpd.public, ...getPerQuestionState() };
     // Overwrite any other picker settings if there's a host
-    if (this.jpd.public.host) {
-      this.jpd.public.picker = this.jpd.public.host;
+    if (this.settings.host) {
+      this.jpd.public.picker = this.settings.host;
     }
   }
 
@@ -837,7 +845,7 @@ export class Jeopardy {
       this.jpd.public.round = 'double';
       // If double, person with lowest score is picker
       // Unless we are allowing multiple corrects or there's a host
-      if (!this.jpd.public.allowMultipleCorrect && !this.jpd.public.host) {
+      if (!this.settings.allowMultipleCorrect && !this.settings.host) {
         // Pick the lowest score out of the currently connected players
         // This is nlogn rather than n, but prob ok for small numbers of players
         const playersWithScores = this.room.getConnectedRoster().map((p) => ({
@@ -857,7 +865,7 @@ export class Jeopardy {
       this.room.roster.forEach((p) => {
         this.jpd.public.waitingForWager![p.id] = true;
       });
-      this.setWagerTimeout(this.jpd.finalTimeout);
+      this.setWagerTimeout(this.settings.finalTimeout);
       // autopick the question
       this.jpd.public.currentQ = '1_1';
       // autobuzz the players in ascending score order
@@ -979,7 +987,7 @@ export class Jeopardy {
     if (
       openai &&
       !this.jpd.public.canNextQ &&
-      this.jpd.public.enableAIJudge &&
+      this.settings.enableAIJudge &&
       // Don't use AI if the user undid
       !this.undoActivated &&
       this.jpd.public.currentJudgeAnswer
@@ -1060,7 +1068,7 @@ export class Jeopardy {
       // Not in judging step
       return false;
     }
-    if (this.jpd.public.host && socket?.id !== this.jpd.public.host) {
+    if (this.settings.host && socket?.id !== this.settings.host) {
       // Not the host
       return;
     }
@@ -1072,7 +1080,7 @@ export class Jeopardy {
     const delta = this.jpd.public.wagers[id] || this.jpd.public.currentValue;
     if (correct === true) {
       this.jpd.public.scores[id] += delta;
-      if (!this.jpd.public.allowMultipleCorrect) {
+      if (!this.settings.allowMultipleCorrect) {
         // Correct answer is next picker
         this.jpd.public.picker = id;
       }
@@ -1104,7 +1112,7 @@ export class Jeopardy {
       }
     }
     const allowMultipleCorrect =
-      this.jpd.public.round === 'final' || this.jpd.public.allowMultipleCorrect;
+      this.jpd.public.round === 'final' || this.settings.allowMultipleCorrect;
     const skipRemaining = !allowMultipleCorrect && correct === true;
     this.advanceJudging(skipRemaining);
 
@@ -1216,7 +1224,7 @@ export class Jeopardy {
     this.jpd.public.playClueEndTS = 0;
     this.jpd.public.buzzUnlockTS = Date.now();
     if (this.jpd.public.round === 'final') {
-      this.unlockAnswer(this.jpd.finalTimeout);
+      this.unlockAnswer(this.settings.finalTimeout);
       // Play final jeopardy music
       this.io.of(this.roomId).emit('JPD:playFinalJeopardy');
     } else {
@@ -1224,14 +1232,14 @@ export class Jeopardy {
         // DD already handles buzzing automatically
         this.jpd.public.canBuzz = true;
       }
-      this.unlockAnswer(this.jpd.answerTimeout);
+      this.unlockAnswer(this.settings.answerTimeout);
     }
     this.emitState();
   }
 
-  async pregenAIVoices() {
+  async pregenAIVoices(rvcHost: string) {
     // Indicate we should use AI voices for this game
-    this.jpd.public.enableAIVoices = true;
+    this.settings.enableAIVoices = rvcHost;
     this.emitState();
     // For the current game, get all category names and clues (61 clues + 12 category names)
     // Final category doesn't get read right now
@@ -1245,10 +1253,10 @@ export class Jeopardy {
     console.log('%s strings to generate', strings.size);
     const arr = Array.from(strings);
     // console.log(arr);
-    for (let i = 0; i < arr.length; i++) {
+    await Promise.all(arr.map(async (str, i) => {
       try {
         // Call the API to pregenerate the voice clips
-        const url = await genAITextToSpeech(arr[i] ?? '');
+        const url = await genAITextToSpeech(rvcHost, str ?? '');
         // Report progress back in chat messages
         if (url) {
           this.room.addChatMessage(undefined, {
@@ -1261,7 +1269,7 @@ export class Jeopardy {
       } catch (e) {
         console.log(e);
       }
-    }
+    }));
   }
 
   toJSON() {
