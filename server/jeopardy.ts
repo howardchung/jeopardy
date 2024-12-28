@@ -1253,7 +1253,7 @@ export class Jeopardy {
     console.log('%s strings to generate', strings.size);
     const arr = Array.from(strings);
     // console.log(arr);
-    await Promise.all(arr.map(async (str, i) => {
+    const results = await Promise.allSettled(arr.map(async (str, i) => {
       try {
         // Call the API to pregenerate the voice clips
         const url = await genAITextToSpeech(rvcHost, str ?? '');
@@ -1270,6 +1270,11 @@ export class Jeopardy {
         console.log(e);
       }
     }));
+    this.room.addChatMessage(undefined, {
+      id: '',
+      name: 'System',
+      msg: results.filter(Boolean).length + '/' + results.length + ' voices generated!',
+    });
   }
 
   toJSON() {
