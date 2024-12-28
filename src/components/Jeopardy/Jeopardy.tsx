@@ -388,7 +388,13 @@ export class Jeopardy extends React.Component<{
       try {
         await new Promise(async (resolve, reject) => {
           const hash = MD5.hash(text);
-          const aiVoice = new Audio(this.state.game?.enableAIVoices + '/gradio_api/file=audio/output/{hash}.mp3'.replace('{hash}', hash));
+          const aiVoice = new Audio(
+            this.state.game?.enableAIVoices +
+              '/gradio_api/file=audio/output/{hash}.mp3'.replace(
+                '{hash}',
+                hash,
+              ),
+          );
           aiVoice.onended = resolve;
           aiVoice.onerror = reject;
           try {
@@ -586,7 +592,12 @@ export class Jeopardy extends React.Component<{
         )}
         {this.state.overlayMsg && <ErrorModal error={this.state.overlayMsg} />}
         <div
-          style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '4px' }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            gap: '4px',
+          }}
         >
           {
             <React.Fragment>
@@ -802,7 +813,10 @@ export class Jeopardy extends React.Component<{
                             />
                           )}
                           {Boolean(game.wagerEndTS) && (
-                            <TimerBar duration={game.wagerEndTS - game.serverTime} secondary />
+                            <TimerBar
+                              duration={game.wagerEndTS - game.serverTime}
+                              secondary
+                            />
                           )}
                           {game.canNextQ && (
                             <div
@@ -1103,7 +1117,11 @@ export class Jeopardy extends React.Component<{
                 {game && game.airDate && (
                   <Label
                     style={{ display: 'flex', alignItems: 'center' }}
-                    color={getColor((game && game.info) || 'regular') as SemanticCOLORS}
+                    color={
+                      getColor(
+                        (game && game.info) || 'regular',
+                      ) as SemanticCOLORS
+                    }
                     size="medium"
                   >
                     {new Date(game.airDate + 'T00:00').toLocaleDateString([], {
@@ -1111,7 +1129,7 @@ export class Jeopardy extends React.Component<{
                       month: 'long',
                       day: 'numeric',
                     })}
-                    {(game && game.info) ? ' - ' + game.info : ''}
+                    {game && game.info ? ' - ' + game.info : ''}
                   </Label>
                 )}
                 <Button
@@ -1141,7 +1159,10 @@ export class Jeopardy extends React.Component<{
                   labelPosition="left"
                   color={game?.enableAIJudge ? 'green' : 'red'}
                   onClick={() => {
-                    this.socket?.emit('JPD:enableAiJudge', !Boolean(game?.enableAIJudge));
+                    this.socket?.emit(
+                      'JPD:enableAiJudge',
+                      !Boolean(game?.enableAIJudge),
+                    );
                   }}
                 >
                   <Icon name="lightbulb" />
@@ -1217,17 +1238,19 @@ class TimerBar extends React.Component<{
     }
   }
   render() {
-    return <div
-      style={{
-        position: 'absolute',
-        bottom: '0px',
-        left: '0px',
-        height: '10px',
-        width: this.state.width,
-        backgroundColor: this.props.secondary ? '#16AB39' : '#0E6EB8',
-        transition: `${this.props.duration / 1000}s width linear`,
-      }}
-    />;
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '0px',
+          left: '0px',
+          height: '10px',
+          width: this.state.width,
+          backgroundColor: this.props.secondary ? '#16AB39' : '#0E6EB8',
+          transition: `${this.props.duration / 1000}s width linear`,
+        }}
+      />
+    );
   }
 }
 
@@ -1379,44 +1402,44 @@ const SettingsModal = ({
       <Modal.Content>
         <h4>Settings will be applied to any games you create.</h4>
         <div style={{ gap: '4px', display: 'flex', flexDirection: 'column' }}>
-        <Checkbox
-          checked={makeMeHost}
-          onChange={(e, props) => setMakeMeHost(props.checked)}
-          label="Make me the host (Only you will be able to select questions and make judging decisions)"
-          toggle={true}
-        />
-        <Checkbox
-          checked={allowMultipleCorrect}
-          onChange={(e, props) => setAllowMultipleCorrect(props.checked)}
-          label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)"
-          toggle={true}
-        />
-        <Checkbox
-          checked={enableAIJudge}
-          onChange={(e, props) => setEnableAIJudge(props.checked)}
-          label="Enable AI judge by default"
-          toggle={true}
-        />
-        <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-          <Input
-            style={{ width: 60 }}
-            type="number"
-            value={answerTimeout}
-            onChange={(e, data) => setAnswerTimeout(Number(data.value))}
-            size="mini"
+          <Checkbox
+            checked={makeMeHost}
+            onChange={(e, props) => setMakeMeHost(props.checked)}
+            label="Make me the host (Only you will be able to select questions and make judging decisions)"
+            toggle={true}
           />
-          Seconds for regular answers and Daily Double wagers (Default: 20)
-        </div>
-        <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-          <Input
-            style={{ width: 60 }}
-            type="number"
-            value={finalTimeout}
-            onChange={(e, data) => setFinalTimeout(Number(data.value))}
-            size="mini"
+          <Checkbox
+            checked={allowMultipleCorrect}
+            onChange={(e, props) => setAllowMultipleCorrect(props.checked)}
+            label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)"
+            toggle={true}
           />
-          Seconds for Final Jeopardy answers and wagers (Default: 30)
-        </div>
+          <Checkbox
+            checked={enableAIJudge}
+            onChange={(e, props) => setEnableAIJudge(props.checked)}
+            label="Enable AI judge by default"
+            toggle={true}
+          />
+          <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+            <Input
+              style={{ width: 60 }}
+              type="number"
+              value={answerTimeout}
+              onChange={(e, data) => setAnswerTimeout(Number(data.value))}
+              size="mini"
+            />
+            Seconds for regular answers and Daily Double wagers (Default: 20)
+          </div>
+          <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+            <Input
+              style={{ width: 60 }}
+              type="number"
+              value={finalTimeout}
+              onChange={(e, data) => setFinalTimeout(Number(data.value))}
+              size="mini"
+            />
+            Seconds for Final Jeopardy answers and wagers (Default: 30)
+          </div>
         </div>
       </Modal.Content>
       <Modal.Actions>

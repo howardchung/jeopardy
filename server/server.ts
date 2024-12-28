@@ -37,7 +37,7 @@ async function saveRoomsToRedis() {
     // console.time('roomSave');
     const roomArr = Array.from(rooms.values());
     for (let i = 0; i < roomArr.length; i++) {
-      if (roomArr[i].getConnectedRoster().length) {
+      if (roomArr[i].getConnectedPlayers().length) {
         const roomData = roomArr[i].serialize();
         const key = roomArr[i].roomId;
         await redis?.setex(key, 24 * 60 * 60, roomData);
@@ -90,7 +90,7 @@ app.get('/stats', async (req, res) => {
       const obj = {
         creationTime: room.creationTime,
         roomId: room.roomId,
-        rosterLength: room.getConnectedRoster().length,
+        rosterLength: room.getConnectedPlayers().length,
       };
       currentUsers += obj.rosterLength;
       roomData.push(obj);
@@ -103,7 +103,7 @@ app.get('/stats', async (req, res) => {
       .find((line) => line.startsWith('used_memory:'))
       ?.split(':')[1]
       .trim();
-    const chatMessages = await getRedisCountDay('chatMessages');
+    // const chatMessages = await getRedisCountDay('chatMessages');
     const newGames = await getRedisCountDay('newGames');
     const customGames = await getRedisCountDay('customGames');
     const aiJudgeLastDay = await getRedisCountDay('aiJudge');
@@ -119,7 +119,7 @@ app.get('/stats', async (req, res) => {
       roomCount: rooms.size,
       cpuUsage,
       redisUsage,
-      chatMessages,
+      // chatMessages,
       currentUsers,
       newGames,
       customGames,

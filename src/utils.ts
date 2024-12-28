@@ -1,4 +1,4 @@
-import { cyrb53 } from "./hash";
+import { cyrb53 } from './hash';
 
 export function formatTimestamp(input: any) {
   if (

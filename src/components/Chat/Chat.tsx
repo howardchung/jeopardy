@@ -69,7 +69,9 @@ export class Chat extends React.Component<ChatProps> {
           style={{ color: correct ? '#21ba45' : '#db2828' }}
         >{`ruled ${name} ${correct ? 'correct' : 'incorrect'}: ${answer} (${
           delta >= 0 ? '+' : ''
-        }${delta}) ${confidence != null ? `(${(confidence * 100).toFixed(0)}% conf.)` : ''}`}</span>
+        }${delta}) ${
+          confidence != null ? `(${(confidence * 100).toFixed(0)}% conf.)` : ''
+        }`}</span>
       );
     } else if (cmd === 'answer') {
       return `Correct answer: ${msg}`;
@@ -143,14 +145,7 @@ export class Chat extends React.Component<ChatProps> {
   }
 }
 
-const ChatMessage = ({
-  id,
-  name,
-  timestamp,
-  cmd,
-  msg,
-  formatMessage,
-}: any) => {
+const ChatMessage = ({ id, name, timestamp, cmd, msg, formatMessage }: any) => {
   return (
     <Comment>
       <Comment.Avatar src={getDefaultPicture(name, getColorHex(id))} />
@@ -159,7 +154,9 @@ const ChatMessage = ({
           {name || id}
         </Comment.Author>
         <Comment.Metadata className="dark">
-          <div title={new Date(timestamp).toDateString()}>{new Date(timestamp).toLocaleTimeString()}</div>
+          <div title={new Date(timestamp).toDateString()}>
+            {new Date(timestamp).toLocaleTimeString()}
+          </div>
         </Comment.Metadata>
         <Comment.Text className="light system">
           {cmd && formatMessage(cmd, msg)}

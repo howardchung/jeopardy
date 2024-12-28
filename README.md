@@ -32,9 +32,11 @@ A website for playing Jeopardy! together with friends over the Internet. Designe
 - Games might be incomplete if some clues weren't revealed on the show.
 
 ## Updating Clues:
+
 - Game data is collected using a separate j-archive-parser project and collected into a single gzipped JSON file, which this project can retrieve.
 
 ## Environment Variables
+
 - `REDIS_URL`: Provide to allow persisting rooms to Redis so they survive server reboots
 - `OPENAI_SECRET_KEY`: Provide to allow using OpenAI's ChatGPT to judge answers
 
