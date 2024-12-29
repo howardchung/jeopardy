@@ -493,10 +493,12 @@ export class Room {
   }
 
   getConnectedPlayers = () => {
+    // Returns players that are currently connected and not spectators
     return this.roster.filter((p) => p.connected);
   };
 
   getActivePlayers = () => {
+    // Returns all players not marked as spectator (includes disconnected)
     // Currently just returns all players
     // In the future we might want to ignore spectators
     return this.roster;
