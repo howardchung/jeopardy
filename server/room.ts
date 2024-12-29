@@ -137,11 +137,10 @@ const getGameState = (
 export type PublicGameState = ReturnType<typeof getGameState>['public'];
 
 export class Room {
+  // Serialized state
   public roster: User[] = [];
   public clientIds: Record<string, string> = {};
   private chat: ChatMessage[] = [];
-  private io: Server;
-  public roomId: string;
   public creationTime: Date = new Date();
   public jpd: ReturnType<typeof getGameState> = getGameState({}, [], [], []);
   public settings = {
@@ -152,6 +151,10 @@ export class Room {
     enableAIJudge: false,
     enableAIVoices: undefined as string | undefined,
   };
+
+  // Unserialized state
+  private io: Server;
+  public roomId: string;
   // Note: snapshot is not persisted so undo is not possible if server restarts
   private jpdSnapshot: ReturnType<typeof getGameState> | undefined;
   private undoActivated: boolean | undefined = undefined;
@@ -167,8 +170,8 @@ export class Room {
     roomId: string,
     roomData?: string | null | undefined,
   ) {
-    this.roomId = roomId;
     this.io = io;
+    this.roomId = roomId;
 
     if (roomData) {
       this.deserialize(roomData);
@@ -445,7 +448,8 @@ export class Room {
       this.creationTime = new Date(roomObj.creationTime);
     }
     if (roomObj.roster) {
-      this.roster = roomObj.roster;
+      // Reset connected state to false, reconnects will update it again
+      this.roster = roomObj.roster.map((p: User) => ({...p, connected: false}));
     }
     if (roomObj.jpd && roomObj.jpd.public) {
       const gameData = roomObj.jpd;
