@@ -1,7 +1,8 @@
 import OpenAI from 'openai';
+import config from './config';
 
-const openai = process.env.OPENAI_SECRET_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY })
+export const openai = config.OPENAI_SECRET_KEY
+  ? new OpenAI({ apiKey: config.OPENAI_SECRET_KEY })
   : undefined;
 
 // Notes on AI judging:

@@ -1,8 +1,9 @@
 import Redis from 'ioredis';
+import config from './config';
 
-let redis: Redis | null = null;
-if (process.env.REDIS_URL) {
-  redis = new Redis(process.env.REDIS_URL);
+export let redis: Redis | undefined = undefined;
+if (config.REDIS_URL) {
+  redis = new Redis(config.REDIS_URL);
 }
 
 export async function redisCount(prefix: string) {
@@ -36,6 +37,35 @@ export async function getRedisCountHour(prefix: string) {
   return Number(value);
 }
 
+export async function redisCountDistinct(prefix: string, item: string) {
+  if (!redis) {
+    return;
+  }
+  const key = `${prefix}:${getStartOfHour()}`;
+  await redis.pfadd(key, item);
+  await redis.expireat(key, getStartOfHour() + 86400 * 1000);
+}
+
+export async function getRedisCountDayDistinct(prefix: string) {
+  if (!redis) {
+    return;
+  }
+  // Get counts for last 24 hour keys (including current partial hour)
+  const keyArr = [];
+  for (let i = 0; i < 24; i += 1) {
+    keyArr.push(`${prefix}:${getStartOfHour() - i * 3600 * 1000}`);
+  }
+  return await redis.pfcount(...keyArr);
+}
+
+export async function getRedisCountHourDistinct(prefix: string) {
+  if (!redis) {
+    return;
+  }
+  // Get counts for previous full hour
+  return await redis.pfcount(`${prefix}:${getStartOfHour() - 3600 * 1000}`);
+}
+
 function getStartOfDay() {
   const now = Date.now();
   return now - (now % 86400000);
@@ -50,3 +80,4 @@ function getStartOfMinute() {
   const now = Date.now();
   return now - (now % 60000);
 }
+

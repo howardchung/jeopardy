@@ -1,35 +1,12 @@
 import { Socket, Server } from 'socket.io';
-import Redis from 'ioredis';
 import Papa from 'papaparse';
 import { gunzipSync } from 'zlib';
-import { redisCount } from './utils/redis';
+import { redis, redisCount } from './redis';
 import fs from 'fs';
 import nodeCrypto from 'node:crypto';
 import { genAITextToSpeech } from './aivoice';
-import { getOpenAIDecision } from './openai';
-
-interface RawQuestion {
-  val: number;
-  cat: string;
-  x?: number;
-  y?: number;
-  q?: string;
-  a?: string;
-  dd?: boolean;
-}
-
-interface Question {
-  value: number;
-  category: string;
-  question?: string;
-  answer?: string;
-  daily_double?: boolean;
-}
-
-let redis = undefined as unknown as Redis;
-if (process.env.REDIS_URL) {
-  redis = new Redis(process.env.REDIS_URL);
-}
+import { getOpenAIDecision, openai } from './openai';
+import config from './config';
 
 // On boot, start with the initial data included in repo
 console.time('load');
@@ -41,7 +18,7 @@ console.timeEnd('load');
 console.log('loaded %d episodes', Object.keys(jData).length);
 
 async function refreshEpisodes() {
-  if (process.env.NODE_ENV === 'development') {
+  if (config.NODE_ENV === 'development') {
     return;
   }
   console.time('reload');
@@ -214,7 +191,7 @@ export class Room {
       }
       this.clientIds[clientId] = socket.id;
 
-      this.emitState();
+      this.sendState();
       this.sendRoster();
       socket.emit('chatinit', this.chat);
 
@@ -294,7 +271,7 @@ export class Room {
         this.jpdSnapshot = undefined;
         this.undoActivated = undefined;
         this.aiJudged = undefined;
-        this.emitState();
+        this.sendState();
       });
       socket.on('JPD:buzz', () => {
         if (!this.jpd.public.canBuzz) {
@@ -304,7 +281,7 @@ export class Room {
           return;
         }
         this.jpd.public.buzzes[socket.id] = Date.now();
-        this.emitState();
+        this.sendState();
       });
       socket.on('JPD:answer', (question, answer) => {
         if (question !== this.jpd.public.currentQ) {
@@ -324,7 +301,7 @@ export class Room {
           this.jpd.answers[socket.id] = answer;
         }
         this.jpd.public.submitted[socket.id] = true;
-        this.emitState();
+        this.sendState();
         if (
           this.jpd.public.round !== 'final' &&
           // If a player disconnects, don't wait for their answer
@@ -370,7 +347,7 @@ export class Room {
           this.undoActivated = true;
           this.jpd = JSON.parse(JSON.stringify(this.jpdSnapshot));
           this.advanceJudging(false);
-          this.emitState();
+          this.sendState();
         }
       });
       socket.on('JPD:skipQ', () => {
@@ -381,7 +358,7 @@ export class Room {
       });
       socket.on('JPD:enableAiJudge', (enable: boolean) => {
         this.settings.enableAIJudge = Boolean(enable);
-        this.emitState();
+        this.sendState();
         // optional: If we're in the judging phase, trigger the AI judge here
         // That way we can decide to use AI judge after the first answer has already been revealed
       });
@@ -457,17 +434,14 @@ export class Room {
       // Reconstruct the timeouts from the saved state
       if (this.jpd.public.questionEndTS) {
         const remaining = this.jpd.public.questionEndTS - Date.now();
-        console.log('[QUESTIONENDTS]', remaining);
         this.setQuestionAnswerTimeout(remaining);
       }
       if (this.jpd.public.playClueEndTS) {
         const remaining = this.jpd.public.playClueEndTS - Date.now();
-        console.log('[PLAYCLUEENDTS]', remaining);
         this.setPlayClueTimeout(remaining);
       }
       if (this.jpd.public.wagerEndTS) {
         const remaining = this.jpd.public.wagerEndTS - Date.now();
-        console.log('[WAGERENDTS]', remaining);
         this.setWagerTimeout(remaining, this.jpd.public.wagerEndTS);
       }
     }
@@ -475,6 +449,16 @@ export class Room {
       this.settings = roomObj.settings;
     }
   };
+
+  saveRoom = async () => {
+    const roomData = this.serialize();
+    const key = this.roomId;
+    await redis?.setex(key, 24 * 60 * 60, roomData);
+    if (config.permaRooms.includes(key)) {
+      await redis?.persist(key);
+    }
+    redisCount('saves');
+  }
 
   addChatMessage = (socket: Socket | undefined, chatMsg: any) => {
     const chatWithTime: ChatMessage = {
@@ -484,7 +468,29 @@ export class Room {
     this.chat.push(chatWithTime);
     this.chat = this.chat.splice(-100);
     this.io.of(this.roomId).emit('REC:chat', chatWithTime);
+    this.saveRoom();
   };
+  
+  sendState = () => {
+    this.jpd.public.serverTime = Date.now();
+    // Copy values over from settings before each send
+    this.jpd.public.host = this.settings.host;
+    this.jpd.public.enableAIJudge = this.settings.enableAIJudge;
+    this.jpd.public.enableAIVoices = this.settings.enableAIVoices;
+    this.io.of(this.roomId).emit('JPD:state', this.jpd.public);
+    this.saveRoom();
+  }
+
+  sendRoster = () => {
+    // Sort by score and resend the list of players to everyone
+    this.roster.sort(
+      (a, b) =>
+        (this.jpd.public?.scores[b.id] || 0) -
+        (this.jpd.public?.scores[a.id] || 0),
+    );
+    this.io.of(this.roomId).emit('roster', this.roster);
+    this.saveRoom();
+  }
 
   getConnectedPlayers = () => {
     return this.roster.filter((p) => p.connected);
@@ -501,7 +507,70 @@ export class Room {
     return this.roster;
   };
 
-  loadEpisode(socket: Socket, options: GameOptions, custom: string) {
+  handleReconnect = (newId: string, oldId: string) => {
+    console.log('[RECONNECT] transfer %s to %s', oldId, newId);
+    // Update the roster with the new ID and connected state
+    const target = this.getAllPlayers().find((p) => p.id === oldId);
+    if (target) {
+      target.id = newId;
+      target.connected = true;
+      target.disconnectTime = 0;
+    }
+    if (this.jpd.public.scores?.[oldId]) {
+      this.jpd.public.scores[newId] = this.jpd.public.scores[oldId];
+      delete this.jpd.public.scores[oldId];
+    }
+    if (this.jpd.public.buzzes?.[oldId]) {
+      this.jpd.public.buzzes[newId] = this.jpd.public.buzzes[oldId];
+      delete this.jpd.public.buzzes[oldId];
+    }
+    if (this.jpd.public.judges?.[oldId]) {
+      this.jpd.public.judges[newId] = this.jpd.public.judges[oldId];
+      delete this.jpd.public.judges[oldId];
+    }
+    if (this.jpd.public.submitted?.[oldId]) {
+      this.jpd.public.submitted[newId] = this.jpd.public.submitted[oldId];
+      delete this.jpd.public.submitted[oldId];
+    }
+    if (this.jpd.public.answers?.[oldId]) {
+      this.jpd.public.answers[newId] = this.jpd.public.answers[oldId];
+      delete this.jpd.public.answers[oldId];
+    }
+    if (this.jpd.public.wagers?.[oldId]) {
+      this.jpd.public.wagers[newId] = this.jpd.public.wagers[oldId];
+      delete this.jpd.public.wagers[oldId];
+    }
+    // Note: two copies of answers and wagers exist, a public and non-public version, so we need to copy both
+    // Alternatively, we can just have some state to tracks whether to emit the answers and wagers and keep both in public only
+    if (this.jpd.answers?.[oldId]) {
+      this.jpd.answers[newId] = this.jpd.answers[oldId];
+      delete this.jpd.answers[oldId];
+    }
+    if (this.jpd.wagers?.[oldId]) {
+      this.jpd.wagers[newId] = this.jpd.wagers[oldId];
+      delete this.jpd.wagers[oldId];
+    }
+    if (this.jpd.public.waitingForWager?.[oldId]) {
+      // Current behavior is to submit wager 0 if disconnecting
+      // So there should be no state to transfer
+      this.jpd.public.waitingForWager[newId] = true;
+      delete this.jpd.public.waitingForWager[oldId];
+    }
+    if (this.jpd.public.currentJudgeAnswer === oldId) {
+      this.jpd.public.currentJudgeAnswer = newId;
+    }
+    if (this.jpd.public.dailyDoublePlayer === oldId) {
+      this.jpd.public.dailyDoublePlayer = newId;
+    }
+    if (this.jpd.public.picker === oldId) {
+      this.jpd.public.picker = newId;
+    }
+    if (this.settings.host === oldId) {
+      this.settings.host = newId;
+    }
+  }
+
+  loadEpisode = (socket: Socket, options: GameOptions, custom: string) => {
     let {
       number,
       filter,
@@ -625,92 +694,11 @@ export class Room {
     }
   }
 
-  emitState() {
-    this.jpd.public.serverTime = Date.now();
-    this.jpd.public.host = this.settings.host;
-    this.jpd.public.enableAIJudge = this.settings.enableAIJudge;
-    this.jpd.public.enableAIVoices = this.settings.enableAIVoices;
-    this.io.of(this.roomId).emit('JPD:state', this.jpd.public);
-  }
-
-  sendRoster() {
-    // Sort by score and resend the list of players to everyone
-    this.roster.sort(
-      (a, b) =>
-        (this.jpd.public?.scores[b.id] || 0) -
-        (this.jpd.public?.scores[a.id] || 0),
-    );
-    this.io.of(this.roomId).emit('roster', this.roster);
-  }
-
-  handleReconnect(newId: string, oldId: string) {
-    console.log('[RECONNECT] transfer %s to %s', oldId, newId);
-    // Update the roster with the new ID and connected state
-    const target = this.getAllPlayers().find((p) => p.id === oldId);
-    if (target) {
-      target.id = newId;
-      target.connected = true;
-      target.disconnectTime = 0;
-    }
-    if (this.jpd.public.scores?.[oldId]) {
-      this.jpd.public.scores[newId] = this.jpd.public.scores[oldId];
-      delete this.jpd.public.scores[oldId];
-    }
-    if (this.jpd.public.buzzes?.[oldId]) {
-      this.jpd.public.buzzes[newId] = this.jpd.public.buzzes[oldId];
-      delete this.jpd.public.buzzes[oldId];
-    }
-    if (this.jpd.public.judges?.[oldId]) {
-      this.jpd.public.judges[newId] = this.jpd.public.judges[oldId];
-      delete this.jpd.public.judges[oldId];
-    }
-    if (this.jpd.public.submitted?.[oldId]) {
-      this.jpd.public.submitted[newId] = this.jpd.public.submitted[oldId];
-      delete this.jpd.public.submitted[oldId];
-    }
-    if (this.jpd.public.answers?.[oldId]) {
-      this.jpd.public.answers[newId] = this.jpd.public.answers[oldId];
-      delete this.jpd.public.answers[oldId];
-    }
-    if (this.jpd.public.wagers?.[oldId]) {
-      this.jpd.public.wagers[newId] = this.jpd.public.wagers[oldId];
-      delete this.jpd.public.wagers[oldId];
-    }
-    // Note: two copies of answers and wagers exist, a public and non-public version, so we need to copy both
-    // Alternatively, we can just have some state to tracks whether to emit the answers and wagers and keep both in public only
-    if (this.jpd.answers?.[oldId]) {
-      this.jpd.answers[newId] = this.jpd.answers[oldId];
-      delete this.jpd.answers[oldId];
-    }
-    if (this.jpd.wagers?.[oldId]) {
-      this.jpd.wagers[newId] = this.jpd.wagers[oldId];
-      delete this.jpd.wagers[oldId];
-    }
-    if (this.jpd.public.waitingForWager?.[oldId]) {
-      // Current behavior is to submit wager 0 if disconnecting
-      // So there should be no state to transfer
-      this.jpd.public.waitingForWager[newId] = true;
-      delete this.jpd.public.waitingForWager[oldId];
-    }
-    if (this.jpd.public.currentJudgeAnswer === oldId) {
-      this.jpd.public.currentJudgeAnswer = newId;
-    }
-    if (this.jpd.public.dailyDoublePlayer === oldId) {
-      this.jpd.public.dailyDoublePlayer = newId;
-    }
-    if (this.jpd.public.picker === oldId) {
-      this.jpd.public.picker = newId;
-    }
-    if (this.settings.host === oldId) {
-      this.settings.host = newId;
-    }
-  }
-
-  playCategories() {
+  playCategories = () => {
     this.io.of(this.roomId).emit('JPD:playCategories');
   }
 
-  resetAfterQuestion() {
+  resetAfterQuestion = () => {
     this.jpd.answers = {};
     this.jpd.wagers = {};
     clearTimeout(this.playClueTimeout);
@@ -723,7 +711,7 @@ export class Room {
     }
   }
 
-  nextQuestion() {
+  nextQuestion = () => {
     // Show the correct answer in the game log
     this.addChatMessage(undefined, {
       id: '',
@@ -739,13 +727,13 @@ export class Room {
     if (Object.keys(this.jpd.public.board).length === 0) {
       this.nextRound();
     } else {
-      this.emitState();
+      this.sendState();
       // TODO may want to introduce some delay here to make sure our state is updated before reading selection
       this.io.of(this.roomId).emit('JPD:playMakeSelection');
     }
   }
 
-  nextRound() {
+  nextRound = () => {
     this.resetAfterQuestion();
     // host is made picker in resetAfterQuestion, so any picker changes here should be behind host check
     // advance round counter
@@ -814,7 +802,7 @@ export class Room {
         this.nextRound();
       }
     }
-    this.emitState();
+    this.sendState();
     if (
       this.jpd.public.round === 'jeopardy' ||
       this.jpd.public.round === 'double'
@@ -823,12 +811,12 @@ export class Room {
     }
   }
 
-  unlockAnswer(durationMs: number) {
+  unlockAnswer = (durationMs: number) => {
     this.jpd.public.questionEndTS = Date.now() + durationMs;
     this.setQuestionAnswerTimeout(durationMs);
   }
 
-  setQuestionAnswerTimeout(durationMs: number) {
+  setQuestionAnswerTimeout = (durationMs: number) => {
     this.questionAnswerTimeout = setTimeout(() => {
       if (this.jpd.public.round !== 'final') {
         this.io.of(this.roomId).emit('JPD:playTimesUp');
@@ -837,7 +825,7 @@ export class Room {
     }, durationMs);
   }
 
-  revealAnswer() {
+  revealAnswer = () => {
     clearTimeout(this.questionAnswerTimeout);
     this.jpd.public.questionEndTS = 0;
 
@@ -853,10 +841,10 @@ export class Room {
     this.jpd.public.currentAnswer = this.jpd.board[this.jpd.public.currentQ]?.a;
     this.jpdSnapshot = JSON.parse(JSON.stringify(this.jpd));
     this.advanceJudging(false);
-    this.emitState();
+    this.sendState();
   }
 
-  advanceJudging(skipRemaining: boolean) {
+  advanceJudging = (skipRemaining: boolean) => {
     if (this.jpd.public.currentJudgeAnswerIndex === undefined) {
       this.jpd.public.currentJudgeAnswerIndex = 0;
     } else {
@@ -895,7 +883,7 @@ export class Room {
       return;
     }
     if (
-      process.env.OPENAI_SECRET_KEY &&
+      openai &&
       !this.jpd.public.canNextQ &&
       this.settings.enableAIJudge &&
       // Don't use AI if the user undid
@@ -912,7 +900,7 @@ export class Room {
     }
   }
 
-  async doAiJudge(data: { currentQ: string; id: string }) {
+  doAiJudge = async (data: { currentQ: string; id: string }) => {
     // currentQ: The board coordinates of the current question, e.g. 1_3
     // id: socket id of the person being judged
     const { currentQ, id } = data;
@@ -939,10 +927,10 @@ export class Room {
     }
   }
 
-  doHumanJudge(
+  doHumanJudge = (
     socket: Socket,
     data: { currentQ: string; id: string; correct: boolean | null },
-  ) {
+  ) => {
     const answer = this.jpd.public.currentAnswer;
     const submitted = this.jpd.public.answers[data.id];
     const success = this.judgeAnswer(socket, data);
@@ -957,7 +945,7 @@ export class Room {
     }
   }
 
-  judgeAnswer(
+  judgeAnswer = (
     socket: Socket | undefined,
     {
       currentQ,
@@ -970,7 +958,7 @@ export class Room {
       correct: boolean | null;
       confidence?: number;
     },
-  ) {
+  ) => {
     if (id in this.jpd.public.judges) {
       // Already judged this player
       return false;
@@ -1035,12 +1023,12 @@ export class Room {
     if (this.jpd.public.canNextQ) {
       this.nextQuestion();
     } else {
-      this.emitState();
+      this.sendState();
     }
     return correct != null;
   }
 
-  submitWager(id: string, wager: number) {
+  submitWager = (id: string, wager: number) => {
     if (id in this.jpd.wagers) {
       return;
     }
@@ -1072,7 +1060,7 @@ export class Room {
           this.jpd.board[this.jpd.public.currentQ]?.q;
       }
       this.triggerPlayClue();
-      this.emitState();
+      this.sendState();
     }
     if (this.jpd.public.round === 'final' && this.jpd.public.currentQ) {
       // store the wagers privately until everyone's made one
@@ -1089,11 +1077,11 @@ export class Room {
         }
         this.triggerPlayClue();
       }
-      this.emitState();
+      this.sendState();
     }
   }
 
-  setWagerTimeout(durationMs: number, endTS?: number) {
+  setWagerTimeout = (durationMs: number, endTS?: number) => {
     this.jpd.public.wagerEndTS = endTS ?? Date.now() + durationMs;
     this.wagerTimeout = setTimeout(() => {
       Object.keys(this.jpd.public.waitingForWager ?? {}).forEach((id) => {
@@ -1102,7 +1090,7 @@ export class Room {
     }, durationMs);
   }
 
-  triggerPlayClue() {
+  triggerPlayClue = () => {
     clearTimeout(this.wagerTimeout);
     this.jpd.public.wagerEndTS = 0;
     const clue = this.jpd.public.board[this.jpd.public.currentQ];
@@ -1128,14 +1116,13 @@ export class Room {
     this.setPlayClueTimeout(speakingTime);
   }
 
-  setPlayClueTimeout(durationMs: number) {
+  setPlayClueTimeout = (durationMs: number) => {
     this.playClueTimeout = setTimeout(() => {
       this.playClueDone();
     }, durationMs);
   }
 
-  playClueDone() {
-    console.log('[PLAYCLUEDONE]');
+  playClueDone = () => {
     clearTimeout(this.playClueTimeout);
     this.jpd.public.playClueEndTS = 0;
     this.jpd.public.buzzUnlockTS = Date.now();
@@ -1150,13 +1137,13 @@ export class Room {
       }
       this.unlockAnswer(this.settings.answerTimeout);
     }
-    this.emitState();
+    this.sendState();
   }
 
-  async pregenAIVoices(rvcHost: string) {
+  pregenAIVoices = async (rvcHost: string) => {
     // Indicate we should use AI voices for this game
     this.settings.enableAIVoices = rvcHost;
-    this.emitState();
+    this.sendState();
     // For the current game, get all category names and clues (61 clues + 12 category names)
     // Final category doesn't get read right now
     const strings = new Set(
