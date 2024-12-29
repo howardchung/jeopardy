@@ -13,6 +13,24 @@ interface ChatMessage {
   msg: string;
 }
 
+interface RawQuestion {
+  val: number;
+  cat: string;
+  x?: number;
+  y?: number;
+  q?: string;
+  a?: string;
+  dd?: boolean;
+}
+
+interface Question {
+  value: number;
+  category: string;
+  question?: string;
+  answer?: string;
+  daily_double?: boolean;
+}
+
 type GameOptions = {
   number?: string;
   filter?: string;
@@ -24,22 +42,4 @@ type GameOptions = {
   answerTimeout?: number;
   // timeout to use for final wagers and answers (all players participate)
   finalTimeout?: number;
-};
-
-interface RawQuestion {
-  val: number;
-  cat: string;
-  x?: number;
-  y?: number;
-  q?: string;
-  a?: string;
-  dd?: boolean;
-};
-
-interface Question {
-  value: number;
-  category: string;
-  question?: string;
-  answer?: string;
-  daily_double?: boolean;
-};
+}
