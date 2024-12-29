@@ -13,7 +13,7 @@ import { makeRoomName, makeUserName } from './moniker';
 import config from './config';
 
 const app = express();
-let server: any = null;
+let server = null as https.Server | http.Server | null;
 if (config.SSL_KEY_FILE && config.SSL_CRT_FILE) {
   const key = fs.readFileSync(config.SSL_KEY_FILE as string);
   const cert = fs.readFileSync(config.SSL_CRT_FILE as string);
@@ -21,7 +21,7 @@ if (config.SSL_KEY_FILE && config.SSL_CRT_FILE) {
 } else {
   server = new http.Server(app);
 }
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, { cors: { origin: '*' }, transports: ['websocket'] });
 const rooms = new Map<string, Room>();
 init();
 
@@ -44,7 +44,7 @@ async function init() {
       rooms.set(roomId, new Room(io, roomId));
     }
   });
-  server.listen(config.PORT);
+  server?.listen(Number(config.PORT));
 }
 
 app.use(cors());

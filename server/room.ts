@@ -971,7 +971,7 @@ export class Room {
       // Not in judging step
       return false;
     }
-    if (this.settings.host && socket?.id !== this.settings.host) {
+    if (this.settings.host && socket && socket?.id !== this.settings.host) {
       // Not the host
       return;
     }
