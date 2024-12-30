@@ -1162,21 +1162,19 @@ export class Room {
     // console.log(arr);
     const results = await Promise.allSettled(
       arr.map(async (str, i) => {
-        try {
-          // Call the API to pregenerate the voice clips
-          const url = await genAITextToSpeech(rvcHost, str ?? '');
-          // Report progress back in chat messages
-          if (url) {
-            this.addChatMessage(undefined, {
-              id: '',
-              name: 'System',
-              msg: 'generated ai voice ' + i + ': ' + url,
-            });
-            redisCount('aiVoice');
-          }
-        } catch (e) {
-          console.log(e);
+        // Call the API to pregenerate the voice clips
+        const url = await genAITextToSpeech(rvcHost, str ?? '');
+        // Report progress back in chat messages
+        if (url) {
+          this.addChatMessage(undefined, {
+            id: '',
+            name: 'System',
+            msg: 'generated ai voice ' + i + ': ' + url,
+          });
+          redisCount('aiVoice');
+          return url;
         }
+        return null;
       }),
     );
     this.addChatMessage(undefined, {
