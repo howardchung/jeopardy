@@ -1160,6 +1160,7 @@ export class Room {
     console.log('%s strings to generate', strings.size);
     const arr = Array.from(strings);
     // console.log(arr);
+    const start = Date.now();
     const results = await Promise.allSettled(
       arr.map(async (str, i) => {
         // Call the API to pregenerate the voice clips
@@ -1174,17 +1175,18 @@ export class Room {
           redisCount('aiVoice');
           return url;
         }
-        return null;
+        throw new Error('no output URL');
       }),
     );
+    const end = Date.now();
     this.addChatMessage(undefined, {
       id: '',
       name: 'System',
       msg:
-        results.filter(Boolean).length +
+        results.filter(r => r.status === 'fulfilled').length +
         '/' +
         results.length +
-        ' voices generated!',
+        ' voices generated in ' + (end - start) + ' ms',
     });
   }
 }
