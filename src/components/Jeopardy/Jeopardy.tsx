@@ -29,7 +29,7 @@ import {
 import { io, type Socket } from 'socket.io-client';
 import { type AppState } from '../App/App';
 import ReactMarkdown from 'react-markdown';
-import { type PublicGameState } from '../../../server/room';
+import { type PublicGameState } from '../../../server/gamestate';
 import { MD5 } from '../../md5';
 
 const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
