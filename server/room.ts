@@ -1116,13 +1116,13 @@ export class Room {
             redisCount('aiVoice');
             success += 1;
           }
-          count += 1;
         } catch (e) {
           // Log errors, but continue iterating
           console.log(e);
         }
+        count += 1;
       }
-      if (workerIndex === 0) {
+      if (count === items.length) {
         const end = Date.now();
         this.addChatMessage(undefined, {
           id: '',
