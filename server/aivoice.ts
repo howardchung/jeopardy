@@ -13,10 +13,6 @@ export async function genAITextToSpeech(
   }
   const resp = await fetch(rvcHost + '/gradio_api/call/partial_36', {
     method: 'POST',
-    // We make ~70 requests at once, and each generation can take around 30 seconds + time waiting for other jobs to finish
-    // Set a long timeout to prevent timeout errors
-    // An alternative to this is to make the requests in series, or control the concurrency so we don't start at all once
-    signal: AbortSignal.timeout(30 * 60 * 1000),
     headers: {
       'Content-Type': 'application/json',
     },

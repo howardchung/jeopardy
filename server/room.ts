@@ -1158,13 +1158,18 @@ export class Room {
       ].filter(Boolean),
     );
     console.log('%s strings to generate', strings.size);
-    const arr = Array.from(strings);
-    // console.log(arr);
+    const items = Array.from(strings);
     const start = Date.now();
-    const results = await Promise.allSettled(
-      arr.map(async (str, i) => {
-        // Call the API to pregenerate the voice clips
-        const url = await genAITextToSpeech(rvcHost, str ?? '');
+    let cursor = items.entries();
+    // create for loops that each run off the same cursor which keeps track of location
+    let numWorkers = 10;
+    // The parallelism should ideally depend on the server configuration
+    // But we just need a value that won't take more than 5 minutes between start and stop because fetch will timeout
+    // No good way of configuring it right now without switching to undici
+    const results = Array(items.length);
+    Array(numWorkers).fill('').forEach(async () => {
+      for (let [i, text] of cursor) {
+        const url = await genAITextToSpeech(rvcHost, text ?? '');
         // Report progress back in chat messages
         if (url) {
           this.addChatMessage(undefined, {
@@ -1173,17 +1178,16 @@ export class Room {
             msg: 'generated ai voice ' + i + ': ' + url,
           });
           redisCount('aiVoice');
-          return url;
+          results[i] = url;
         }
-        throw new Error('no output URL');
-      }),
-    );
+      }
+    });
     const end = Date.now();
     this.addChatMessage(undefined, {
       id: '',
       name: 'System',
       msg:
-        results.filter(r => r.status === 'fulfilled').length +
+        results.filter(Boolean).length +
         '/' +
         results.length +
         ' voices generated in ' + (end - start) + ' ms',
