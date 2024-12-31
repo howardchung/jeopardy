@@ -1100,31 +1100,40 @@ export class Room {
     // The parallelism should ideally depend on the server configuration
     // But we just need a value that won't take more than 5 minutes between start and stop because fetch will timeout
     // No good way of configuring it right now without switching to undici
-    const results = Array(items.length);
-    Array(numWorkers).fill('').forEach(async () => {
+    let success = 0;
+    let count = 0;
+    Array(numWorkers).fill('').forEach(async (_, workerIndex) => {
       for (let [i, text] of cursor) {
-        const url = await genAITextToSpeech(rvcHost, text ?? '');
-        // Report progress back in chat messages
-        if (url) {
-          this.addChatMessage(undefined, {
-            id: '',
-            name: 'System',
-            msg: 'generated ai voice ' + i + ': ' + url,
-          });
-          redisCount('aiVoice');
-          results[i] = url;
+        try {
+          const url = await genAITextToSpeech(rvcHost, text ?? '');
+          // Report progress back in chat messages
+          if (url) {
+            this.addChatMessage(undefined, {
+              id: '',
+              name: 'System',
+              msg: 'generated ai voice ' + i + ': ' + url,
+            });
+            redisCount('aiVoice');
+            success += 1;
+          }
+          count += 1;
+        } catch (e) {
+          // Log errors, but continue iterating
+          console.log(e);
         }
       }
-    });
-    const end = Date.now();
-    this.addChatMessage(undefined, {
-      id: '',
-      name: 'System',
-      msg:
-        results.filter(Boolean).length +
-        '/' +
-        results.length +
-        ' voices generated in ' + (end - start) + ' ms',
+      if (workerIndex === 0) {
+        const end = Date.now();
+        this.addChatMessage(undefined, {
+          id: '',
+          name: 'System',
+          msg:
+            success +
+            '/' +
+            count +
+            ' voices generated in ' + (end - start) + 'ms',
+        });
+      }
     });
   }
 }
