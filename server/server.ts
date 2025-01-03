@@ -11,6 +11,7 @@ import { Room } from './room';
 import { redis, getRedisCountDay } from './redis';
 import { makeRoomName, makeUserName } from './moniker';
 import config from './config';
+import { getJDataStats } from './jData';
 
 const app = express();
 let server = null as https.Server | http.Server | null;
@@ -53,6 +54,10 @@ app.use(express.static('build'));
 
 app.get('/ping', (req, res) => {
   res.json('pong');
+});
+
+app.get('/metadata', (req, res) => {
+  res.json(getJDataStats());
 });
 
 app.get('/stats', async (req, res) => {

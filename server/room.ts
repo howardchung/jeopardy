@@ -1,51 +1,11 @@
 import { Socket, Server } from 'socket.io';
 import Papa from 'papaparse';
-import { gunzipSync } from 'zlib';
 import { redis, redisCount } from './redis';
-import fs from 'fs';
-import nodeCrypto from 'node:crypto';
 import { genAITextToSpeech } from './aivoice';
 import { getOpenAIDecision, openai } from './openai';
 import config from './config';
 import { getGameState, getPerQuestionState } from './gamestate';
-
-// On boot, start with the initial data included in repo
-console.time('load');
-let fileData: Buffer | undefined = fs.readFileSync('./jeopardy.json.gz');
-let jData = JSON.parse(gunzipSync(fileData).toString());
-let hash = nodeCrypto.createHash('md5').update(fileData).digest('hex');
-fileData = undefined;
-console.timeEnd('load');
-console.log('loaded %d episodes', Object.keys(jData).length);
-
-async function refreshEpisodes() {
-  if (config.NODE_ENV === 'development') {
-    return;
-  }
-  console.time('reload');
-  try {
-    const response = await fetch(
-      'https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz',
-    );
-    const arrayBuf = await response.arrayBuffer();
-    const buf = Buffer.from(arrayBuf);
-    const newHash = nodeCrypto.createHash('md5').update(buf).digest('hex');
-    // Check if new compressed data matches current
-    if (newHash !== hash) {
-      jData = JSON.parse(gunzipSync(buf).toString());
-      hash = newHash;
-      console.log('reloaded %d episodes', Object.keys(jData).length);
-    } else {
-      console.log('skipping reload since data is the same');
-    }
-  } catch (e) {
-    console.log(e);
-  }
-  console.timeEnd('reload');
-}
-// Periodically refetch the latest episode data and replace it in memory
-setInterval(refreshEpisodes, 24 * 60 * 60 * 1000);
-refreshEpisodes();
+import { getJData } from './jData';
 
 export class Room {
   // Serialized state
@@ -572,6 +532,7 @@ export class Room {
         console.warn(e);
       }
     } else {
+      const jData = getJData();
       // Load question data into game
       let nums = Object.keys(jData);
       if (filter) {

@@ -30,7 +30,7 @@ import { io, type Socket } from 'socket.io-client';
 import { type AppState } from '../App/App';
 import ReactMarkdown from 'react-markdown';
 import { type PublicGameState } from '../../../server/gamestate';
-import { MD5 } from '../../md5';
+import { cyrb53 } from '../../../server/hash';
 
 const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
 const boardFill = new Audio('/jeopardy/jeopardy-board-fill.mp3');
@@ -386,7 +386,7 @@ export class Jeopardy extends React.Component<{
     if (this.state.game?.enableAIVoices) {
       try {
         await new Promise(async (resolve, reject) => {
-          const hash = MD5.hash(text);
+          const hash = cyrb53(text).toString();
           const aiVoice = new Audio(
             this.state.game?.enableAIVoices +
               '/gradio_api/file=audio/output/{hash}.mp3'.replace(

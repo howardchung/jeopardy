@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Divider, Header, Icon } from 'semantic-ui-react';
+import CountUp from 'react-countup';
 
 import { NewRoomButton, JeopardyTopBar } from '../TopBar/TopBar';
 import styles from './Home.module.css';
+import { serverPath } from '../../utils';
 
 const Feature = ({
   icon,
@@ -33,23 +35,40 @@ const Feature = ({
 
 const Hero = ({
   heroText,
-  subText,
   action,
   image,
   color,
 }: {
   heroText?: string;
-  subText?: string;
   action?: React.ReactNode;
   image?: string;
   color?: string;
 }) => {
+  const [epCount, setEpCount] = useState(8000);
+  const [qCount, setQCount] = useState(500000);
+  useEffect(() => {
+    const update = async () => {
+      const response = await fetch(serverPath + '/metadata');
+      const json = await response.json();
+      setQCount(json.qs);
+      setEpCount(json.eps);
+    }
+    update();
+  }, []);
   return (
     <div className={`${styles.hero} ${color === 'green' ? styles.green : ''}`}>
       <div className={styles.heroInner}>
         <div style={{ padding: '30px', flex: '1 1 0' }}>
           <div className={styles.heroText}>{heroText}</div>
-          <div className={styles.subText}>{subText}</div>
+          <div className={styles.subText}>
+            <CountUp start={8000} end={epCount} delay={0} duration={3} />
+            {' '}
+            episodes featuring
+            {' '}
+            <CountUp start={500000} end={qCount} delay={0} duration={3} />
+            {' '}
+            clues
+          </div>
           {action}
         </div>
         <div
@@ -75,7 +94,6 @@ export const JeopardyHome = () => {
       <div className={styles.container}>
         <Hero
           heroText={'Play Jeopardy! online with friends.'}
-          subText={'Pick from 7,000+ episodes featuring 400,000+ clues.'}
           action={<NewRoomButton />}
           image={'/screenshot3.png'}
         />

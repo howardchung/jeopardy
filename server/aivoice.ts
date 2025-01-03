@@ -1,4 +1,4 @@
-import nodeCrypto from 'node:crypto';
+import { cyrb53 } from './hash';
 
 // Given input text, gets back an mp3 file URL
 // We can send this to each client and have it be read
@@ -43,7 +43,7 @@ export async function genAITextToSpeech(
         0,
         44100,
         'mp3',
-        nodeCrypto.createHash('md5').update(text).digest('hex'),
+        cyrb53(text).toString(),
       ],
     }),
   });
