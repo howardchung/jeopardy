@@ -84,7 +84,10 @@ app.get('/stats', async (req, res) => {
     // const chatMessages = await getRedisCountDay('chatMessages');
     const newGamesLastDay = await getRedisCountDay('newGames');
     const customGamesLastDay = await getRedisCountDay('customGames');
-    const aiJudgeLastDay = await getRedisCountDay('aiJudge');
+    const aiJudgeLastDay = await getRedisCountDay('aiJudge'); 
+    const aiShortcutLastDay = await getRedisCountDay('aiShortcut');
+    const aiChatGptLastDay = await getRedisCountDay('aiChatGpt');
+    const aiRefuseLastDay = await getRedisCountDay('aiRefuse');
     const undoLastDay = await getRedisCountDay('undo');
     const aiUndoLastDay = await getRedisCountDay('aiUndo');
     const aiVoiceLastDay = await getRedisCountDay('aiVoice');
@@ -103,6 +106,9 @@ app.get('/stats', async (req, res) => {
       newGamesLastDay,
       customGamesLastDay,
       aiJudgeLastDay,
+      aiShortcutLastDay,
+      aiChatGptLastDay,
+      aiRefuseLastDay,
       undoLastDay,
       aiUndoLastDay,
       aiVoiceLastDay,

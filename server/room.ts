@@ -798,6 +798,8 @@ export class Room {
   }
 
   doAiJudge = async (data: { currentQ: string; id: string }) => {
+    // count the number of automatic judges
+    redisCount('aiJudge');
     // currentQ: The board coordinates of the current question, e.g. 1_3
     // id: socket id of the person being judged
     const { currentQ, id } = data;
@@ -805,22 +807,37 @@ export class Room {
     const q = this.jpd.board[currentQ]?.q ?? '';
     const a = this.jpd.public.currentAnswer ?? '';
     const response = this.jpd.public.answers[id];
-    const decision = await getOpenAIDecision(q, a, response);
-    console.log('[AIDECISION]', id, q, a, response, decision);
-    const correct = decision?.correct;
-    const confidence = decision?.confidence;
-    if (correct != null) {
-      // Log the AI decision along with whether the user agreed with it (accuracy)
+    let correct: boolean | null = null;
+    if (response === '') {
+      // empty response is always wrong
+      correct = false;
+      redisCount('aiShortcut');
+    } else if (response.toLowerCase().trim() === a.toLowerCase().trim()) {
+      // exact match is always right
+      correct = true;
+      redisCount('aiShortcut');
+    } else {
+      // count the number of calls to chatgpt
+      redisCount('aiChatGpt');
+      const decision = await getOpenAIDecision(q, a, response);
+      console.log('[AIDECISION]', id, q, a, response, decision);
+      if (decision && decision.correct != null) {
+        correct = decision.correct;
+      } else {
+        redisCount('aiRefuse');
+      }
+      // Log the AI decision to measure accuracy
       // If the user undoes and then chooses differently than AI, then that's a failed decision
       // Alternative: we can just highlight what the AI thinks is correct instead of auto-applying the decision, then we'll have user feedback for sure
-      if (redis) {
-        redis.lpush(
-          'jpd:aiJudges',
-          JSON.stringify({ q, a, response, correct, confidence }),
-        );
-        redisCount('aiJudge');
-      }
-      this.judgeAnswer(undefined, { currentQ, id, correct, confidence });
+      // If undefined, AI refused to answer
+      redis?.lpush(
+        'jpd:aiJudges',
+        JSON.stringify({ q, a, response, correct: decision?.correct }),
+      );
+      redis?.ltrim('jpd:aiJudges', 0, 1000);
+    }
+    if (correct != null) {
+      this.judgeAnswer(undefined, { currentQ, id, correct });
     }
   }
 
@@ -831,15 +848,6 @@ export class Room {
     const answer = this.jpd.public.currentAnswer;
     const submitted = this.jpd.public.answers[data.id];
     const success = this.judgeAnswer(socket, data);
-    if (success) {
-      if (data.correct && redis) {
-        // If the answer was judged correct and non-trivial (equal lowercase), log it for analysis
-        if (answer?.toLowerCase() !== submitted?.toLowerCase()) {
-          redis.lpush('jpd:nonTrivialJudges', `${answer},${submitted},${1}`);
-          // redis.ltrim('jpd:nonTrivialJudges', 0, 100000);
-        }
-      }
-    }
   }
 
   judgeAnswer = (
