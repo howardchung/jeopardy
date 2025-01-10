@@ -3,21 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "compression": "^1.7.4",
+    "compression": "^1.7.5",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
+    "dotenv": "^16.4.7",
     "express": "^5.0.1",
-    "ioredis": "^5.3.1",
-    "openai": "^4.77.0",
-    "papaparse": "^5.3.2",
-    "react": "^18.2.0",
+    "ioredis": "^5.4.2",
+    "openai": "^4.78.0",
+    "papaparse": "^5.5.1",
+    "react": "^18.3.1",
     "react-countup": "^6.5.3",
-    "react-dom": "^18.2.0",
-    "react-markdown": "^9.0.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.3",
     "semantic-ui-css": "^2.5.0",
     "semantic-ui-react": "^2.1.5",
-    "socket.io": "^4.6.0",
-    "socket.io-client": "^4.6.0"
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
   },
   "scripts": {
     "server": "node buildServer/server.js",
@@ -47,16 +47,16 @@
     ]
   },
   "devDependencies": {
-    "@types/compression": "^1.7.2",
-    "@types/cors": "^2.8.13",
+    "@types/compression": "^1.7.5",
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
-    "@types/node": "^18.13.0",
+    "@types/node": "^22.10.5",
     "@types/papaparse": "^5.3.15",
-    "@types/react": "^18.0.28",
-    "@types/react-dom": "^18.0.10",
-    "prettier": "^3.1.1",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "prettier": "^3.4.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^4.9.5",
-    "vite": "^4.5.0"
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
   }
 }
