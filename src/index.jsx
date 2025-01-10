@@ -11,4 +11,4 @@ const gameId = urlParams.get('game');
 const isHome = !Boolean(gameId);
 const container = document.getElementById('root');
 const root = createRoot(container);
-root.render(isHome ? <JeopardyHome /> : <App />);
+root.render(isHome ? <JeopardyHome /> : <React.StrictMode><App /></React.StrictMode>);

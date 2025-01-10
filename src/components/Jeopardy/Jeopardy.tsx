@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   Label,
@@ -27,7 +27,6 @@ import {
   getOrCreateClientId,
 } from '../../utils';
 import { io, type Socket } from 'socket.io-client';
-import { type AppState } from '../App/App';
 import ReactMarkdown from 'react-markdown';
 import { type PublicGameState } from '../../../server/gamestate';
 import { cyrb53 } from '../../../server/hash';
@@ -67,10 +66,13 @@ if (query) {
 }
 
 export class Jeopardy extends React.Component<{
-  setAppState: (state: Partial<AppState>) => void;
   participants: User[];
   updateName: (name: string) => void;
   addChatMessage: (data: ChatMessage) => void;
+  setSocket: (socket: Socket) => void;
+  setParticipants: (users: User[]) => void;
+  setScrollTimestamp: (ts: number) => void;
+  setChat: (chat: ChatMessage[]) => void;
 }> {
   public state = {
     game: undefined as PublicGameState | undefined,
@@ -111,7 +113,7 @@ export class Jeopardy extends React.Component<{
       },
     });
     this.socket = socket;
-    this.props.setAppState({ socket });
+    this.props.setSocket(socket);
     socket.on('connect', async () => {
       // Load username from localstorage
       let userName = window.localStorage.getItem('watchparty-username');
@@ -130,13 +132,11 @@ export class Jeopardy extends React.Component<{
       this.props.addChatMessage(data);
     });
     socket.on('roster', (data: User[]) => {
-      this.props.setAppState({
-        participants: data,
-        rosterUpdateTS: Date.now(),
-      });
+      this.props.setParticipants(data);
     });
     socket.on('chatinit', (data: any) => {
-      this.props.setAppState({ chat: data, scrollTimestamp: Date.now() });
+      this.props.setChat(data);
+      this.props.setScrollTimestamp(0);
     });
     socket.on('JPD:state', (game: PublicGameState) => {
       this.setState({ game, localEpNum: game.epNum });
@@ -236,6 +236,8 @@ export class Jeopardy extends React.Component<{
 
   componentWillUnmount() {
     document.removeEventListener('keydown', this.onKeydown);
+    this.socket?.close();
+    this.socket = undefined;
   }
 
   async componentDidUpdate(prevProps: any, prevState: any) {
@@ -693,8 +695,8 @@ export class Jeopardy extends React.Component<{
                           <div className="" style={{ height: '60px' }}>
                             {!game.currentAnswer &&
                             this.socket &&
-                            !game.buzzes[this.socket.id] &&
-                            !game.submitted[this.socket.id] &&
+                            !game.buzzes[this.socket.id!] &&
+                            !game.submitted[this.socket.id!] &&
                             !game.currentDailyDouble &&
                             game.round !== 'final' ? (
                               <div style={{ display: 'flex' }}>
@@ -741,7 +743,7 @@ export class Jeopardy extends React.Component<{
                             {!game.currentAnswer &&
                             !this.state.localAnswerSubmitted &&
                             this.socket &&
-                            game.buzzes[this.socket.id] &&
+                            game.buzzes[this.socket.id!] &&
                             game.questionEndTS ? (
                               <Input
                                 autoFocus
@@ -766,17 +768,17 @@ export class Jeopardy extends React.Component<{
                             ) : null}
                             {game.waitingForWager &&
                             this.socket &&
-                            game.waitingForWager[this.socket.id] ? (
+                            game.waitingForWager[this.socket.id!] ? (
                               <Input
                                 label={`Wager (${
                                   getWagerBounds(
                                     game.round,
-                                    game.scores[this.socket.id],
+                                    game.scores[this.socket.id!],
                                   ).minWager
                                 } to ${
                                   getWagerBounds(
                                     game.round,
-                                    game.scores[this.socket.id],
+                                    game.scores[this.socket.id!],
                                   ).maxWager
                                 })`}
                                 value={this.state.localWager}
@@ -1210,47 +1212,45 @@ export class Jeopardy extends React.Component<{
   }
 }
 
-class TimerBar extends React.Component<{
+function TimerBar({duration, secondary, submitAnswer}: {
   duration: number;
   secondary?: boolean;
   submitAnswer?: Function;
-}> {
-  public state = { width: '0%' };
-  submitTimeout: number | null = null;
-  componentDidMount() {
+}) {
+  const [width, setWidth] = useState(0);
+  const [submitTimeout, setSubmitTimeout] = useState<number | null>(null);
+  useEffect(() => {
     requestAnimationFrame(() => {
-      this.setState({ width: '100%' });
+      setWidth(100);
     });
-    if (this.props.submitAnswer) {
+    if (submitAnswer) {
       // Submit whatever's in the box 0.5s before expected timeout
       // Bit hacky, but to fix we either need to submit updates on each character
       // Or have a separate step where the server instructs all clients to submit whatever is in box and accepts it
-      this.submitTimeout = window.setTimeout(
-        this.props.submitAnswer,
-        this.props.duration - 500,
-      );
+      setSubmitTimeout(window.setTimeout(
+        submitAnswer,
+        duration - 500,
+      ));
     }
-  }
-  componentWillUnmount() {
-    if (this.submitTimeout) {
-      window.clearTimeout(this.submitTimeout);
+    return () => {
+      if (submitTimeout) {
+        window.clearTimeout(submitTimeout);
+      }
     }
-  }
-  render() {
-    return (
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '0px',
-          left: '0px',
-          height: '10px',
-          width: this.state.width,
-          backgroundColor: this.props.secondary ? '#16AB39' : '#0E6EB8',
-          transition: `${this.props.duration / 1000}s width linear`,
-        }}
-      />
-    );
-  }
+  }, []);
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        bottom: '0px',
+        left: '0px',
+        height: '10px',
+        width: width + '%',
+        backgroundColor: secondary ? '#16AB39' : '#0E6EB8',
+        transition: `${duration / 1000}s width linear`,
+      }}
+    />
+  );
 }
 
 function getWagerBounds(round: string, score: number) {

@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { serverPath } from '../../utils';
 import { Icon, Popup, Button } from 'semantic-ui-react';
 import '../Jeopardy/Jeopardy.css';
 
-export class NewRoomButton extends React.Component<{ size?: string }> {
-  createRoom = async () => {
+export function NewRoomButton({size}: { size?: string }) {
+  const createRoom = useCallback(async () => {
     const response = await window.fetch(serverPath + '/createRoom', {
       method: 'POST',
       headers: {
@@ -17,96 +17,92 @@ export class NewRoomButton extends React.Component<{ size?: string }> {
     const searchParams = new URLSearchParams(window.location.search);
     searchParams.set('game', name);
     window.location.search = searchParams.toString();
-  };
-  render() {
-    return (
-      <Popup
-        content="Create a new room with a random URL that you can share with friends"
-        trigger={
-          <Button
-            color="blue"
-            size={this.props.size as any}
-            icon
-            fluid
-            labelPosition="left"
-            onClick={this.createRoom}
-            className="toolButton"
-          >
-            <Icon name="certificate" />
-            New Room
-          </Button>
-        }
-      />
-    );
-  }
+  }, []);
+  return (
+    <Popup
+      content="Create a new room with a random URL that you can share with friends"
+      trigger={
+        <Button
+          color="blue"
+          size={size as any}
+          icon
+          fluid
+          labelPosition="left"
+          onClick={createRoom}
+          className="toolButton"
+        >
+          <Icon name="certificate" />
+          New Room
+        </Button>
+      }
+    />
+  );
 }
 
-export class JeopardyTopBar extends React.Component<{ hideNewRoom?: boolean }> {
-  render() {
-    return (
-      <React.Fragment>
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            padding: '1em',
-            paddingBottom: '0px',
-          }}
-        >
-          <a href="/" style={{ display: 'flex' }}>
-            <div
-              className="logo small"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '48px',
-                width: '48px',
-                marginRight: '10px',
-                borderRadius: '50%',
-                position: 'relative',
-                backgroundColor: '#209CEE',
-              }}
-            >
-              J!
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <div className="logo">Jeopardy!</div>
-            </div>
-          </a>
+export function JeopardyTopBar({ hideNewRoom }: { hideNewRoom?: boolean }) {
+  return (
+    <React.Fragment>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          padding: '1em',
+          paddingBottom: '0px',
+        }}
+      >
+        <a href="/" style={{ display: 'flex' }}>
+          <div
+            className="logo small"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '48px',
+              width: '48px',
+              marginRight: '10px',
+              borderRadius: '50%',
+              position: 'relative',
+              backgroundColor: '#209CEE',
+            }}
+          >
+            J!
+          </div>
           <div
             style={{
               display: 'flex',
-              marginLeft: '10px',
               alignItems: 'center',
             }}
           >
-            <a
-              href="https://github.com/howardchung/jeopardy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="footerIcon"
-              title="GitHub"
-            >
-              <Icon name="github" size="big" link />
-            </a>
+            <div className="logo">Jeopardy!</div>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              width: '200px',
-              marginLeft: 'auto',
-            }}
+        </a>
+        <div
+          style={{
+            display: 'flex',
+            marginLeft: '10px',
+            alignItems: 'center',
+          }}
+        >
+          <a
+            href="https://github.com/howardchung/jeopardy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footerIcon"
+            title="GitHub"
           >
-            {!this.props.hideNewRoom && <NewRoomButton />}
-          </div>
+            <Icon name="github" size="big" link />
+          </a>
         </div>
-      </React.Fragment>
-    );
-  }
+        <div
+          style={{
+            display: 'flex',
+            width: '200px',
+            marginLeft: 'auto',
+          }}
+        >
+          {!hideNewRoom && <NewRoomButton />}
+        </div>
+      </div>
+    </React.Fragment>
+  );
 }

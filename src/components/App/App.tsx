@@ -1,5 +1,5 @@
 import './App.css';
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Divider, Grid, Icon, Input } from 'semantic-ui-react';
 import { serverPath, generateName } from '../../utils';
 import { Chat } from '../Chat/Chat';
@@ -7,104 +7,93 @@ import { JeopardyTopBar } from '../TopBar/TopBar';
 import { Jeopardy } from '../Jeopardy/Jeopardy';
 import { type Socket } from 'socket.io-client';
 
-export interface AppState {
-  participants: User[];
-  rosterUpdateTS: Number;
-  chat: ChatMessage[];
-  myName: string;
-  scrollTimestamp: number;
-  socket: Socket | undefined;
-}
+export default function App() {
+  const [participants, setParticipants] = useState<User[]>([]);
+  const [chat, setChat] = useState<ChatMessage[]>([]);
+  const [myName, setMyName] = useState('');
+  const [scrollTimestamp, setScrollTimestamp] = useState(0);
+  const [socket, setSocket] = useState<Socket | undefined>(undefined);
 
-export default class App extends React.Component<null, AppState> {
-  state: AppState = {
-    participants: [],
-    rosterUpdateTS: Date.now(),
-    chat: [],
-    myName: '',
-    scrollTimestamp: 0,
-    socket: undefined,
-  };
-
-  async componentDidMount() {
-    // Send heartbeat to the server
-    window.setInterval(
+  useEffect(() => {
+    const heartbeat =  window.setInterval(
       () => {
         window.fetch(serverPath + '/ping');
       },
       10 * 60 * 1000,
     );
-  }
+    return () => {
+      window.clearInterval(heartbeat);
+    }
+  });
 
-  updateName = (name: string) => {
-    if (this.state.socket) {
-      this.setState({ myName: name });
-      this.state.socket.emit('CMD:name', name);
+  const updateName = useCallback((name: string) => {
+    if (socket) {
+      setMyName(name);
+      socket.emit('CMD:name', name);
       window.localStorage.setItem('watchparty-username', name);
     }
-  };
+  }, [socket]);
 
-  addChatMessage = (data: ChatMessage) => {
-    this.state.chat.push(data);
-    this.setState({
-      chat: this.state.chat,
-      scrollTimestamp: Number(new Date()),
-    });
-  };
+  const addChatMessage = useCallback((data: ChatMessage) => {
+    chat.push(data);
+    setChat(chat);
+    setScrollTimestamp(Number(new Date()));
+  }, [chat]);
 
-  sendChatMessage = (msg: string) => {
-    this.state.socket?.emit('CMD:chat', msg);
-  };
+  const sendChatMessage = useCallback((msg: string) => {
+    socket?.emit('CMD:chat', msg);
+  }, [socket]);
 
-  render() {
-    return (
-      <React.Fragment>
-        <JeopardyTopBar />
-        {
-          <Grid stackable celled="internally">
-            <Grid.Row>
-              <Grid.Column width={12}>
-                <Jeopardy
-                  setAppState={(state) => this.setState(state as AppState)}
-                  participants={this.state.participants}
-                  updateName={this.updateName}
-                  addChatMessage={this.addChatMessage}
-                />
-              </Grid.Column>
-              <Grid.Column
-                width={4}
-                style={{ display: 'flex', flexDirection: 'column' }}
-                className="fullHeightColumn"
-              >
-                <Input
-                  inverted
-                  fluid
-                  label={'My name is:'}
-                  value={this.state.myName}
-                  onChange={(e, data) => this.updateName(data.value)}
-                  icon={
-                    <Icon
-                      onClick={async () =>
-                        this.updateName(await generateName())
-                      }
-                      name="random"
-                      inverted
-                      circular
-                      link
-                    />
-                  }
-                />
-                <Divider inverted horizontal></Divider>
-                <Chat
-                  chat={this.state.chat}
-                  scrollTimestamp={this.state.scrollTimestamp}
-                  sendChatMessage={this.sendChatMessage}
-                />
-              </Grid.Column>
-            </Grid.Row>
-          </Grid>
-        }
-      </React.Fragment>
-    );
-  }
+  return (
+    <React.Fragment>
+      <JeopardyTopBar />
+      {
+        <Grid stackable celled="internally">
+          <Grid.Row>
+            <Grid.Column width={12}>
+              <Jeopardy
+                participants={participants}
+                updateName={updateName}
+                addChatMessage={addChatMessage}
+                setParticipants={setParticipants}
+                setSocket={setSocket}
+                setScrollTimestamp={setScrollTimestamp}
+                setChat={setChat}
+              />
+            </Grid.Column>
+            <Grid.Column
+              width={4}
+              style={{ display: 'flex', flexDirection: 'column' }}
+              className="fullHeightColumn"
+            >
+              <Input
+                inverted
+                fluid
+                label={'My name is:'}
+                value={myName}
+                onChange={(e, data) => updateName(data.value)}
+                icon={
+                  <Icon
+                    onClick={async () =>
+                      updateName(await generateName())
+                    }
+                    name="random"
+                    inverted
+                    circular
+                    link
+                  />
+                }
+              />
+              <Divider inverted horizontal></Divider>
+              <Chat
+                chat={chat}
+                scrollTimestamp={scrollTimestamp}
+                sendChatMessage={sendChatMessage}
+              />
+            </Grid.Column>
+          </Grid.Row>
+        </Grid>
+      }
+    </React.Fragment>
+  );
 }

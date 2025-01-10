@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button, Comment, Icon, Input, Segment } from 'semantic-ui-react';
 
 import { getColorHex, getDefaultPicture } from '../../utils';
@@ -11,144 +11,127 @@ interface ChatProps {
   sendChatMessage: (msg: string) => void;
 }
 
-export class Chat extends React.Component<ChatProps> {
-  public state = { chatMsg: '', isNearBottom: true };
-  messagesRef = React.createRef<HTMLDivElement>();
-
-  componentDidMount() {
-    this.scrollToBottom();
-    this.messagesRef.current?.addEventListener('scroll', this.onScroll);
-  }
-
-  componentDidUpdate(prevProps: ChatProps) {
-    if (this.props.scrollTimestamp !== prevProps.scrollTimestamp) {
-      if (prevProps.scrollTimestamp === 0 || this.state.isNearBottom) {
-        this.scrollToBottom();
-      }
-    }
-  }
-
-  updateChatMsg = (e: any, data: { value: string }) => {
-    this.setState({ chatMsg: data.value });
+export function Chat (props: ChatProps) {
+  const [chatMsg, setChatMsg] = useState('');
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  
+  const updateChatMsg = (e: any, data: { value: string }) => {
+    setChatMsg(data.value);
   };
 
-  sendChatMsg = () => {
-    if (!this.state.chatMsg) {
+  const sendChatMsg = () => {
+    if (!chatMsg) {
       return;
     }
-    this.setState({ chatMsg: '' });
-    this.props.sendChatMessage(this.state.chatMsg);
+    setChatMsg('');
+    props.sendChatMessage(chatMsg);
   };
 
-  onScroll = () => {
-    this.setState({ isNearBottom: this.isChatNearBottom() });
-  };
-
-  isChatNearBottom = () => {
-    return (
-      this.messagesRef.current &&
-      this.messagesRef.current.scrollHeight -
-        this.messagesRef.current.scrollTop -
-        this.messagesRef.current.offsetHeight <
+  const isChatNearBottom = () => {
+    return Boolean(
+      messagesRef.current &&
+      messagesRef.current.scrollHeight -
+        messagesRef.current.scrollTop -
+        messagesRef.current.offsetHeight <
         100
     );
   };
 
-  scrollToBottom = () => {
-    if (this.messagesRef.current) {
-      this.messagesRef.current.scrollTop =
-        this.messagesRef.current.scrollHeight;
+  const onScroll = () => {
+    setIsNearBottom(isChatNearBottom());
+  };
+
+  const scrollToBottom = () => {
+    if (messagesRef.current) {
+      messagesRef.current.scrollTop =
+        messagesRef.current.scrollHeight;
     }
   };
 
-  formatMessage = (cmd: string, msg: string): React.ReactNode | string => {
-    if (cmd === 'judge') {
-      const { id, correct, answer, delta, name, confidence } = JSON.parse(msg);
-      return (
-        <span
-          style={{ color: correct ? '#21ba45' : '#db2828' }}
-        >{`ruled ${name} ${correct ? 'correct' : 'incorrect'}: ${answer} (${
-          delta >= 0 ? '+' : ''
-        }${delta}) ${
-          confidence != null ? `(${(confidence * 100).toFixed(0)}% conf.)` : ''
-        }`}</span>
-      );
-    } else if (cmd === 'answer') {
-      return `Correct answer: ${msg}`;
-    }
-    return cmd;
-  };
+  useEffect(() => {
+    scrollToBottom();
+    messagesRef.current?.addEventListener('scroll', onScroll);
+    return () => {
+      messagesRef.current?.removeEventListener('scroll', onScroll);
+    };
+  }, []);
 
-  render() {
-    return (
-      <Segment
-        className={this.props.className}
-        inverted
-        style={{
-          display: this.props.hide ? 'none' : 'flex',
-          flexDirection: 'column',
-          flexGrow: '1',
-          minHeight: 0,
-          marginTop: 0,
-          marginBottom: 0,
-        }}
+  useEffect(() => {
+    // if scrolltimestamp updated, we received a new message
+    // We don't really need to diff it with the previous props
+    // If 0, we haven't scrolled yet and want to always go to bottom
+    if (isChatNearBottom() || props.scrollTimestamp === 0) {
+      scrollToBottom();
+    }
+  }, [props.scrollTimestamp, props.chat]);
+  return (
+    <Segment
+      className={props.className}
+      inverted
+      style={{
+        display: props.hide ? 'none' : 'flex',
+        flexDirection: 'column',
+        flexGrow: '1',
+        minHeight: 0,
+        marginTop: 0,
+        marginBottom: 0,
+      }}
+    >
+      <div
+        className="chatContainer"
+        ref={messagesRef}
+        style={{ position: 'relative' }}
       >
-        <div
-          className="chatContainer"
-          ref={this.messagesRef}
-          style={{ position: 'relative' }}
-        >
-          <Comment.Group>
-            {this.props.chat.map((msg) => (
-              <ChatMessage
-                key={msg.timestamp + msg.id}
-                {...msg}
-                formatMessage={this.formatMessage}
-              />
-            ))}
-            {/* <div ref={this.messagesEndRef} /> */}
-          </Comment.Group>
-          {!this.state.isNearBottom && (
-            <Button
-              size="tiny"
-              onClick={this.scrollToBottom}
-              style={{
-                position: 'sticky',
-                bottom: 0,
-                display: 'block',
-                margin: '0 auto',
-              }}
-            >
-              Jump to bottom
-            </Button>
-          )}
-        </div>
-        <Input
-          inverted
-          fluid
-          onKeyPress={(e: any) => e.key === 'Enter' && this.sendChatMsg()}
-          onChange={this.updateChatMsg}
-          value={this.state.chatMsg}
-          icon={
-            <Icon
-              onClick={this.sendChatMsg}
-              name="send"
-              inverted
-              circular
-              link
+        <Comment.Group>
+          {props.chat.map((msg) => (
+            <ChatMessage
+              key={msg.timestamp + msg.id}
+              {...msg}
             />
-          }
-          placeholder="Enter a message..."
-        />
-      </Segment>
-    );
-  }
+          ))}
+          {/* <div ref={this.messagesEndRef} /> */}
+        </Comment.Group>
+        {!isNearBottom && (
+          <Button
+            size="tiny"
+            onClick={scrollToBottom}
+            style={{
+              position: 'sticky',
+              bottom: 0,
+              display: 'block',
+              margin: '0 auto',
+            }}
+          >
+            Jump to bottom
+          </Button>
+        )}
+      </div>
+      <Input
+        inverted
+        fluid
+        onKeyPress={(e: any) => e.key === 'Enter' && sendChatMsg()}
+        onChange={updateChatMsg}
+        value={chatMsg}
+        icon={
+          <Icon
+            onClick={sendChatMsg}
+            name="send"
+            inverted
+            circular
+            link
+          />
+        }
+        placeholder="Enter a message..."
+      />
+    </Segment>
+  );
 }
 
-const ChatMessage = ({ id, name, timestamp, cmd, msg, formatMessage }: any) => {
+const ChatMessage = ({ id, name, timestamp, cmd, msg }: {id: string, name?: string, timestamp: string, cmd: string, msg: string}) => {
   return (
     <Comment>
-      <Comment.Avatar src={getDefaultPicture(name, getColorHex(id))} />
+      <Comment.Avatar src={getDefaultPicture(name ?? '', getColorHex(id))} />
       <Comment.Content>
         <Comment.Author as="a" className="light">
           {name || id}
@@ -165,4 +148,22 @@ const ChatMessage = ({ id, name, timestamp, cmd, msg, formatMessage }: any) => {
       </Comment.Content>
     </Comment>
   );
+};
+
+const formatMessage = (cmd: string, msg: string): React.ReactNode | string => {
+  if (cmd === 'judge') {
+    const { id, correct, answer, delta, name, confidence } = JSON.parse(msg);
+    return (
+      <span
+        style={{ color: correct ? '#21ba45' : '#db2828' }}
+      >{`ruled ${name} ${correct ? 'correct' : 'incorrect'}: ${answer} (${
+        delta >= 0 ? '+' : ''
+      }${delta}) ${
+        confidence != null ? `(${(confidence * 100).toFixed(0)}% conf.)` : ''
+      }`}</span>
+    );
+  } else if (cmd === 'answer') {
+    return `Correct answer: ${msg}`;
+  }
+  return cmd;
 };
