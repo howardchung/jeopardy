@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, Comment, Icon, Input, Segment } from 'semantic-ui-react';
-
 import { getColorHex, getDefaultPicture } from '../../utils';
+import { Socket } from 'socket.io-client';
 
 interface ChatProps {
   chat: ChatMessage[];
   scrollTimestamp: number;
   className?: string;
   hide?: boolean;
-  sendChatMessage: (msg: string) => void;
+  socket: Socket | undefined;
 }
 
 export function Chat (props: ChatProps) {
@@ -21,11 +21,11 @@ export function Chat (props: ChatProps) {
   };
 
   const sendChatMsg = () => {
-    if (!chatMsg) {
+    if (!chatMsg || !props.socket) {
       return;
     }
     setChatMsg('');
-    props.sendChatMessage(chatMsg);
+    props.socket.emit('CMD:chat', chatMsg);
   };
 
   const isChatNearBottom = () => {

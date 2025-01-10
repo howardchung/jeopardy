@@ -67,9 +67,9 @@ if (query) {
 
 export class Jeopardy extends React.Component<{
   participants: User[];
+  chat: ChatMessage[];
   updateName: (name: string) => void;
-  addChatMessage: (data: ChatMessage) => void;
-  setSocket: (socket: Socket) => void;
+  setSocket: (socket: Socket | undefined) => void;
   setParticipants: (users: User[]) => void;
   setScrollTimestamp: (ts: number) => void;
   setChat: (chat: ChatMessage[]) => void;
@@ -129,7 +129,8 @@ export class Jeopardy extends React.Component<{
       if (document.visibilityState && document.visibilityState !== 'visible') {
         new Audio('/clearly.mp3').play();
       }
-      this.props.addChatMessage(data);
+      this.props.setChat([...this.props.chat, data]);
+      this.props.setScrollTimestamp(Number(new Date()));
     });
     socket.on('roster', (data: User[]) => {
       this.props.setParticipants(data);
@@ -238,6 +239,7 @@ export class Jeopardy extends React.Component<{
     document.removeEventListener('keydown', this.onKeydown);
     this.socket?.close();
     this.socket = undefined;
+    this.props.setSocket(undefined);
   }
 
   async componentDidUpdate(prevProps: any, prevState: any) {

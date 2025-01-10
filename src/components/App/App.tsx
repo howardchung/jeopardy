@@ -34,16 +34,6 @@ export default function App() {
     }
   }, [socket]);
 
-  const addChatMessage = useCallback((data: ChatMessage) => {
-    chat.push(data);
-    setChat(chat);
-    setScrollTimestamp(Number(new Date()));
-  }, [chat]);
-
-  const sendChatMessage = useCallback((msg: string) => {
-    socket?.emit('CMD:chat', msg);
-  }, [socket]);
-
   return (
     <React.Fragment>
       <JeopardyTopBar />
@@ -53,8 +43,8 @@ export default function App() {
             <Grid.Column width={12}>
               <Jeopardy
                 participants={participants}
+                chat={chat}
                 updateName={updateName}
-                addChatMessage={addChatMessage}
                 setParticipants={setParticipants}
                 setSocket={setSocket}
                 setScrollTimestamp={setScrollTimestamp}
@@ -88,7 +78,7 @@ export default function App() {
               <Chat
                 chat={chat}
                 scrollTimestamp={scrollTimestamp}
-                sendChatMessage={sendChatMessage}
+                socket={socket}
               />
             </Grid.Column>
           </Grid.Row>
