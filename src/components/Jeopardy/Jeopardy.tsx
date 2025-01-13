@@ -1220,19 +1220,17 @@ function TimerBar({duration, secondary, submitAnswer}: {
   submitAnswer?: Function;
 }) {
   const [width, setWidth] = useState(0);
-  const [submitTimeout, setSubmitTimeout] = useState<number | null>(null);
   useEffect(() => {
-    requestAnimationFrame(() => {
-      setWidth(100);
-    });
+    setWidth(100);
+    let submitTimeout: number | undefined;
     if (submitAnswer) {
       // Submit whatever's in the box 0.5s before expected timeout
       // Bit hacky, but to fix we either need to submit updates on each character
       // Or have a separate step where the server instructs all clients to submit whatever is in box and accepts it
-      setSubmitTimeout(window.setTimeout(
+      submitTimeout = window.setTimeout(
         submitAnswer,
         duration - 500,
-      ));
+      );
     }
     return () => {
       if (submitTimeout) {
