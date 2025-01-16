@@ -61,7 +61,7 @@ export function Chat (props: ChatProps) {
     // if scrolltimestamp updated, we received a new message
     // We don't really need to diff it with the previous props
     // If 0, we haven't scrolled yet and want to always go to bottom
-    if (isChatNearBottom() || props.scrollTimestamp === 0) {
+    if (isChatNearBottom() || props.scrollTimestamp != null) {
       scrollToBottom();
     }
   }, [props.scrollTimestamp, props.chat]);

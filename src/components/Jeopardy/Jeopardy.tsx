@@ -129,7 +129,9 @@ export class Jeopardy extends React.Component<{
       if (document.visibilityState && document.visibilityState !== 'visible') {
         new Audio('/clearly.mp3').play();
       }
-      this.props.setChat([...this.props.chat, data]);
+      // There may be race condition issues if we append using [...this.state.chat, data]
+      this.props.chat.push(data);
+      this.props.setChat(this.props.chat);
       this.props.setScrollTimestamp(Number(new Date()));
     });
     socket.on('roster', (data: User[]) => {
@@ -805,9 +807,9 @@ export class Jeopardy extends React.Component<{
                           <div className={`answer`} style={{ height: '30px' }}>
                             {game.currentAnswer}
                           </div>
-                          {/* {Boolean(game.playClueEndTS) && (
+                          {Boolean(game.playClueEndTS) && (
                             <TimerBar duration={game.playClueEndTS - game.serverTime} />
-                          )} */}
+                          )}
                           {Boolean(game.questionEndTS) && (
                             <TimerBar
                               duration={game.questionEndTS - game.serverTime}
@@ -1221,7 +1223,9 @@ function TimerBar({duration, secondary, submitAnswer}: {
 }) {
   const [width, setWidth] = useState(0);
   useEffect(() => {
-    setWidth(100);
+    requestAnimationFrame(() => {
+      setWidth(100);
+    });
     let submitTimeout: number | undefined;
     if (submitAnswer) {
       // Submit whatever's in the box 0.5s before expected timeout

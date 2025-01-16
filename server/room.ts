@@ -845,8 +845,6 @@ export class Room {
     socket: Socket,
     data: { currentQ: string; id: string; correct: boolean | null },
   ) => {
-    const answer = this.jpd.public.currentAnswer;
-    const submitted = this.jpd.public.answers[data.id];
     const success = this.judgeAnswer(socket, data);
   }
 
