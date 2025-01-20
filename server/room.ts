@@ -57,7 +57,7 @@ export class Room {
         (p) => p.connected || now - p.disconnectTime < 60 * 60 * 1000,
       );
       const afterLength = this.getAllPlayers();
-      if (beforeLength !== afterLength) {
+      if (beforeLength !== afterLength && this.getConnectedPlayers().length > 0) {
         this.sendRoster();
       }
     }, 30 * 60 * 1000);
