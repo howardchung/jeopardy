@@ -35,6 +35,8 @@ export class Room {
   private questionAnswerTimeout: NodeJS.Timeout =
     undefined as unknown as NodeJS.Timeout;
   private wagerTimeout: NodeJS.Timeout = undefined as unknown as NodeJS.Timeout;
+  public cleanupInterval: NodeJS.Timeout = undefined as unknown as NodeJS.Timeout;
+  public lastUpdateTime: Date = new Date();
 
   constructor(
     io: Server,
@@ -48,8 +50,7 @@ export class Room {
       this.deserialize(roomData);
     }
 
-    // Currently, all rooms remain in memory until server reboot, so this could be a lot of intervals
-    setInterval(() => {
+    this.cleanupInterval = setInterval(() => {
       // Remove players that have been disconnected for a long time
       const beforeLength = this.getAllPlayers();
       const now = Date.now();
@@ -351,6 +352,7 @@ export class Room {
     if (config.permaRooms.includes(key)) {
       await redis?.persist(key);
     }
+    this.lastUpdateTime = new Date();
     redisCount('saves');
   }
 

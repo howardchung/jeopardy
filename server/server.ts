@@ -25,6 +25,24 @@ if (config.SSL_KEY_FILE && config.SSL_CRT_FILE) {
 const io = new Server(server, { cors: { origin: '*' }, transports: ['websocket'] });
 const rooms = new Map<string, Room>();
 init();
+setInterval(freeUnusedRooms, 5 * 60 * 1000);
+async function freeUnusedRooms() {
+  // Only run if redis persistence is turned on
+  // Clean up rooms that are no longer in redis and empty
+  // Frees up some JS memory space when process is long-running
+  // If running without redis, keep rooms in memory
+  // We don't currently attempt to reload rooms from redis on demand
+  if (redis) {
+    rooms.forEach(async (room, key) => {
+      if (room.roster.length === 0 && !(await redis?.get(key))) {
+        clearInterval(room.cleanupInterval);
+        rooms.delete(key);
+        // Unregister the namespace to avoid dupes
+        io._nsps.delete(key);
+      }
+    });
+  }
+}
 
 async function init() {
   if (redis) {
@@ -101,6 +119,7 @@ app.get('/stats', async (req, res) => {
       roomCount: rooms.size,
       cpuUsage,
       redisUsage,
+      memUsage: process.memoryUsage().rss,
       // chatMessages,
       currentUsers,
       newGamesLastDay,
@@ -150,7 +169,7 @@ app.get('/aiJudges', async (req, res) => {
   }
 });
 
-app.post('/createRoom', (req, res) => {
+app.post('/createRoom', async (req, res) => {
   const genName = () => '/' + makeRoomName();
   let name = genName();
   // Keep retrying until no collision
@@ -159,6 +178,7 @@ app.post('/createRoom', (req, res) => {
   }
   console.log('createRoom: ', name);
   const newRoom = new Room(io, name);
+  newRoom.saveRoom();
   rooms.set(name, newRoom);
   res.json({ name: name.slice(1) });
 });
