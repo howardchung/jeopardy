@@ -821,22 +821,26 @@ export class Room {
     } else {
       // count the number of calls to chatgpt
       redisCount('aiChatGpt');
-      const decision = await getOpenAIDecision(q, a, response);
-      console.log('[AIDECISION]', id, q, a, response, decision);
-      if (decision && decision.correct != null) {
-        correct = decision.correct;
-      } else {
-        redisCount('aiRefuse');
+      try {
+        const decision = await getOpenAIDecision(q, a, response);
+        console.log('[AIDECISION]', id, q, a, response, decision);
+        if (decision && decision.correct != null) {
+          correct = decision.correct;
+        } else {
+          redisCount('aiRefuse');
+        }
+        // Log the AI decision to measure accuracy
+        // If the user undoes and then chooses differently than AI, then that's a failed decision
+        // Alternative: we can just highlight what the AI thinks is correct instead of auto-applying the decision, then we'll have user feedback for sure
+        // If undefined, AI refused to answer
+        redis?.lpush(
+          'jpd:aiJudges',
+          JSON.stringify({ q, a, response, correct: decision?.correct }),
+        );
+        redis?.ltrim('jpd:aiJudges', 0, 1000);
+      } catch (e) {
+        console.log(e);
       }
-      // Log the AI decision to measure accuracy
-      // If the user undoes and then chooses differently than AI, then that's a failed decision
-      // Alternative: we can just highlight what the AI thinks is correct instead of auto-applying the decision, then we'll have user feedback for sure
-      // If undefined, AI refused to answer
-      redis?.lpush(
-        'jpd:aiJudges',
-        JSON.stringify({ q, a, response, correct: decision?.correct }),
-      );
-      redis?.ltrim('jpd:aiJudges', 0, 1000);
     }
     if (correct != null) {
       this.judgeAnswer(undefined, { currentQ, id, correct });
