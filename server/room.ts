@@ -213,8 +213,11 @@ export class Room {
       socket.on('JPD:bulkJudge', (data) => {
         // Check if the next player to be judged is in the input data
         // If so, doJudge for that player
-        // Check if we advanced to the next question, otherwise keep doing doJudge
-        while (this.jpd.public.currentJudgeAnswer !== undefined) {
+        // Check if we advanced to the next question, otherwise keep doing 
+        let count = 0;
+        while (this.jpd.public.currentJudgeAnswer !== undefined && count <= data.length) {
+          // The bulkjudge may not contain all decisions. Stop if we did as many decisions as the input data
+          console.log('[BULKJUDGE]', count, data.length);
           const id = this.jpd.public.currentJudgeAnswer;
           const match = data.find((d: any) => d.id === id);
           if (match) {
