@@ -8,7 +8,7 @@
     "dotenv": "^16.4.7",
     "express": "^5.0.1",
     "ioredis": "^5.4.2",
-    "openai": "^4.78.0",
+    "openai": "^5.1.1",
     "papaparse": "^5.5.1",
     "react": "^18.3.1",
     "react-countup": "^6.5.3",
