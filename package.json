@@ -21,7 +21,7 @@
   },
   "type": "module",
   "engines": {
-    "node": "24"
+    "node": "24.7.0"
   },
   "scripts": {
     "server": "node server.ts",
