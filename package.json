@@ -20,11 +20,8 @@
     "socket.io-client": "^4.8.1"
   },
   "type": "module",
-  "engines": {
-    "node": "24.7.0"
-  },
   "scripts": {
-    "server": "node server.ts",
+    "server": "node --experimental-strip-types server.ts",
     "ui": "vite --host",
     "build": "npm run buildReact",
     "buildReact": "vite build && npm run typecheck",
