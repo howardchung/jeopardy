@@ -1,6 +1,6 @@
 import { gunzipSync } from 'zlib';
 import fs from 'fs';
-import config from './config';
+import config from './config.ts';
 
 let qs = 0;
 let eps = 0;

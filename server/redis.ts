@@ -1,5 +1,5 @@
-import Redis from 'ioredis';
-import config from './config';
+import { Redis } from 'ioredis';
+import config from './config.ts';
 
 export let redis: Redis | undefined = undefined;
 if (config.REDIS_URL) {

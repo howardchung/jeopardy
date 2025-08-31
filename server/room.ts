@@ -1,11 +1,11 @@
 import { Socket, Server } from 'socket.io';
 import Papa from 'papaparse';
-import { redis, redisCount } from './redis';
-import { genAITextToSpeech } from './aivoice';
-import { getOpenAIDecision, openai } from './openai';
-import config from './config';
-import { getGameState, getPerQuestionState } from './gamestate';
-import { getJData } from './jData';
+import { redis, redisCount } from './redis.ts';
+import { genAITextToSpeech } from './aivoice.ts';
+import { getOpenAIDecision, openai } from './openai.ts';
+import config from './config.ts';
+import { getGameState, getPerQuestionState } from './gamestate.ts';
+import { getJData } from './jData.ts';
 
 export class Room {
   // Serialized state

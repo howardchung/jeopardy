@@ -1,4 +1,4 @@
-import { cyrb53 } from './hash';
+import { cyrb53 } from './hash.ts';
 
 // Given input text, gets back an mp3 file URL
 // We can send this to each client and have it be read

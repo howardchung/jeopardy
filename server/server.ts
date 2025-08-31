@@ -7,11 +7,11 @@ import cors from 'cors';
 import https from 'https';
 import http from 'http';
 import { Server } from 'socket.io';
-import { Room } from './room';
-import { redis, getRedisCountDay } from './redis';
-import { makeRoomName, makeUserName } from './moniker';
-import config from './config';
-import { getJDataStats } from './jData';
+import { Room } from './room.ts';
+import { redis, getRedisCountDay } from './redis.ts';
+import { makeRoomName, makeUserName } from './moniker.ts';
+import config from './config.ts';
+import { getJDataStats } from './jData.ts';
 
 const app = express();
 let server = null as https.Server | http.Server | null;

@@ -19,13 +19,16 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   },
+  "type": "module",
+  "engines": {
+    "node": "24"
+  },
   "scripts": {
-    "server": "node buildServer/server.js",
+    "server": "node server.ts",
     "ui": "vite --host",
-    "build": "npm run buildReact && npm run buildServer",
+    "build": "npm run buildReact",
     "buildReact": "vite build && npm run typecheck",
-    "buildServer": "tsc --project server/tsconfig.json --outDir buildServer",
-    "typecheckServer": "tsc --project server/tsconfig.json --noEmit",
+    "typecheckServer": "tsc --project server/tsconfig.json",
     "typecheck": "tsc --project src/tsconfig.json --noEmit",
     "dev": "ts-node-dev --respawn --transpile-only --project server/tsconfig.json server/server.ts",
     "prettier": "prettier --write .",

@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "lib": ["dom", "es2020"],
+    "target": "es2020",
     "allowJs": true,
     "strict": true,
     "esModuleInterop": true,
-    "module": "commonjs",
-    "outDir": "../buildServer"
+    "module": "nodenext",
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": [".", "../global.d.ts"]
 }
