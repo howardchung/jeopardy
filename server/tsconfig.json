@@ -6,7 +6,9 @@
     "esModuleInterop": true,
     "module": "nodenext",
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true
   },
   "include": [".", "../global.d.ts"]
 }

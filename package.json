@@ -23,12 +23,12 @@
   "scripts": {
     "server": "node --experimental-strip-types server/server.ts",
     "ui": "vite --host",
-    "build": "npm run buildReact",
+    "build": "npm run buildReact && npm typecheckServer",
     "buildReact": "vite build && npm run typecheck",
     "typecheckServer": "tsc --project server/tsconfig.json",
     "typecheck": "tsc --project src/tsconfig.json --noEmit",
-    "dev": "ts-node-dev --respawn --transpile-only --project server/tsconfig.json server/server.ts",
-    "prettier": "prettier --write .",
+    "dev": "node --watch server/server.ts",
+    "prettier": "npx prettier --write .",
     "updateEps": "curl -sSL -O https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz"
   },
   "eslintConfig": {
@@ -54,9 +54,7 @@
     "@types/papaparse": "^5.3.15",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "prettier": "^3.4.2",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.7.3",
-    "vite": "^6.0.7"
+    "typescript": "^5.9.2",
+    "vite": "^7.1.6"
   }
 }
