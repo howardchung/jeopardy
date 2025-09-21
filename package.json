@@ -23,7 +23,7 @@
   "scripts": {
     "server": "node --experimental-strip-types server/server.ts",
     "ui": "vite --host",
-    "build": "npm run buildReact && npm typecheckServer",
+    "build": "npm run buildReact && npm run typecheckServer",
     "buildReact": "vite build && npm run typecheck",
     "typecheckServer": "tsc --project server/tsconfig.json",
     "typecheck": "tsc --project src/tsconfig.json --noEmit",
