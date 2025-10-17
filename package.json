@@ -21,7 +21,7 @@
   },
   "type": "module",
   "scripts": {
-    "server": "node --experimental-strip-types server/server.ts",
+    "server": "node server/server.ts",
     "ui": "vite --host",
     "build": "npm run buildReact && npm run typecheckServer",
     "buildReact": "vite build && npm run typecheck",
