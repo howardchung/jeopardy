@@ -993,6 +993,7 @@ export class Jeopardy extends React.Component<{
                     {Boolean(game.playClueEndTS) && (
                       <TimerBar
                         duration={game.playClueEndTS - game.serverTime}
+                        text="Waiting for reading. . ."
                       />
                     )}
                     {Boolean(game.questionEndTS) && (
@@ -1000,12 +1001,14 @@ export class Jeopardy extends React.Component<{
                         duration={game.questionEndTS - game.serverTime}
                         secondary
                         submitAnswer={this.submitAnswer}
+                        text="Open for answers. . ."
                       />
                     )}
                     {Boolean(game.wagerEndTS) && (
                       <TimerBar
                         duration={game.wagerEndTS - game.serverTime}
                         secondary
+                        text="Waiting for wagers. . ."
                       />
                     )}
                     {game.canNextQ && (
@@ -1196,10 +1199,12 @@ function TimerBar({
   duration,
   secondary,
   submitAnswer,
+  text,
 }: {
   duration: number;
   secondary?: boolean;
   submitAnswer?: Function;
+  text?: string;
 }) {
   const [width, setWidth] = useState(0);
   useEffect(() => {
@@ -1225,12 +1230,21 @@ function TimerBar({
         position: 'absolute',
         bottom: '0px',
         left: '0px',
-        height: '10px',
+        height: '14px',
         width: width + '%',
         backgroundColor: secondary ? '#16AB39' : '#0E6EB8',
         transition: `${duration / 1000}s width linear`,
+        fontSize: '12px',
+        lineHeight: '10px',
+        textShadow: '1px 1px 2px black',
+        textAlign: 'left',
+        padding: '1px 6px',
+        display: 'flex',
+        // alignItems: 'center',
       }}
-    />
+    >
+      {text}
+    </div>
   );
 }
 
