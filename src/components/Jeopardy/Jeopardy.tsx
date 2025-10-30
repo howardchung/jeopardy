@@ -1372,11 +1372,11 @@ const SettingsModal = ({
   onSubmit: (settings: GameSettings) => void;
   settings: GameSettings;
 }) => {
-  const [answerTimeout, setAnswerTimeout] = useState<number | undefined>(
-    settings.answerTimeout,
+  const [answerTimeout, setAnswerTimeout] = useState<number | string |undefined>(
+    settings.answerTimeout || 20,
   );
-  const [finalTimeout, setFinalTimeout] = useState<number | undefined>(
-    settings.finalTimeout,
+  const [finalTimeout, setFinalTimeout] = useState<number | string | undefined>(
+    settings.finalTimeout || 30,
   );
   const [makeMeHost, setMakeMeHost] = useState<boolean | undefined>(
     settings.makeMeHost,
@@ -1417,7 +1417,7 @@ const SettingsModal = ({
           <NumberInput
             styles={{ input: { width: 40 } }}
             value={answerTimeout}
-            onChange={(value) => setAnswerTimeout(Number(value))}
+            onChange={(value) => setAnswerTimeout(value)}
             size="xs"
             hideControls
           />
@@ -1434,7 +1434,7 @@ const SettingsModal = ({
           <NumberInput
             styles={{ input: { width: 40 } }}
             value={finalTimeout}
-            onChange={(value) => setFinalTimeout(Number(value))}
+            onChange={(value) => setFinalTimeout(value)}
             size="xs"
             hideControls
           />

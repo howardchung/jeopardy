@@ -565,12 +565,12 @@ export class Room {
         );
       }
       if (number === 'ddtest') {
-        loadedData = jData['8000'];
+        loadedData = {...jData['8000']};
         loadedData['jeopardy'] = loadedData['jeopardy'].filter(
           (q: any) => q.dd,
         );
       } else if (number === 'finaltest') {
-        loadedData = jData['8000'];
+        loadedData = {...jData['8000']};
       } else {
         if (!number) {
           // Random an episode
