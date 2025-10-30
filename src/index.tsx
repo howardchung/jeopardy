@@ -14,9 +14,10 @@ const gameId = urlParams.get('game');
 const isHome = !Boolean(gameId);
 const container = document.getElementById('root');
 const root = createRoot(container!);
-root.render(<React.StrictMode>
+root.render(
+  <React.StrictMode>
     <MantineProvider theme={theme} forceColorScheme="dark">
-        {isHome ? <JeopardyHome /> : <App />}
+      {isHome ? <JeopardyHome /> : <App />}
     </MantineProvider>
-    </React.StrictMode>
+  </React.StrictMode>,
 );

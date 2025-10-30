@@ -35,7 +35,8 @@ export class Room {
   private questionAnswerTimeout: NodeJS.Timeout =
     undefined as unknown as NodeJS.Timeout;
   private wagerTimeout: NodeJS.Timeout = undefined as unknown as NodeJS.Timeout;
-  public cleanupInterval: NodeJS.Timeout = undefined as unknown as NodeJS.Timeout;
+  public cleanupInterval: NodeJS.Timeout =
+    undefined as unknown as NodeJS.Timeout;
   public lastUpdateTime: Date = new Date();
 
   constructor(
@@ -50,18 +51,24 @@ export class Room {
       this.deserialize(roomData);
     }
 
-    this.cleanupInterval = setInterval(() => {
-      // Remove players that have been disconnected for a long time
-      const beforeLength = this.getAllPlayers();
-      const now = Date.now();
-      this.roster = this.roster.filter(
-        (p) => p.connected || now - p.disconnectTime < 60 * 60 * 1000,
-      );
-      const afterLength = this.getAllPlayers();
-      if (beforeLength !== afterLength && this.getConnectedPlayers().length > 0) {
-        this.sendRoster();
-      }
-    }, 30 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        // Remove players that have been disconnected for a long time
+        const beforeLength = this.getAllPlayers();
+        const now = Date.now();
+        this.roster = this.roster.filter(
+          (p) => p.connected || now - p.disconnectTime < 60 * 60 * 1000,
+        );
+        const afterLength = this.getAllPlayers();
+        if (
+          beforeLength !== afterLength &&
+          this.getConnectedPlayers().length > 0
+        ) {
+          this.sendRoster();
+        }
+      },
+      30 * 60 * 1000,
+    );
 
     io.of(roomId).on('connection', (socket: Socket) => {
       this.jpd.public.scores[socket.id] = 0;
@@ -216,9 +223,12 @@ export class Room {
         }
         // Check if the next player to be judged is in the input data
         // If so, doJudge for that player
-        // Check if we advanced to the next question, otherwise keep doing 
+        // Check if we advanced to the next question, otherwise keep doing
         let count = 0;
-        while (this.jpd.public.currentJudgeAnswer !== undefined && count <= data.length) {
+        while (
+          this.jpd.public.currentJudgeAnswer !== undefined &&
+          count <= data.length
+        ) {
           // The bulkjudge may not contain all decisions. Stop if we did as many decisions as the input data
           count += 1;
           console.log('[BULKJUDGE]', count, data.length);
@@ -328,7 +338,10 @@ export class Room {
     }
     if (roomObj.roster) {
       // Reset connected state to false, reconnects will update it again
-      this.roster = roomObj.roster.map((p: User) => ({...p, connected: false}));
+      this.roster = roomObj.roster.map((p: User) => ({
+        ...p,
+        connected: false,
+      }));
     }
     if (roomObj.jpd && roomObj.jpd.public) {
       const gameData = roomObj.jpd;
@@ -361,7 +374,7 @@ export class Room {
     }
     this.lastUpdateTime = new Date();
     redisCount('saves');
-  }
+  };
 
   addChatMessage = (socket: Socket | undefined, chatMsg: any) => {
     const chatWithTime: ChatMessage = {
@@ -373,7 +386,7 @@ export class Room {
     this.io.of(this.roomId).emit('REC:chat', chatWithTime);
     this.saveRoom();
   };
-  
+
   sendState = () => {
     this.jpd.public.serverTime = Date.now();
     // Copy values over from settings before each send
@@ -382,7 +395,7 @@ export class Room {
     this.jpd.public.enableAIVoices = this.settings.enableAIVoices;
     this.io.of(this.roomId).emit('JPD:state', this.jpd.public);
     this.saveRoom();
-  }
+  };
 
   sendRoster = () => {
     // Sort by score and resend the list of players to everyone
@@ -393,7 +406,7 @@ export class Room {
     );
     this.io.of(this.roomId).emit('roster', this.roster);
     this.saveRoom();
-  }
+  };
 
   getConnectedPlayers = () => {
     // Returns players that are currently connected and not spectators
@@ -473,7 +486,7 @@ export class Room {
     if (this.settings.host === oldId) {
       this.settings.host = newId;
     }
-  }
+  };
 
   loadEpisode = (socket: Socket, options: GameOptions, custom: string) => {
     let {
@@ -598,11 +611,11 @@ export class Room {
       }
       this.nextRound();
     }
-  }
+  };
 
   playCategories = () => {
     this.io.of(this.roomId).emit('JPD:playCategories');
-  }
+  };
 
   resetAfterQuestion = () => {
     this.jpd.answers = {};
@@ -615,7 +628,7 @@ export class Room {
     if (this.settings.host) {
       this.jpd.public.picker = this.settings.host;
     }
-  }
+  };
 
   nextQuestion = () => {
     // Show the correct answer in the game log
@@ -638,7 +651,7 @@ export class Room {
       // TODO may want to introduce some delay here to make sure our state is updated before reading selection
       this.io.of(this.roomId).emit('JPD:playMakeSelection');
     }
-  }
+  };
 
   nextRound = () => {
     this.resetAfterQuestion();
@@ -716,12 +729,12 @@ export class Room {
     ) {
       this.playCategories();
     }
-  }
+  };
 
   unlockAnswer = (durationMs: number) => {
     this.jpd.public.questionEndTS = Date.now() + durationMs;
     this.setQuestionAnswerTimeout(durationMs);
-  }
+  };
 
   setQuestionAnswerTimeout = (durationMs: number) => {
     this.questionAnswerTimeout = setTimeout(() => {
@@ -730,7 +743,7 @@ export class Room {
       }
       this.revealAnswer();
     }, durationMs);
-  }
+  };
 
   revealAnswer = () => {
     clearTimeout(this.questionAnswerTimeout);
@@ -749,7 +762,7 @@ export class Room {
     this.jpdSnapshot = JSON.parse(JSON.stringify(this.jpd));
     this.advanceJudging(false);
     this.sendState();
-  }
+  };
 
   advanceJudging = (skipRemaining: boolean) => {
     if (this.jpd.public.currentJudgeAnswerIndex === undefined) {
@@ -805,7 +818,7 @@ export class Room {
         id: this.jpd.public.currentJudgeAnswer,
       });
     }
-  }
+  };
 
   doAiJudge = async (data: { currentQ: string; id: string }) => {
     // count the number of automatic judges
@@ -853,14 +866,14 @@ export class Room {
     if (correct != null) {
       this.judgeAnswer(undefined, { currentQ, id, correct });
     }
-  }
+  };
 
   doHumanJudge = (
     socket: Socket,
     data: { currentQ: string; id: string; correct: boolean | null },
   ) => {
     const success = this.judgeAnswer(socket, data);
-  }
+  };
 
   judgeAnswer = (
     socket: Socket | undefined,
@@ -910,13 +923,13 @@ export class Room {
     }
     // If null/undefined, don't change scores
     if (correct != null) {
-      const userName = this.getAllPlayers().find((p) => p.id === socket?.id)?.name;
+      const userName = this.getAllPlayers().find(
+        (p) => p.id === socket?.id,
+      )?.name;
       const msg = {
         id: socket?.id ?? '',
         // name of judge
-        name:
-          userName ??
-          'System',
+        name: userName ?? 'System',
         bot: !Boolean(userName),
         cmd: 'judge',
         msg: JSON.stringify({
@@ -945,7 +958,7 @@ export class Room {
       this.sendState();
     }
     return correct != null;
-  }
+  };
 
   submitWager = (id: string, wager: number) => {
     if (id in this.jpd.wagers) {
@@ -998,7 +1011,7 @@ export class Room {
       }
       this.sendState();
     }
-  }
+  };
 
   setWagerTimeout = (durationMs: number, endTS?: number) => {
     this.jpd.public.wagerEndTS = endTS ?? Date.now() + durationMs;
@@ -1007,7 +1020,7 @@ export class Room {
         this.submitWager(id, 0);
       });
     }, durationMs);
-  }
+  };
 
   triggerPlayClue = () => {
     clearTimeout(this.wagerTimeout);
@@ -1033,13 +1046,13 @@ export class Room {
       this.jpd.public.playClueEndTS = Date.now() + speakingTime;
     }
     this.setPlayClueTimeout(speakingTime);
-  }
+  };
 
   setPlayClueTimeout = (durationMs: number) => {
     this.playClueTimeout = setTimeout(() => {
       this.playClueDone();
     }, durationMs);
-  }
+  };
 
   playClueDone = () => {
     clearTimeout(this.playClueTimeout);
@@ -1057,7 +1070,7 @@ export class Room {
       this.unlockAnswer(this.settings.answerTimeout);
     }
     this.sendState();
-  }
+  };
 
   pregenAIVoices = async (rvcHost: string) => {
     // Indicate we should use AI voices for this game
@@ -1085,42 +1098,46 @@ export class Room {
     // No good way of configuring it right now without switching to undici
     let success = 0;
     let count = 0;
-    Array(numWorkers).fill('').forEach(async (_, workerIndex) => {
-      for (let [i, text] of cursor) {
-        try {
-          const url = await genAITextToSpeech(rvcHost, text ?? '');
-          // Report progress back in chat messages
-          if (url) {
-            this.addChatMessage(undefined, {
-              id: '',
-              name: 'System',
-              bot: true,
-              msg: 'generated ai voice ' + i + ': ' + url,
-            });
-            redisCount('aiVoice');
-            success += 1;
+    Array(numWorkers)
+      .fill('')
+      .forEach(async (_, workerIndex) => {
+        for (let [i, text] of cursor) {
+          try {
+            const url = await genAITextToSpeech(rvcHost, text ?? '');
+            // Report progress back in chat messages
+            if (url) {
+              this.addChatMessage(undefined, {
+                id: '',
+                name: 'System',
+                bot: true,
+                msg: 'generated ai voice ' + i + ': ' + url,
+              });
+              redisCount('aiVoice');
+              success += 1;
+            }
+          } catch (e) {
+            // Log errors, but continue iterating
+            console.log(e);
           }
-        } catch (e) {
-          // Log errors, but continue iterating
-          console.log(e);
+          count += 1;
         }
-        count += 1;
-      }
-      if (count === items.length) {
-        const end = Date.now();
-        this.addChatMessage(undefined, {
-          id: '',
-          name: 'System',
-          bot: true,
-          msg:
-            success +
-            '/' +
-            count +
-            ' voices generated in ' + (end - start) + 'ms',
-        });
-      }
-    });
-  }
+        if (count === items.length) {
+          const end = Date.now();
+          this.addChatMessage(undefined, {
+            id: '',
+            name: 'System',
+            bot: true,
+            msg:
+              success +
+              '/' +
+              count +
+              ' voices generated in ' +
+              (end - start) +
+              'ms',
+          });
+        }
+      });
+  };
 }
 
 function constructBoard(questions: RawQuestion[]) {

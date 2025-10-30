@@ -26,7 +26,24 @@ import { io, type Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
 import { type PublicGameState } from '../../../server/gamestate';
 import { cyrb53 } from '../../../server/hash';
-import { IconArrowBackUp, IconBook, IconBulb, IconCheck, IconCornerDownRight, IconDownload, IconGavel, IconHandFinger, IconHome, IconLock, IconPlayerTrackNextFilled, IconPlug, IconSettings, IconStarFilled, IconUpload, IconX } from '@tabler/icons-react';
+import {
+  IconArrowBackUp,
+  IconBook,
+  IconBulb,
+  IconCheck,
+  IconCornerDownRight,
+  IconDownload,
+  IconGavel,
+  IconHandFinger,
+  IconHome,
+  IconLock,
+  IconPlayerTrackNextFilled,
+  IconPlug,
+  IconSettings,
+  IconStarFilled,
+  IconUpload,
+  IconX,
+} from '@tabler/icons-react';
 
 const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
 const boardFill = new Audio('/jeopardy/jeopardy-board-fill.mp3');
@@ -538,34 +555,38 @@ export class Jeopardy extends React.Component<{
     return (
       <>
         {this.state.showCustomModal && (
-          <Modal opened onClose={() => this.setState({ showCustomModal: false })} title="Custom Game">
-                <div>
-                  You can create and play a custom game by uploading a data
-                  file. Download the example and customize with your own
-                  questions and answers.
-                  <div>
-                    <Button
-                      component="a"
-                      color="orange"
-                      href={`./example.csv`}
-                      download="example.csv"
-                      leftSection={<IconDownload />}
-                    >
-                      Download example.csv
-                    </Button>
-                  </div>
-                </div>
-                <hr />
-                <div>Once you're done, upload your file:</div>
-                <div>
-                  <Button
-                    onClick={() => this.customGame()}
-                    color="purple"
-                    leftSection={<IconUpload />}
-                  >
-                    Upload
-                  </Button>
-                </div>
+          <Modal
+            opened
+            onClose={() => this.setState({ showCustomModal: false })}
+            title="Custom Game"
+          >
+            <div>
+              You can create and play a custom game by uploading a data file.
+              Download the example and customize with your own questions and
+              answers.
+              <div>
+                <Button
+                  component="a"
+                  color="orange"
+                  href={`./example.csv`}
+                  download="example.csv"
+                  leftSection={<IconDownload />}
+                >
+                  Download example.csv
+                </Button>
+              </div>
+            </div>
+            <hr />
+            <div>Once you're done, upload your file:</div>
+            <div>
+              <Button
+                onClick={() => this.customGame()}
+                color="purple"
+                leftSection={<IconUpload />}
+              >
+                Upload
+              </Button>
+            </div>
           </Modal>
         )}
         {this.state.showJudgingModal && (
@@ -587,123 +608,120 @@ export class Jeopardy extends React.Component<{
         {this.state.overlayMsg && <ErrorModal error={this.state.overlayMsg} />}
         <div
           className="controls"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  flexWrap: 'wrap',
-                  gap: '4px',
-                  alignItems: 'center',
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            gap: '4px',
+            alignItems: 'center',
+          }}
+        >
+          <Menu shadow="md">
+            <Menu.Target>
+              <Button size="sm" leftSection={<IconStarFilled size={20} />}>
+                New Game
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>Game #</Menu.Label>
+              <TextInput
+                style={{ padding: '8px', paddingTop: '0px' }}
+                value={this.state.localEpNum}
+                onChange={(e) => this.setState({ localEpNum: e.target.value })}
+                onKeyDown={(e: any) =>
+                  e.key === 'Enter' &&
+                  this.newGame({ number: this.state.localEpNum })
+                }
+                rightSection={
+                  <ActionIcon>
+                    <IconCornerDownRight
+                      onClick={() =>
+                        this.newGame({ number: this.state.localEpNum })
+                      }
+                      name="arrow right"
+                    />
+                  </ActionIcon>
+                }
+              />
+              <Menu.Divider />
+              <Menu.Label>Random</Menu.Label>
+              {[
+                { key: 'all', value: null, text: 'Any' },
+                { key: 'kids', value: 'kids', text: 'Kids Week' },
+                { key: 'teen', value: 'teen', text: 'Teen Tournament' },
+                {
+                  key: 'college',
+                  value: 'college',
+                  text: 'College Championship',
+                },
+                {
+                  key: 'celebrity',
+                  value: 'celebrity',
+                  text: 'Celebrity Jeopardy',
+                },
+                {
+                  key: 'teacher',
+                  value: 'teacher',
+                  text: 'Teachers Tournament',
+                },
+                {
+                  key: 'champions',
+                  value: 'champions',
+                  text: 'Tournament of Champions',
+                },
+              ].map((item) => (
+                <Menu.Item
+                  key={item.key}
+                  onClick={() => {
+                    this.newGame({ filter: item.value ?? undefined });
+                  }}
+                >
+                  {item.text}
+                </Menu.Item>
+              ))}
+              <Menu.Divider />
+              <Menu.Label>Custom</Menu.Label>
+              <Menu.Item
+                key={'custom'}
+                onClick={() => {
+                  this.setState({ showCustomModal: true });
                 }}
               >
-                <Menu shadow="md">
-                  <Menu.Target><Button size="sm" leftSection={<IconStarFilled size={20} />}>New Game</Button></Menu.Target>
-                  <Menu.Dropdown>
-                  <Menu.Label>Game #</Menu.Label>
-                  <TextInput
-                  style={{ padding: '8px', paddingTop: '0px' }}
-                  value={this.state.localEpNum}
-                  onChange={e =>
-                    this.setState({ localEpNum: e.target.value })
-                  }
-                  onKeyDown={(e: any) =>
-                    e.key === 'Enter' &&
-                    this.newGame({ number: this.state.localEpNum })
-                  }
-                  rightSection={
-                    <ActionIcon>
-                      <IconCornerDownRight
-                        onClick={() =>
-                          this.newGame({ number: this.state.localEpNum })
-                        }
-                        name="arrow right"
-                      />
-                    </ActionIcon>
-                  }
-                />
-                  <Menu.Divider />
-                  <Menu.Label>Random</Menu.Label>
-                    {[
-                      { key: 'all', value: null, text: 'Any' },
-                      { key: 'kids', value: 'kids', text: 'Kids Week' },
-                      { key: 'teen', value: 'teen', text: 'Teen Tournament' },
-                      {
-                        key: 'college',
-                        value: 'college',
-                        text: 'College Championship',
-                      },
-                      {
-                        key: 'celebrity',
-                        value: 'celebrity',
-                        text: 'Celebrity Jeopardy',
-                      },
-                      {
-                        key: 'teacher',
-                        value: 'teacher',
-                        text: 'Teachers Tournament',
-                      },
-                      {
-                        key: 'champions',
-                        value: 'champions',
-                        text: 'Tournament of Champions',
-                      },
-                    ].map((item) => (
-                      <Menu.Item
-                        key={item.key}
-                        onClick={() => {
-                            this.newGame({ filter: item.value ?? undefined });
-                        }}
-                      >
-                        {item.text}
-                      </Menu.Item>
-                    ))}
-                    <Menu.Divider />
-                    <Menu.Label>Custom</Menu.Label>
-                    <Menu.Item
-                        key={'custom'}
-                        onClick={() => {
-                            this.setState({ showCustomModal: true });
-                        }}
-                      >
-                        Upload
-                      </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-                <ActionIcon
-                  onClick={() => this.setState({ showSettingsModal: true })}
-                  title="Settings"
-                  size="lg"
-                >
-                  <IconSettings size={20} />
-                </ActionIcon>
-                {canJudge && (
-                  <ActionIcon
-                    onClick={() => this.socket?.emit('JPD:undo')}
-                    title="Undo Judge"
-                    size="lg"
-                  >
-                    <IconArrowBackUp size={20} />
-                  </ActionIcon>
-                )}
-                <div className="controlToggle">
-                <Switch
-                  checked={!this.state.readingDisabled}
-                  onChange={() => {
-                    const checked = !this.state.readingDisabled;
-                    this.setState({ readingDisabled: checked });
-                    if (checked) {
-                      window.localStorage.setItem(
-                        'jeopardy-readingDisabled',
-                        '1',
-                      );
-                    } else {
-                      window.localStorage.removeItem(
-                        'jeopardy-readingDisabled',
-                      );
-                    }
-                  }}
-                  label="Reading"
-                />
-                {/* <Button
+                Upload
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+          <ActionIcon
+            onClick={() => this.setState({ showSettingsModal: true })}
+            title="Settings"
+            size="lg"
+          >
+            <IconSettings size={20} />
+          </ActionIcon>
+          {canJudge && (
+            <ActionIcon
+              onClick={() => this.socket?.emit('JPD:undo')}
+              title="Undo Judge"
+              size="lg"
+            >
+              <IconArrowBackUp size={20} />
+            </ActionIcon>
+          )}
+          <div className="controlToggle">
+            <Switch
+              checked={!this.state.readingDisabled}
+              onChange={() => {
+                const checked = !this.state.readingDisabled;
+                this.setState({ readingDisabled: checked });
+                if (checked) {
+                  window.localStorage.setItem('jeopardy-readingDisabled', '1');
+                } else {
+                  window.localStorage.removeItem('jeopardy-readingDisabled');
+                }
+              }}
+              label="Reading"
+            />
+            {/* <Button
                   color={this.state.readingDisabled ? 'red' : 'green'}
                   onClick={() => {
                     const checked = !this.state.readingDisabled;
@@ -723,19 +741,19 @@ export class Jeopardy extends React.Component<{
                 >
                   {this.state.readingDisabled ? 'Reading off' : 'Reading on'}
                 </Button> */}
-                </div>
-                <div className="controlToggle">
-                <Switch
-                  checked={game?.enableAIJudge}
-                  onChange={() => {
-                    this.socket?.emit(
-                      'JPD:enableAiJudge',
-                      !Boolean(game?.enableAIJudge),
-                    );
-                  }}
-                  label="AI Judge"
-                />
-                {/* <Button
+          </div>
+          <div className="controlToggle">
+            <Switch
+              checked={game?.enableAIJudge}
+              onChange={() => {
+                this.socket?.emit(
+                  'JPD:enableAiJudge',
+                  !Boolean(game?.enableAIJudge),
+                );
+              }}
+              label="AI Judge"
+            />
+            {/* <Button
                   color={game?.enableAIJudge ? 'green' : 'red'}
                   onClick={() => {
                     this.socket?.emit(
@@ -747,7 +765,7 @@ export class Jeopardy extends React.Component<{
                 >
                   {game?.enableAIJudge ? 'AI Judge on' : 'AI Judge off'}
                 </Button> */}
-                {/* <Button
+            {/* <Button
                   onClick={() => this.socket?.emit('JPD:cmdIntro')}
                   icon
                   labelPosition="left"
@@ -756,27 +774,23 @@ export class Jeopardy extends React.Component<{
                   <Icon name="film" />
                   Play Intro
                 </Button> */}
-                </div>
-                {game && game.airDate && (
-                  <Badge
-                    style={{ display: 'flex', alignItems: 'center', height: '36px' }}
-                    color={
-                      getColor(
-                        (game && game.info) || 'regular',
-                      )
-                    }
-                    size="md"
-                    radius="sm"
-                  >
-                    {new Date(game.airDate + 'T00:00').toLocaleDateString([], {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                    {game && game.info ? ' - ' + game.info : ''}
-                  </Badge>
-                )}
-              </div>
+          </div>
+          {game && game.airDate && (
+            <Badge
+              style={{ display: 'flex', alignItems: 'center', height: '36px' }}
+              color={getColor((game && game.info) || 'regular')}
+              size="md"
+              radius="sm"
+            >
+              {new Date(game.airDate + 'T00:00').toLocaleDateString([], {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+              {game && game.info ? ' - ' + game.info : ''}
+            </Badge>
+          )}
+        </div>
         <div
           style={{
             display: 'flex',
@@ -785,394 +799,385 @@ export class Jeopardy extends React.Component<{
             gap: '4px',
           }}
         >
-                <div style={{ display: 'flex', flexGrow: 1 }}>
-                  <div
-                    id="board"
-                    className={`board ${
-                      this.state.game?.currentQ ? 'currentQ' : ''
-                    }`}
-                  >
-                    {this.state.isIntroPlaying && <div id="intro" />}
-                    {categories.map((cat, i) => (
-                      <div key={i} className="category box">
-                        {this.state.categoryMask[i] ? cat : ''}
-                      </div>
-                    ))}
-                    {Array.from(Array(5)).map((_, i) => {
+          <div style={{ display: 'flex', flexGrow: 1 }}>
+            <div
+              id="board"
+              className={`board ${this.state.game?.currentQ ? 'currentQ' : ''}`}
+            >
+              {this.state.isIntroPlaying && <div id="intro" />}
+              {categories.map((cat, i) => (
+                <div key={i} className="category box">
+                  {this.state.categoryMask[i] ? cat : ''}
+                </div>
+              ))}
+              {Array.from(Array(5)).map((_, i) => {
+                return (
+                  <React.Fragment key={i}>
+                    {categories.map((cat, j) => {
+                      const id = `${j + 1}_${i + 1}`;
+                      const clue = game?.board[id];
                       return (
-                        <React.Fragment key={i}>
-                          {categories.map((cat, j) => {
-                            const id = `${j + 1}_${i + 1}`;
-                            const clue = game?.board[id];
-                            return (
-                              <div
-                                key={id}
-                                id={id}
-                                onClick={
-                                  clue ? () => this.pickQ(id) : undefined
-                                }
-                                className={`${clue ? 'value' : ''} box`}
-                              >
-                                {!this.state.clueMask[id] && clue
-                                  ? clue.value
-                                  : ''}
-                              </div>
-                            );
-                          })}
-                        </React.Fragment>
+                        <div
+                          key={id}
+                          id={id}
+                          onClick={clue ? () => this.pickQ(id) : undefined}
+                          className={`${clue ? 'value' : ''} box`}
+                        >
+                          {!this.state.clueMask[id] && clue ? clue.value : ''}
+                        </div>
                       );
                     })}
-                    {game && Boolean(game.currentQ) && (
-                      <div
-                        id="clueContainerContainer"
-                        className="clueContainerContainer"
-                      >
-                        <div
-                          id="clueContainer"
-                          className={`clueContainer ${
-                            game.currentDailyDouble && game.waitingForWager
-                              ? 'dailyDouble'
-                              : ''
-                          }`}
-                        >
-                          <div className="category" style={{ height: '30px' }}>
-                            {game.board[game.currentQ] &&
-                              game.board[game.currentQ].category}
-                          </div>
-                          <div className="category" style={{ height: '30px' }}>
-                            {Boolean(game.currentValue) && game.currentValue}
-                          </div>
-                          {
-                            <div className={`clue`}>
-                              <ReactMarkdown
-                                components={{
-                                  //This custom renderer changes how images are rendered
-                                  //we use it to constrain the max width of an image to its container
-                                  img: ({
-                                    alt,
-                                    src,
-                                    title,
-                                  }: {
-                                    alt?: string;
-                                    src?: string;
-                                    title?: string;
-                                  }) => (
-                                    <img
-                                      alt={alt}
-                                      src={src}
-                                      title={title}
-                                      style={{
-                                        maxWidth: '80%',
-                                        maxHeight: '350px',
-                                      }}
-                                    />
-                                  ),
+                  </React.Fragment>
+                );
+              })}
+              {game && Boolean(game.currentQ) && (
+                <div
+                  id="clueContainerContainer"
+                  className="clueContainerContainer"
+                >
+                  <div
+                    id="clueContainer"
+                    className={`clueContainer ${
+                      game.currentDailyDouble && game.waitingForWager
+                        ? 'dailyDouble'
+                        : ''
+                    }`}
+                  >
+                    <div className="category" style={{ height: '30px' }}>
+                      {game.board[game.currentQ] &&
+                        game.board[game.currentQ].category}
+                    </div>
+                    <div className="category" style={{ height: '30px' }}>
+                      {Boolean(game.currentValue) && game.currentValue}
+                    </div>
+                    {
+                      <div className={`clue`}>
+                        <ReactMarkdown
+                          components={{
+                            //This custom renderer changes how images are rendered
+                            //we use it to constrain the max width of an image to its container
+                            img: ({
+                              alt,
+                              src,
+                              title,
+                            }: {
+                              alt?: string;
+                              src?: string;
+                              title?: string;
+                            }) => (
+                              <img
+                                alt={alt}
+                                src={src}
+                                title={title}
+                                style={{
+                                  maxWidth: '80%',
+                                  maxHeight: '350px',
                                 }}
-                              >
-                                {game.board[game.currentQ] &&
-                                  game.board[game.currentQ].question}
-                              </ReactMarkdown>
-                            </div>
-                          }
-                          <div className="" style={{ height: '60px' }}>
-                            {!game.currentAnswer &&
-                            this.socket &&
-                            !game.buzzes[this.socket.id!] &&
-                            !game.submitted[this.socket.id!] &&
-                            !game.currentDailyDouble &&
-                            game.round !== 'final' ? (
-                              <div style={{ display: 'flex' }}>
-                                <Button
-                                  disabled={this.state.buzzFrozen}
-                                  color={game.canBuzz ? 'green' : 'grey'}
-                                  size="xl"
-                                  onClick={this.onBuzz}
-                                  leftSection={game.canBuzz ? <IconBulb /> : <IconLock />}
-                                >
-                                  Buzz
-                                </Button>
-                                <div
-                                  style={{
-                                    position: 'absolute',
-                                    top: '0px',
-                                    right: '0px',
-                                    zIndex: 1,
-                                  }}
-                                >
-                                  <Button
-                                    disabled={this.state.buzzFrozen}
-                                    color={game.canBuzz ? 'red' : 'grey'}
-                                    onClick={() => {
-                                      if (game.canBuzz) {
-                                        this.submitAnswer(null);
-                                      }
-                                    }}
-                                    leftSection={game.canBuzz ? <IconPlayerTrackNextFilled /> : <IconLock />}
-                                  >
-                                    Pass
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : null}
-                            {!game.currentAnswer &&
-                            !this.state.localAnswerSubmitted &&
-                            this.socket &&
-                            game.buzzes[this.socket.id!] &&
-                            game.questionEndTS ? (
-                              <TextInput
-                                autoFocus
-                                placeholder="Answer"
-                                value={this.state.localAnswer}
-                                onChange={(e) =>
-                                  this.setState({ localAnswer: e.target.value })
-                                }
-                                onKeyDown={(e: any) =>
-                                  e.key === 'Enter' && this.submitAnswer()
-                                }
-                                rightSection={
-                                  <ActionIcon onClick={() => this.submitAnswer()}>
-                                    <IconCornerDownRight size={20} />
-                                  </ActionIcon>
-                                }
                               />
-                            ) : null}
-                            {game.waitingForWager &&
-                            this.socket &&
-                            game.waitingForWager[this.socket.id!] ? (
-                              <NumberInput
-                                styles={{ label: { textShadow: '1px 1px 2px black' }}}
-                                label={`Wager (${
-                                  getWagerBounds(
-                                    game.round,
-                                    game.scores[this.socket.id!],
-                                  ).minWager
-                                } - ${
-                                  getWagerBounds(
-                                    game.round,
-                                    game.scores[this.socket.id!],
-                                  ).maxWager
-                                })`}
-                                value={this.state.localWager}
-                                onChange={(value) =>
-                                  this.setState({ localWager: value })
+                            ),
+                          }}
+                        >
+                          {game.board[game.currentQ] &&
+                            game.board[game.currentQ].question}
+                        </ReactMarkdown>
+                      </div>
+                    }
+                    <div className="" style={{ height: '60px' }}>
+                      {!game.currentAnswer &&
+                      this.socket &&
+                      !game.buzzes[this.socket.id!] &&
+                      !game.submitted[this.socket.id!] &&
+                      !game.currentDailyDouble &&
+                      game.round !== 'final' ? (
+                        <div style={{ display: 'flex' }}>
+                          <Button
+                            disabled={this.state.buzzFrozen}
+                            color={game.canBuzz ? 'green' : 'grey'}
+                            size="xl"
+                            onClick={this.onBuzz}
+                            leftSection={
+                              game.canBuzz ? <IconBulb /> : <IconLock />
+                            }
+                          >
+                            Buzz
+                          </Button>
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '0px',
+                              right: '0px',
+                              zIndex: 1,
+                            }}
+                          >
+                            <Button
+                              disabled={this.state.buzzFrozen}
+                              color={game.canBuzz ? 'red' : 'grey'}
+                              onClick={() => {
+                                if (game.canBuzz) {
+                                  this.submitAnswer(null);
                                 }
-                                onKeyDown={(e: any) =>
-                                  e.key === 'Enter' && this.submitWager()
-                                }
-                                rightSection={
-                                  <ActionIcon onClick={() => this.submitWager()}>
-                                    <IconCornerDownRight
-                                      size={20}
-                                    />
-                                  </ActionIcon>
-                                }
-                                mt="md"
-                              />
-                            ) : null}
-                          </div>
-                          <div className={`answer`} style={{ height: '30px' }}>
-                            {game.currentAnswer}
-                          </div>
-                          {Boolean(game.playClueEndTS) && (
-                            <TimerBar duration={game.playClueEndTS - game.serverTime} />
-                          )}
-                          {Boolean(game.questionEndTS) && (
-                            <TimerBar
-                              duration={game.questionEndTS - game.serverTime}
-                              secondary
-                              submitAnswer={this.submitAnswer}
-                            />
-                          )}
-                          {Boolean(game.wagerEndTS) && (
-                            <TimerBar
-                              duration={game.wagerEndTS - game.serverTime}
-                              secondary
-                            />
-                          )}
-                          {game.canNextQ && (
-                            <div
-                              style={{
-                                position: 'absolute',
-                                top: '0px',
-                                right: '0px',
                               }}
+                              leftSection={
+                                game.canBuzz ? (
+                                  <IconPlayerTrackNextFilled />
+                                ) : (
+                                  <IconLock />
+                                )
+                              }
                             >
-                              <Button
-                                onClick={() => this.socket?.emit('JPD:skipQ')}
-                                leftSection={<IconPlayerTrackNextFilled />}
-                              >
-                                Next
-                              </Button>
-                            </div>
-                          )}
-                          {game.currentAnswer && canJudge && (
-                            <div
-                              style={{
-                                position: 'absolute',
-                                bottom: '0px',
-                                right: '0px',
-                              }}
-                            >
-                              <Button
-                                onClick={() =>
-                                  this.setState({ showJudgingModal: true })
-                                }
-                                leftSection={<IconGavel />}
-                              >
-                                Bulk Judge
-                              </Button>
-                            </div>
-                          )}
+                              Pass
+                            </Button>
+                          </div>
                         </div>
+                      ) : null}
+                      {!game.currentAnswer &&
+                      !this.state.localAnswerSubmitted &&
+                      this.socket &&
+                      game.buzzes[this.socket.id!] &&
+                      game.questionEndTS ? (
+                        <TextInput
+                          autoFocus
+                          placeholder="Answer"
+                          value={this.state.localAnswer}
+                          onChange={(e) =>
+                            this.setState({ localAnswer: e.target.value })
+                          }
+                          onKeyDown={(e: any) =>
+                            e.key === 'Enter' && this.submitAnswer()
+                          }
+                          rightSection={
+                            <ActionIcon onClick={() => this.submitAnswer()}>
+                              <IconCornerDownRight size={20} />
+                            </ActionIcon>
+                          }
+                        />
+                      ) : null}
+                      {game.waitingForWager &&
+                      this.socket &&
+                      game.waitingForWager[this.socket.id!] ? (
+                        <NumberInput
+                          styles={{
+                            label: { textShadow: '1px 1px 2px black' },
+                          }}
+                          label={`Wager (${
+                            getWagerBounds(
+                              game.round,
+                              game.scores[this.socket.id!],
+                            ).minWager
+                          } - ${
+                            getWagerBounds(
+                              game.round,
+                              game.scores[this.socket.id!],
+                            ).maxWager
+                          })`}
+                          value={this.state.localWager}
+                          onChange={(value) =>
+                            this.setState({ localWager: value })
+                          }
+                          onKeyDown={(e: any) =>
+                            e.key === 'Enter' && this.submitWager()
+                          }
+                          rightSection={
+                            <ActionIcon onClick={() => this.submitWager()}>
+                              <IconCornerDownRight size={20} />
+                            </ActionIcon>
+                          }
+                          mt="md"
+                        />
+                      ) : null}
+                    </div>
+                    <div className={`answer`} style={{ height: '30px' }}>
+                      {game.currentAnswer}
+                    </div>
+                    {Boolean(game.playClueEndTS) && (
+                      <TimerBar
+                        duration={game.playClueEndTS - game.serverTime}
+                      />
+                    )}
+                    {Boolean(game.questionEndTS) && (
+                      <TimerBar
+                        duration={game.questionEndTS - game.serverTime}
+                        secondary
+                        submitAnswer={this.submitAnswer}
+                      />
+                    )}
+                    {Boolean(game.wagerEndTS) && (
+                      <TimerBar
+                        duration={game.wagerEndTS - game.serverTime}
+                        secondary
+                      />
+                    )}
+                    {game.canNextQ && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '0px',
+                          right: '0px',
+                        }}
+                      >
+                        <Button
+                          onClick={() => this.socket?.emit('JPD:skipQ')}
+                          leftSection={<IconPlayerTrackNextFilled />}
+                        >
+                          Next
+                        </Button>
                       </div>
                     )}
-                    {game && game.round === 'end' && (
-                      <div id="endgame">
-                        <h1 style={{ color: 'white' }}>Winner!</h1>
-                        <div style={{ display: 'flex' }}>
-                          {this.getWinners().map((winnerId: string) => (
-                            <img
-                              key={winnerId}
-                              alt=""
-                              style={{ width: '200px', height: '200px' }}
-                              src={getDefaultPicture(
-                                participants.find((p) => p.id === winnerId)
-                                  ?.name ?? '',
-                                getColorHex(winnerId),
-                              )}
-                            />
-                          ))}
-                        </div>
+                    {game.currentAnswer && canJudge && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: '0px',
+                          right: '0px',
+                        }}
+                      >
+                        <Button
+                          onClick={() =>
+                            this.setState({ showJudgingModal: true })
+                          }
+                          leftSection={<IconGavel />}
+                        >
+                          Bulk Judge
+                        </Button>
                       </div>
                     )}
                   </div>
                 </div>
-              <div
-                style={{ display: 'flex', overflowX: 'auto', flexShrink: 0 }}
-              >
-                {participants.map((p) => {
-                  return (
-                    <div key={p.id} className="scoreboard">
-                      <div className="picture" style={{ position: 'relative' }}>
-                        <img
-                          alt=""
-                          src={getDefaultPicture(
-                            p.name ?? '',
-                            getColorHex(p.id),
-                          )}
-                        />
-                        <div
-                          style={{
-                            position: 'absolute',
-                            bottom: '4px',
-                            left: '0px',
-                            width: '100%',
-                            backgroundColor: '#' + getColorHex(p.id),
-                            color: 'white',
-                            borderRadius: '4px',
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            display: 'flex',
-                          }}
-                        >
-                          <div
-                            title={p.name || p.id}
-                            style={{
-                              width: '100%',
-                              backdropFilter: 'brightness(80%)',
-                              padding: '4px',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              display: 'inline-block',
-                            }}
-                          >
-                            {p.name || p.id}
-                          </div>
-                        </div>
-                        {game && (
-                          <div className="icons">
-                            {!game.picker || game.picker === p.id ? (
-                              <IconHandFinger
-                                title="Controlling the board"
-                              />
-                            ) : null}
-                            {game.host && game.host === p.id ? (
-                              <IconStarFilled title="Game host" />
-                            ) : null}
-                            {!p.connected ? (
-                              <IconPlug
-                                color="red"
-                                title="Disconnected"
-                              />
-                            ) : null}
-                          </div>
+              )}
+              {game && game.round === 'end' && (
+                <div id="endgame">
+                  <h1 style={{ color: 'white' }}>Winner!</h1>
+                  <div style={{ display: 'flex' }}>
+                    {this.getWinners().map((winnerId: string) => (
+                      <img
+                        key={winnerId}
+                        alt=""
+                        style={{ width: '200px', height: '200px' }}
+                        src={getDefaultPicture(
+                          participants.find((p) => p.id === winnerId)?.name ??
+                            '',
+                          getColorHex(winnerId),
                         )}
-                        {game &&
-                        p.id === game.currentJudgeAnswer &&
-                        canJudge ? (
-                          <div className="judgeButtons">
-                            <ActionIcon
-                              onClick={() => this.judgeAnswer(p.id, true)}
-                              color="green"
-                              title="Correct"
-                            >
-                              <IconCheck name="check" />
-                            </ActionIcon>
-                            <ActionIcon
-                              onClick={() => this.judgeAnswer(p.id, false)}
-                              color="red"
-                              title="Incorrect"
-                            >
-                              <IconX name="close" />
-                            </ActionIcon>
-                            <ActionIcon
-                              onClick={() => this.judgeAnswer(p.id, null)}
-                              color="grey"
-                              title="Skip"
-                            >
-                              <IconPlayerTrackNextFilled name="angle double right" />
-                            </ActionIcon>
-                          </div>
-                        ) : null}
-                      </div>
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div style={{ display: 'flex', overflowX: 'auto', flexShrink: 0 }}>
+            {participants.map((p) => {
+              return (
+                <div key={p.id} className="scoreboard">
+                  <div className="picture" style={{ position: 'relative' }}>
+                    <img
+                      alt=""
+                      src={getDefaultPicture(p.name ?? '', getColorHex(p.id))}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '4px',
+                        left: '0px',
+                        width: '100%',
+                        backgroundColor: '#' + getColorHex(p.id),
+                        color: 'white',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        display: 'flex',
+                      }}
+                    >
                       <div
-                        className={`points ${
-                          game && game.scores[p.id] < 0 ? 'negative' : ''
-                        }`}
+                        title={p.name || p.id}
+                        style={{
+                          width: '100%',
+                          backdropFilter: 'brightness(80%)',
+                          padding: '4px',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          display: 'inline-block',
+                        }}
                       >
-                        {(game?.scores[p.id] || 0).toLocaleString()}
-                      </div>
-                      <div
-                        className={`answerBox ${
-                          game?.buzzes[p.id] ? 'buzz' : ''
-                        } ${game?.judges[p.id] === false ? 'negative' : ''}`}
-                      >
-                        {game && game.answers[p.id]}
-                                                {game && p.id in game.wagers ? (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: '2px',
-                              right: '2px',
-                            }}
-                          >
-                            <Badge title="Wager" color="gray" size="xs" radius="xs">
-                              {game.wagers[p.id] || 0}
-                            </Badge>
-                          </div>
-                        ) : null}
-                        <div className="timeOffset">
-                          {this.getBuzzOffset(p.id) &&
-                          this.getBuzzOffset(p.id) > 0
-                            ? `+${(this.getBuzzOffset(p.id) / 1000).toFixed(3)}`
-                            : ''}
-                        </div>
+                        {p.name || p.id}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    {game && (
+                      <div className="icons">
+                        {!game.picker || game.picker === p.id ? (
+                          <IconHandFinger title="Controlling the board" />
+                        ) : null}
+                        {game.host && game.host === p.id ? (
+                          <IconStarFilled title="Game host" />
+                        ) : null}
+                        {!p.connected ? (
+                          <IconPlug color="red" title="Disconnected" />
+                        ) : null}
+                      </div>
+                    )}
+                    {game && p.id === game.currentJudgeAnswer && canJudge ? (
+                      <div className="judgeButtons">
+                        <ActionIcon
+                          onClick={() => this.judgeAnswer(p.id, true)}
+                          color="green"
+                          title="Correct"
+                        >
+                          <IconCheck name="check" />
+                        </ActionIcon>
+                        <ActionIcon
+                          onClick={() => this.judgeAnswer(p.id, false)}
+                          color="red"
+                          title="Incorrect"
+                        >
+                          <IconX name="close" />
+                        </ActionIcon>
+                        <ActionIcon
+                          onClick={() => this.judgeAnswer(p.id, null)}
+                          color="grey"
+                          title="Skip"
+                        >
+                          <IconPlayerTrackNextFilled name="angle double right" />
+                        </ActionIcon>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div
+                    className={`points ${
+                      game && game.scores[p.id] < 0 ? 'negative' : ''
+                    }`}
+                  >
+                    {(game?.scores[p.id] || 0).toLocaleString()}
+                  </div>
+                  <div
+                    className={`answerBox ${
+                      game?.buzzes[p.id] ? 'buzz' : ''
+                    } ${game?.judges[p.id] === false ? 'negative' : ''}`}
+                  >
+                    {game && game.answers[p.id]}
+                    {game && p.id in game.wagers ? (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '2px',
+                          right: '2px',
+                        }}
+                      >
+                        <Badge title="Wager" color="gray" size="xs" radius="xs">
+                          {game.wagers[p.id] || 0}
+                        </Badge>
+                      </div>
+                    ) : null}
+                    <div className="timeOffset">
+                      {this.getBuzzOffset(p.id) && this.getBuzzOffset(p.id) > 0
+                        ? `+${(this.getBuzzOffset(p.id) / 1000).toFixed(3)}`
+                        : ''}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
           {false && process.env.NODE_ENV === 'development' && (
             <pre
               style={{ color: 'white', height: '200px', overflow: 'scroll' }}
@@ -1186,7 +1191,11 @@ export class Jeopardy extends React.Component<{
   }
 }
 
-function TimerBar({duration, secondary, submitAnswer}: {
+function TimerBar({
+  duration,
+  secondary,
+  submitAnswer,
+}: {
   duration: number;
   secondary?: boolean;
   submitAnswer?: Function;
@@ -1201,16 +1210,13 @@ function TimerBar({duration, secondary, submitAnswer}: {
       // Submit whatever's in the box 0.5s before expected timeout
       // Bit hacky, but to fix we either need to submit updates on each character
       // Or have a separate step where the server instructs all clients to submit whatever is in box and accepts it
-      submitTimeout = window.setTimeout(
-        submitAnswer,
-        duration - 500,
-      );
+      submitTimeout = window.setTimeout(submitAnswer, duration - 500);
     }
     return () => {
       if (submitTimeout) {
         window.clearTimeout(submitTimeout);
       }
-    }
+    };
   }, []);
   return (
     <div
@@ -1258,67 +1264,70 @@ const BulkJudgeModal = ({
   const [decisions, setDecisions] = useState<Record<string, string>>({});
   const distinctAnswers: string[] = Array.from(
     new Set(
-      Object.values<string>(game?.answers ?? {}).map(
-        (answer: string) => answer?.toLowerCase()?.trim(),
+      Object.values<string>(game?.answers ?? {}).map((answer: string) =>
+        answer?.toLowerCase()?.trim(),
       ),
     ),
   );
   return (
     <Modal opened onClose={onClose} title={game?.currentAnswer}>
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
+      <Table>
+        <Table.Thead>
+          <Table.Tr>
             <Table.Th>Answer</Table.Th>
             <Table.Th>Decision</Table.Th>
             <Table.Th>Responses</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        {distinctAnswers.map((answer) => {
+          return (
+            <Table.Tr>
+              <Table.Td>{answer}</Table.Td>
+              <Table.Td>
+                <Select
+                  placeholder="Select"
+                  value={decisions[answer]}
+                  data={[
+                    { value: 'true', label: 'Correct' },
+                    { value: 'false', label: 'Incorrect' },
+                    { value: 'skip', label: 'Skip' },
+                  ]}
+                  onChange={(value, option) => {
+                    const newDecisions = {
+                      ...decisions,
+                      [answer]: value!,
+                    };
+                    setDecisions(newDecisions);
+                  }}
+                ></Select>
+              </Table.Td>
+              <Table.Td>
+                {participants
+                  .filter(
+                    (p) =>
+                      game?.answers[p.id]?.toLowerCase()?.trim() === answer,
+                  )
+                  .map((p) => {
+                    return (
+                      <img
+                        style={{ width: '30px' }}
+                        alt=""
+                        src={getDefaultPicture(p.name ?? '', getColorHex(p.id))}
+                      />
+                    );
+                  })}
+              </Table.Td>
             </Table.Tr>
-          </Table.Thead>
-          {distinctAnswers.map((answer) => {
-            return (
-              <Table.Tr>
-                <Table.Td>{answer}</Table.Td>
-                <Table.Td>
-                  <Select
-                    placeholder="Select"
-                    value={decisions[answer]}
-                    data={[
-                      { value: 'true', label: 'Correct' },
-                      { value: 'false', label: 'Incorrect' },
-                      { value: 'skip', label: 'Skip' },
-                    ]}
-                    onChange={(value, option) => {
-                      const newDecisions = {
-                        ...decisions,
-                        [answer]: value!,
-                      };
-                      setDecisions(newDecisions);
-                    }}
-                  ></Select>
-                </Table.Td>
-                <Table.Td>
-                  {participants
-                    .filter(
-                      (p) =>
-                        game?.answers[p.id]?.toLowerCase()?.trim() === answer,
-                    )
-                    .map((p) => {
-                      return (
-                        <img
-                          style={{ width: '30px' }}
-                          alt=""
-                          src={getDefaultPicture(
-                            p.name ?? '',
-                            getColorHex(p.id),
-                          )}
-                        />
-                      );
-                    })}
-                </Table.Td>
-              </Table.Tr>
-            );
-          })}
-        </Table>
-        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+          );
+        })}
+      </Table>
+      <div
+        style={{
+          marginTop: '10px',
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}
+      >
         <Button
           onClick={() => {
             const answers = Object.entries<string>(game?.answers || {});
@@ -1339,7 +1348,7 @@ const BulkJudgeModal = ({
         >
           Bulk Judge
         </Button>
-        </div>
+      </div>
     </Modal>
   );
 };
@@ -1370,60 +1379,80 @@ const SettingsModal = ({
   );
   return (
     <Modal opened onClose={onClose} title="Settings">
-        <h4>Settings will be applied to any new games you create.</h4>
-        <div style={{ gap: '4px', display: 'flex', flexDirection: 'column' }}>
-          <Switch
-            checked={makeMeHost}
-            onChange={(e) => setMakeMeHost(e.currentTarget.checked)}
-            label="Make me the host (Only you will be able to select questions and make judging decisions)"
+      <h4>Settings will be applied to any new games you create.</h4>
+      <div style={{ gap: '4px', display: 'flex', flexDirection: 'column' }}>
+        <Switch
+          checked={makeMeHost}
+          onChange={(e) => setMakeMeHost(e.currentTarget.checked)}
+          label="Make me the host (Only you will be able to select questions and make judging decisions)"
+        />
+        <Switch
+          checked={allowMultipleCorrect}
+          onChange={(e) => setAllowMultipleCorrect(e.currentTarget.checked)}
+          label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)"
+        />
+        <Switch
+          checked={enableAIJudge}
+          onChange={(e) => setEnableAIJudge(e.currentTarget.checked)}
+          label="Enable AI judge by default"
+        />
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center',
+            fontSize: '14px',
+          }}
+        >
+          <NumberInput
+            styles={{ input: { width: 40 } }}
+            value={answerTimeout}
+            onChange={(value) => setAnswerTimeout(Number(value))}
+            size="xs"
+            hideControls
           />
-          <Switch
-            checked={allowMultipleCorrect}
-            onChange={(e) => setAllowMultipleCorrect(e.currentTarget.checked)}
-            label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)"
-          />
-          <Switch
-            checked={enableAIJudge}
-            onChange={(e) => setEnableAIJudge(e.currentTarget.checked)}
-            label="Enable AI judge by default"
-          />
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '14px' }}>
-            <NumberInput
-              styles={{ input: { width: 40 }}}
-              value={answerTimeout}
-              onChange={(value) => setAnswerTimeout(Number(value))}
-              size="xs"
-              hideControls
-            />
-            Seconds for regular answers and Daily Double wagers (Default: 20)
-          </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '14px' }}>
-            <NumberInput
-              styles={{ input: { width: 40 }}}
-              value={finalTimeout}
-              onChange={(value) => setFinalTimeout(Number(value))}
-              size="xs"
-              hideControls
-            />
-            Seconds for Final Jeopardy answers and wagers (Default: 30)
-          </div>
+          Seconds for regular answers and Daily Double wagers (Default: 20)
         </div>
-      <div style={{ display: 'flex', marginTop: '10px', justifyContent: 'flex-end' }}>
-      <Button
-        onClick={() => {
-          const settings: GameSettings = {
-            makeMeHost: Boolean(makeMeHost),
-            allowMultipleCorrect: Boolean(allowMultipleCorrect),
-            enableAIJudge: Boolean(enableAIJudge),
-            answerTimeout: Number(answerTimeout),
-            finalTimeout: Number(finalTimeout),
-          };
-          onSubmit(settings);
-          onClose();
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center',
+            fontSize: '14px',
+          }}
+        >
+          <NumberInput
+            styles={{ input: { width: 40 } }}
+            value={finalTimeout}
+            onChange={(value) => setFinalTimeout(Number(value))}
+            size="xs"
+            hideControls
+          />
+          Seconds for Final Jeopardy answers and wagers (Default: 30)
+        </div>
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          marginTop: '10px',
+          justifyContent: 'flex-end',
         }}
       >
-        Save
-      </Button>
+        <Button
+          onClick={() => {
+            const settings: GameSettings = {
+              makeMeHost: Boolean(makeMeHost),
+              allowMultipleCorrect: Boolean(allowMultipleCorrect),
+              enableAIJudge: Boolean(enableAIJudge),
+              answerTimeout: Number(answerTimeout),
+              finalTimeout: Number(finalTimeout),
+            };
+            onSubmit(settings);
+            onClose();
+          }}
+        >
+          Save
+        </Button>
       </div>
     </Modal>
   );

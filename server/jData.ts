@@ -6,7 +6,9 @@ let qs = 0;
 let eps = 0;
 // On boot, start with the initial data included in repo
 console.time('load');
-let jData = JSON.parse(gunzipSync(fs.readFileSync('./jeopardy.json.gz')).toString());
+let jData = JSON.parse(
+  gunzipSync(fs.readFileSync('./jeopardy.json.gz')).toString(),
+);
 updateJDataStats();
 console.timeEnd('load');
 console.log('loaded %d episodes', Object.keys(jData).length);
@@ -44,7 +46,7 @@ function updateJDataStats() {
   console.time('count');
   qs = 0;
   eps = 0;
-  Object.keys(jData).forEach(key => {
+  Object.keys(jData).forEach((key) => {
     eps += 1;
     qs += jData[key].jeopardy.length;
     qs += jData[key].double.length;

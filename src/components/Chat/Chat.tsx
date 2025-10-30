@@ -13,11 +13,11 @@ interface ChatProps {
   socket: Socket | undefined;
 }
 
-export function Chat (props: ChatProps) {
+export function Chat(props: ChatProps) {
   const [chatMsg, setChatMsg] = useState('');
   const [isNearBottom, setIsNearBottom] = useState(true);
   const messagesRef = useRef<HTMLDivElement>(null);
-  
+
   const updateChatMsg = (e: any) => {
     setChatMsg(e.target.value);
   };
@@ -33,10 +33,10 @@ export function Chat (props: ChatProps) {
   const isChatNearBottom = () => {
     return Boolean(
       messagesRef.current &&
-      messagesRef.current.scrollHeight -
-        messagesRef.current.scrollTop -
-        messagesRef.current.offsetHeight <
-        100
+        messagesRef.current.scrollHeight -
+          messagesRef.current.scrollTop -
+          messagesRef.current.offsetHeight <
+          100,
     );
   };
 
@@ -46,8 +46,7 @@ export function Chat (props: ChatProps) {
 
   const scrollToBottom = () => {
     if (messagesRef.current) {
-      messagesRef.current.scrollTop =
-        messagesRef.current.scrollHeight;
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
   };
 
@@ -86,10 +85,7 @@ export function Chat (props: ChatProps) {
       >
         <div className="chatMessages">
           {props.chat.map((msg) => (
-            <ChatMessage
-              key={msg.timestamp + msg.id}
-              {...msg}
-            />
+            <ChatMessage key={msg.timestamp + msg.id} {...msg} />
           ))}
           {/* <div ref={this.messagesEndRef} /> */}
         </div>
@@ -115,7 +111,7 @@ export function Chat (props: ChatProps) {
         value={chatMsg}
         rightSection={
           <ActionIcon radius="md" onClick={sendChatMsg}>
-          <IconSend size={20} />
+            <IconSend size={20} />
           </ActionIcon>
         }
         placeholder="Enter a message..."
@@ -124,26 +120,38 @@ export function Chat (props: ChatProps) {
   );
 }
 
-const ChatMessage = ({ id, name, timestamp, cmd, msg, bot }: {id: string, name?: string, timestamp: string, cmd: string, msg: string, bot?: boolean }) => {
+const ChatMessage = ({
+  id,
+  name,
+  timestamp,
+  cmd,
+  msg,
+  bot,
+}: {
+  id: string;
+  name?: string;
+  timestamp: string;
+  cmd: string;
+  msg: string;
+  bot?: boolean;
+}) => {
   return (
     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-      <Avatar src={bot ? undefined : getDefaultPicture(name ?? '', getColorHex(id))}>
+      <Avatar
+        src={bot ? undefined : getDefaultPicture(name ?? '', getColorHex(id))}
+      >
         {bot ? <IconCpu /> : null}
       </Avatar>
       <div>
         <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end' }}>
-        <div className="light username">
-          {name || id}
-        </div>
-        <div className="dark timestamp">
-          <div title={new Date(timestamp).toDateString()}>
-            {new Date(timestamp).toLocaleTimeString()}
+          <div className="light username">{name || id}</div>
+          <div className="dark timestamp">
+            <div title={new Date(timestamp).toDateString()}>
+              {new Date(timestamp).toLocaleTimeString()}
+            </div>
           </div>
         </div>
-        </div>
-        <div className="light system">
-          {cmd && formatMessage(cmd, msg)}
-        </div>
+        <div className="light system">{cmd && formatMessage(cmd, msg)}</div>
         <div className="light message">{!cmd && msg}</div>
       </div>
     </div>

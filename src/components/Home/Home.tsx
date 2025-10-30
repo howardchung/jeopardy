@@ -4,14 +4,20 @@ import CountUp from 'react-countup';
 import { NewRoomButton, JeopardyTopBar } from '../TopBar/TopBar';
 import styles from './Home.module.css';
 import { serverPath } from '../../utils';
-import { IconBulb, IconGavel, IconHandFinger, IconMicrophoneFilled, IconTool } from '@tabler/icons-react';
+import {
+  IconBulb,
+  IconGavel,
+  IconHandFinger,
+  IconMicrophoneFilled,
+  IconTool,
+} from '@tabler/icons-react';
 
 const Feature = ({
   Icon,
   text,
   title,
 }: {
-  Icon:  React.ForwardRefExoticComponent<any>;
+  Icon: React.ForwardRefExoticComponent<any>;
   text: string;
   title: string;
 }) => {
@@ -52,7 +58,7 @@ const Hero = ({
       const json = await response.json();
       setQCount(json.qs);
       setEpCount(json.eps);
-    }
+    };
     update();
   }, []);
   return (
@@ -61,13 +67,9 @@ const Hero = ({
         <div style={{ padding: '30px', flex: '1 1 0' }}>
           <div className={styles.heroText}>{heroText}</div>
           <div className={styles.subText}>
-            <CountUp start={8000} end={epCount} delay={0} duration={3} />
-            {' '}
-            episodes featuring
-            {' '}
-            <CountUp start={500000} end={qCount} delay={0} duration={3} />
-            {' '}
-            clues
+            <CountUp start={8000} end={epCount} delay={0} duration={3} />{' '}
+            episodes featuring{' '}
+            <CountUp start={500000} end={qCount} delay={0} duration={3} /> clues
           </div>
           {action}
         </div>

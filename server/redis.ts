@@ -80,4 +80,3 @@ function getStartOfMinute() {
   const now = Date.now();
   return now - (now % 60000);
 }
-

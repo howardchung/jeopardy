@@ -5,7 +5,7 @@ import '../Jeopardy/Jeopardy.css';
 import { IconBrandGithub, IconCirclePlusFilled } from '@tabler/icons-react';
 import './TopBar.css';
 
-export function NewRoomButton({size}: { size?: string }) {
+export function NewRoomButton({ size }: { size?: string }) {
   const createRoom = useCallback(async () => {
     const response = await window.fetch(serverPath + '/createRoom', {
       method: 'POST',
@@ -21,14 +21,14 @@ export function NewRoomButton({size}: { size?: string }) {
     window.location.search = searchParams.toString();
   }, []);
   return (
-        <Button
-          color="blue"
-          size={size}
-          onClick={createRoom}
-          leftSection={<IconCirclePlusFilled />}
-        >
-          New Room
-        </Button>
+    <Button
+      color="blue"
+      size={size}
+      onClick={createRoom}
+      leftSection={<IconCirclePlusFilled />}
+    >
+      New Room
+    </Button>
   );
 }
 
@@ -78,21 +78,21 @@ export function JeopardyTopBar({ hideNewRoom }: { hideNewRoom?: boolean }) {
         >
           {!hideNewRoom && <NewRoomButton />}
           <div
-          style={{
-            display: 'flex',
-          }}
-        >
-          <a
-            href="https://github.com/howardchung/jeopardy"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="GitHub"
+            style={{
+              display: 'flex',
+            }}
           >
-            <ActionIcon color="gray" size={36} radius="sm" variant="filled">
-              <IconBrandGithub  />
-            </ActionIcon>
-          </a>
-        </div>
+            <a
+              href="https://github.com/howardchung/jeopardy"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="GitHub"
+            >
+              <ActionIcon color="gray" size={36} radius="sm" variant="filled">
+                <IconBrandGithub />
+              </ActionIcon>
+            </a>
+          </div>
         </div>
       </div>
     </React.Fragment>

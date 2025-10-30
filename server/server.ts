@@ -22,7 +22,10 @@ if (config.SSL_KEY_FILE && config.SSL_CRT_FILE) {
 } else {
   server = new http.Server(app);
 }
-const io = new Server(server, { cors: { origin: '*' }, transports: ['websocket'] });
+const io = new Server(server, {
+  cors: { origin: '*' },
+  transports: ['websocket'],
+});
 const rooms = new Map<string, Room>();
 init();
 setInterval(freeUnusedRooms, 5 * 60 * 1000);
@@ -102,7 +105,7 @@ app.get('/stats', async (req, res) => {
     // const chatMessages = await getRedisCountDay('chatMessages');
     const newGamesLastDay = await getRedisCountDay('newGames');
     const customGamesLastDay = await getRedisCountDay('customGames');
-    const aiJudgeLastDay = await getRedisCountDay('aiJudge'); 
+    const aiJudgeLastDay = await getRedisCountDay('aiJudge');
     const aiShortcutLastDay = await getRedisCountDay('aiShortcut');
     const aiChatGptLastDay = await getRedisCountDay('aiChatGpt');
     const aiRefuseLastDay = await getRedisCountDay('aiRefuse');

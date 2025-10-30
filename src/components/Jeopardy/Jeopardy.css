@@ -121,7 +121,7 @@
   line-height: 1em;
   color: #d7a04b;
   text-shadow: black 4px 4px;
-  border: 1px solid rgba(0,0,0,0);
+  border: 1px solid rgba(0, 0, 0, 0);
 }
 
 .value:hover {
@@ -292,4 +292,3 @@
   width: 100%;
   padding: 20px;
 }
-

@@ -1,19 +1,19 @@
 .username {
-font-weight: 700;
-color: white;
-font-size: 0.9em;
+  font-weight: 700;
+  color: white;
+  font-size: 0.9em;
 }
 
 .timestamp {
-font-weight: 300;
-color: gray;
-font-size: 0.7em;
+  font-weight: 300;
+  color: gray;
+  font-size: 0.7em;
 }
 
 .chatMessages {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .comment {
