@@ -14,6 +14,10 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  background-color: rgba(100,100,100,0.1);
+  height: 100%;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 .comment {

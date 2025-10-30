@@ -105,7 +105,6 @@ export function Chat(props: ChatProps) {
         )}
       </div>
       <TextInput
-        style={{ marginTop: '8px' }}
         onKeyDown={(e: any) => e.key === 'Enter' && sendChatMsg()}
         onChange={updateChatMsg}
         value={chatMsg}
@@ -143,7 +142,7 @@ const ChatMessage = ({
         {bot ? <IconCpu /> : null}
       </Avatar>
       <div>
-        <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
           <div className="light username">{name || id}</div>
           <div className="dark timestamp">
             <div title={new Date(timestamp).toDateString()}>
