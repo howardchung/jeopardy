@@ -958,6 +958,7 @@ export class Jeopardy extends React.Component<{
                         <NumberInput
                           styles={{
                             label: { textShadow: '1px 1px 2px black' },
+                            section: { marginRight: '4px' }
                           }}
                           label={`Wager (${
                             getWagerBounds(
