@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Comment, Icon, Input, Segment } from 'semantic-ui-react';
+import { ActionIcon, Avatar, Button, Group, TextInput } from '@mantine/core';
 import { getColorHex, getDefaultPicture } from '../../utils';
 import { Socket } from 'socket.io-client';
+import { IconCpu, IconSend } from '@tabler/icons-react';
+import './Chat.css';
 
 interface ChatProps {
   chat: ChatMessage[];
@@ -16,8 +18,8 @@ export function Chat (props: ChatProps) {
   const [isNearBottom, setIsNearBottom] = useState(true);
   const messagesRef = useRef<HTMLDivElement>(null);
   
-  const updateChatMsg = (e: any, data: { value: string }) => {
-    setChatMsg(data.value);
+  const updateChatMsg = (e: any) => {
+    setChatMsg(e.target.value);
   };
 
   const sendChatMsg = () => {
@@ -66,9 +68,8 @@ export function Chat (props: ChatProps) {
     }
   }, [props.scrollTimestamp, props.chat]);
   return (
-    <Segment
+    <div
       className={props.className}
-      inverted
       style={{
         display: props.hide ? 'none' : 'flex',
         flexDirection: 'column',
@@ -83,7 +84,7 @@ export function Chat (props: ChatProps) {
         ref={messagesRef}
         style={{ position: 'relative' }}
       >
-        <Comment.Group>
+        <div className="chatMessages">
           {props.chat.map((msg) => (
             <ChatMessage
               key={msg.timestamp + msg.id}
@@ -91,10 +92,10 @@ export function Chat (props: ChatProps) {
             />
           ))}
           {/* <div ref={this.messagesEndRef} /> */}
-        </Comment.Group>
+        </div>
         {!isNearBottom && (
           <Button
-            size="tiny"
+            size="xs"
             onClick={scrollToBottom}
             style={{
               position: 'sticky',
@@ -107,46 +108,45 @@ export function Chat (props: ChatProps) {
           </Button>
         )}
       </div>
-      <Input
-        inverted
-        fluid
-        onKeyPress={(e: any) => e.key === 'Enter' && sendChatMsg()}
+      <TextInput
+        style={{ marginTop: '8px' }}
+        onKeyDown={(e: any) => e.key === 'Enter' && sendChatMsg()}
         onChange={updateChatMsg}
         value={chatMsg}
-        icon={
-          <Icon
-            onClick={sendChatMsg}
-            name="send"
-            inverted
-            circular
-            link
-          />
+        rightSection={
+          <ActionIcon radius="md" onClick={sendChatMsg}>
+          <IconSend size={20} />
+          </ActionIcon>
         }
         placeholder="Enter a message..."
       />
-    </Segment>
+    </div>
   );
 }
 
-const ChatMessage = ({ id, name, timestamp, cmd, msg }: {id: string, name?: string, timestamp: string, cmd: string, msg: string}) => {
+const ChatMessage = ({ id, name, timestamp, cmd, msg, bot }: {id: string, name?: string, timestamp: string, cmd: string, msg: string, bot?: boolean }) => {
   return (
-    <Comment>
-      <Comment.Avatar src={getDefaultPicture(name ?? '', getColorHex(id))} />
-      <Comment.Content>
-        <Comment.Author as="a" className="light">
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <Avatar src={bot ? undefined : getDefaultPicture(name ?? '', getColorHex(id))}>
+        {bot ? <IconCpu /> : null}
+      </Avatar>
+      <div>
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end' }}>
+        <div className="light username">
           {name || id}
-        </Comment.Author>
-        <Comment.Metadata className="dark">
+        </div>
+        <div className="dark timestamp">
           <div title={new Date(timestamp).toDateString()}>
             {new Date(timestamp).toLocaleTimeString()}
           </div>
-        </Comment.Metadata>
-        <Comment.Text className="light system">
+        </div>
+        </div>
+        <div className="light system">
           {cmd && formatMessage(cmd, msg)}
-        </Comment.Text>
-        <Comment.Text className="light">{!cmd && msg}</Comment.Text>
-      </Comment.Content>
-    </Comment>
+        </div>
+        <div className="light message">{!cmd && msg}</div>
+      </div>
+    </div>
   );
 };
 

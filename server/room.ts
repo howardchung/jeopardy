@@ -624,6 +624,7 @@ export class Room {
       name: 'System',
       cmd: 'answer',
       msg: this.jpd.public.currentAnswer,
+      bot: true,
     });
     // Scores have updated so resend sorted player list
     this.sendRoster();
@@ -909,12 +910,14 @@ export class Room {
     }
     // If null/undefined, don't change scores
     if (correct != null) {
+      const userName = this.getAllPlayers().find((p) => p.id === socket?.id)?.name;
       const msg = {
         id: socket?.id ?? '',
         // name of judge
         name:
-          this.getAllPlayers().find((p) => p.id === socket?.id)?.name ??
+          userName ??
           'System',
+        bot: !Boolean(userName),
         cmd: 'judge',
         msg: JSON.stringify({
           id: id,
@@ -1091,6 +1094,7 @@ export class Room {
             this.addChatMessage(undefined, {
               id: '',
               name: 'System',
+              bot: true,
               msg: 'generated ai voice ' + i + ': ' + url,
             });
             redisCount('aiVoice');
@@ -1107,6 +1111,7 @@ export class Room {
         this.addChatMessage(undefined, {
           id: '',
           name: 'System',
+          bot: true,
           msg:
             success +
             '/' +

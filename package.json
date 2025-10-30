@@ -3,6 +3,8 @@
   "version": "0.1.2",
   "private": true,
   "dependencies": {
+    "@mantine/core": "^8.3.5",
+    "@tabler/icons-react": "^3.35.0",
     "compression": "^1.7.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -14,8 +16,6 @@
     "react-countup": "^6.5.3",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.3",
-    "semantic-ui-css": "^2.5.0",
-    "semantic-ui-react": "^2.1.5",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   },

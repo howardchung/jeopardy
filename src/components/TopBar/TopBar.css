@@ -1,0 +1,21 @@
+.hideMobile {
+    @media only screen and (max-width: 600px) {
+        display: none;
+    }
+}
+
+.logo {
+  font-family: 'Gyparody';
+  font-size: 48px;
+  line-height: 48px;
+  text-transform: uppercase;
+  color: white;
+  text-shadow:
+    1px 1px 4px #fff,
+    1px 1px 4px #ccc;
+}
+
+.logo.small {
+  font-size: 30px;
+  line-height: 30px;
+}

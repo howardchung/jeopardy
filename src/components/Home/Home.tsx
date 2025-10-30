@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Divider, Header, Icon } from 'semantic-ui-react';
 import CountUp from 'react-countup';
 
 import { NewRoomButton, JeopardyTopBar } from '../TopBar/TopBar';
 import styles from './Home.module.css';
 import { serverPath } from '../../utils';
+import { IconBulb, IconGavel, IconHandFinger, IconMicrophoneFilled, IconTool } from '@tabler/icons-react';
 
 const Feature = ({
-  icon,
+  Icon,
   text,
   title,
 }: {
-  icon: string;
+  Icon:  React.ForwardRefExoticComponent<any>;
   text: string;
   title: string;
 }) => {
@@ -26,7 +26,7 @@ const Feature = ({
         minWidth: '180px',
       }}
     >
-      <Icon fitted size="huge" name={icon as any} />
+      {<Icon size={80} />}
       <h4 className={styles.featureTitle}>{title}</h4>
       <div className={styles.featureText}>{text}</div>
     </div>
@@ -97,35 +97,29 @@ export const JeopardyHome = () => {
           action={<NewRoomButton />}
           image={'/screenshot3.png'}
         />
-        <Divider horizontal>
-          <Header inverted as="h4">
-            <Icon name="cogs" />
-            Features
-          </Header>
-        </Divider>
         <div className={styles.featureSection}>
           <Feature
-            icon="hand point right"
+            Icon={IconHandFinger}
             title="Episode Selector"
             text="Pick any episode by number, or play a random game."
           />
           <Feature
-            icon="lightbulb"
+            Icon={IconBulb}
             title="Buzzer"
             text="Implements the buzzer logic from the TV show (first correct answer scores points)"
           />
           <Feature
-            icon="microphone"
+            Icon={IconMicrophoneFilled}
             title="Reading"
             text="Clues are read to you by the computer for a realistic experience."
           />
           <Feature
-            icon="gavel"
+            Icon={IconGavel}
             title="Judging"
             text="Players perform answer judging themselves, so you're not penalized for incorrect spelling."
           />
           <Feature
-            icon="wrench"
+            Icon={IconTool}
             title="Custom Games"
             text="Upload your own data file to play a custom game"
           />

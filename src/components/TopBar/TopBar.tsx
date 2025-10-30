@@ -1,7 +1,9 @@
 import React, { useCallback } from 'react';
 import { serverPath } from '../../utils';
-import { Icon, Popup, Button } from 'semantic-ui-react';
+import { Button, ActionIcon } from '@mantine/core';
 import '../Jeopardy/Jeopardy.css';
+import { IconBrandGithub, IconCirclePlusFilled } from '@tabler/icons-react';
+import './TopBar.css';
 
 export function NewRoomButton({size}: { size?: string }) {
   const createRoom = useCallback(async () => {
@@ -19,23 +21,14 @@ export function NewRoomButton({size}: { size?: string }) {
     window.location.search = searchParams.toString();
   }, []);
   return (
-    <Popup
-      content="Create a new room with a random URL that you can share with friends"
-      trigger={
         <Button
           color="blue"
-          size={size as any}
-          icon
-          fluid
-          labelPosition="left"
+          size={size}
           onClick={createRoom}
-          className="toolButton"
+          leftSection={<IconCirclePlusFilled />}
         >
-          <Icon name="certificate" />
           New Room
         </Button>
-      }
-    />
   );
 }
 
@@ -45,12 +38,12 @@ export function JeopardyTopBar({ hideNewRoom }: { hideNewRoom?: boolean }) {
       <div
         style={{
           display: 'flex',
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           padding: '1em',
           paddingBottom: '0px',
         }}
       >
-        <a href="/" style={{ display: 'flex' }}>
+        <a href="/" style={{ display: 'flex', textDecoration: 'none' }}>
           <div
             className="logo small"
             style={{
@@ -73,34 +66,33 @@ export function JeopardyTopBar({ hideNewRoom }: { hideNewRoom?: boolean }) {
               alignItems: 'center',
             }}
           >
-            <div className="logo">Jeopardy!</div>
+            <div className="logo hideMobile">Jeopardy!</div>
           </div>
         </a>
         <div
           style={{
             display: 'flex',
-            marginLeft: '10px',
-            alignItems: 'center',
+            gap: '0.5em',
+            marginLeft: 'auto',
+          }}
+        >
+          {!hideNewRoom && <NewRoomButton />}
+          <div
+          style={{
+            display: 'flex',
           }}
         >
           <a
             href="https://github.com/howardchung/jeopardy"
             target="_blank"
             rel="noopener noreferrer"
-            className="footerIcon"
             title="GitHub"
           >
-            <Icon name="github" size="big" link />
+            <ActionIcon color="gray" size={36} radius="sm" variant="filled">
+              <IconBrandGithub  />
+            </ActionIcon>
           </a>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            width: '200px',
-            marginLeft: 'auto',
-          }}
-        >
-          {!hideNewRoom && <NewRoomButton />}
         </div>
       </div>
     </React.Fragment>

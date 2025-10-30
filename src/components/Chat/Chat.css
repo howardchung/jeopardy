@@ -1,0 +1,44 @@
+.username {
+font-weight: 700;
+color: white;
+font-size: 0.9em;
+}
+
+.timestamp {
+font-weight: 300;
+color: gray;
+font-size: 0.7em;
+}
+
+.chatMessages {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.comment {
+  word-break: break-word;
+}
+
+.comment .light {
+  color: gainsboro;
+}
+
+.comment .dark {
+  color: gray;
+}
+
+.chatContainer {
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.system {
+  font-size: 0.7em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.message {
+  font-size: 0.9em;
+}

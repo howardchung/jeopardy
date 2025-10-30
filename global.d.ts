@@ -11,6 +11,7 @@ interface ChatMessage {
   id: string;
   cmd: string;
   msg: string;
+  bot?: boolean;
 }
 
 interface RawQuestion {

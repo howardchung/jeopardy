@@ -1,6 +1,7 @@
 import './App.css';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Divider, Grid, Icon, Input } from 'semantic-ui-react';
+import { ActionIcon, Divider, Grid, TextInput } from '@mantine/core';
+import { IconArrowsShuffle } from '@tabler/icons-react';
 import { serverPath, generateName } from '../../utils';
 import { Chat } from '../Chat/Chat';
 import { JeopardyTopBar } from '../TopBar/TopBar';
@@ -38,9 +39,8 @@ export default function App() {
     <React.Fragment>
       <JeopardyTopBar />
       {
-        <Grid stackable celled="internally">
-          <Grid.Row>
-            <Grid.Column width={12}>
+        <Grid style={{ paddingLeft: '10px', paddingRight: '10px' }} gutter={10}>
+            <Grid.Col style={{ position: 'relative' }} span={{ base: 12, md: 9 }} className="fullHeightColumn">
               <Jeopardy
                 participants={participants}
                 chat={chat}
@@ -50,38 +50,31 @@ export default function App() {
                 setScrollTimestamp={setScrollTimestamp}
                 setChat={setChat}
               />
-            </Grid.Column>
-            <Grid.Column
-              width={4}
-              style={{ display: 'flex', flexDirection: 'column' }}
+            </Grid.Col>
+            <Grid.Col
+              span={{ base: 12, md: 3 }}
               className="fullHeightColumn"
             >
-              <Input
-                inverted
-                fluid
-                label={'My name is:'}
+              <TextInput
+                leftSection={<div style={{ whiteSpace: 'nowrap' }}>Name:</div>}
+                leftSectionWidth={60}
                 value={myName}
-                onChange={(e, data) => updateName(data.value)}
-                icon={
-                  <Icon
-                    onClick={async () =>
+                onChange={(e) => updateName(e.target.value)}
+                rightSection={
+                  <ActionIcon radius="md" onClick={async () =>
                       updateName(await generateName())
-                    }
-                    name="random"
-                    inverted
-                    circular
-                    link
-                  />
+                    }>
+                  <IconArrowsShuffle size={20} />
+                  </ActionIcon>
                 }
               />
-              <Divider inverted horizontal></Divider>
+              <Divider></Divider>
               <Chat
                 chat={chat}
                 scrollTimestamp={scrollTimestamp}
                 socket={socket}
               />
-            </Grid.Column>
-          </Grid.Row>
+            </Grid.Col>
         </Grid>
       }
     </React.Fragment>

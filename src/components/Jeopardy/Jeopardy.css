@@ -26,20 +26,30 @@
   src: url('./gyparody.ttf');
 }
 
-.logo {
-  font-family: 'Gyparody';
-  font-size: 48px;
-  line-height: 48px;
-  text-transform: uppercase;
-  color: white;
-  text-shadow:
-    1px 1px 4px #fff,
-    1px 1px 4px #ccc;
+.controlsContainer {
+  position: absolute;
+  width: 100%;
+  bottom: 0px;
 }
 
-.logo.small {
-  font-size: 30px;
-  line-height: 30px;
+.controls {
+  color: white;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  line-height: 14px;
+  padding-left: 10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.control.control {
+  margin-right: 10px;
+  text-transform: uppercase;
+}
+
+.control.action {
+  cursor: pointer;
 }
 
 .board {
@@ -68,12 +78,28 @@
   }
 }
 
+@media only screen and (min-width: 600px) {
+  .controls {
+    position: absolute;
+    top: -50px;
+    left: 260px;
+  }
+}
+
+.controlToggle {
+  background-color: rgba(200, 200, 200, 0.1);
+  border-radius: 4px;
+  padding: 10px;
+  height: 36px;
+}
+
 .box {
   align-items: center;
   justify-content: center;
   display: flex;
   background-color: #0000b5;
-  padding: 4px;
+  padding-left: 4px;
+  padding-right: 4px;
   height: 100%;
   width: 100%;
   min-width: 100px;
@@ -82,8 +108,8 @@
 
 .category {
   font-family: 'Swiss 911';
-  font-size: 2.5vh;
-  line-height: 2.5vh;
+  font-size: 1.25em;
+  line-height: 1em;
   letter-spacing: 1px;
   color: #e1f3ff;
   text-transform: uppercase;
@@ -91,9 +117,11 @@
 
 .value {
   font-family: 'Swiss 911';
-  font-size: 6vh;
+  font-size: 3em;
+  line-height: 1em;
   color: #d7a04b;
   text-shadow: black 4px 4px;
+  border: 1px solid rgba(0,0,0,0);
 }
 
 .value:hover {
@@ -206,6 +234,7 @@
   top: 0px;
   display: flex;
   justify-content: center;
+  gap: 2px;
 }
 
 .scoreboard .answerBox {
@@ -238,10 +267,6 @@
   border-radius: 3px;
 }
 
-.gameSelector input {
-  width: 100px;
-}
-
 #intro {
   position: absolute;
   width: 100%;
@@ -267,3 +292,4 @@
   width: 100%;
   padding: 20px;
 }
+
