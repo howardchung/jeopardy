@@ -33,23 +33,22 @@
 }
 
 .controls {
-  color: white;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  line-height: 14px;
+  justify-content: center;
+  gap: 4px;
   padding-left: 10px;
-  padding-top: 10px;
   padding-bottom: 10px;
 }
 
-.control.control {
-  margin-right: 10px;
-  text-transform: uppercase;
-}
-
-.control.action {
-  cursor: pointer;
+@media only screen and (min-width: 1100px) {
+  .controls {
+    position: absolute;
+    top: -40px;
+    left: 260px;
+    flex-wrap: nowrap;
+  }
 }
 
 .board {
@@ -75,14 +74,6 @@
   .board {
     overflow-x: scroll;
     justify-content: start;
-  }
-}
-
-@media only screen and (min-width: 600px) {
-  .controls {
-    position: absolute;
-    top: -50px;
-    left: 260px;
   }
 }
 

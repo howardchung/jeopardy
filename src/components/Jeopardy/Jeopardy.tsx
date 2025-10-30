@@ -608,13 +608,6 @@ export class Jeopardy extends React.Component<{
         {this.state.overlayMsg && <ErrorModal error={this.state.overlayMsg} />}
         <div
           className="controls"
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            flexWrap: 'wrap',
-            gap: '4px',
-            alignItems: 'center',
-          }}
         >
           <Menu shadow="md">
             <Menu.Target>
@@ -1001,7 +994,7 @@ export class Jeopardy extends React.Component<{
                         duration={game.questionEndTS - game.serverTime}
                         secondary
                         submitAnswer={this.submitAnswer}
-                        text="Open for answers. . ."
+                        text="Waiting for answers. . ."
                       />
                     )}
                     {Boolean(game.wagerEndTS) && (
@@ -1236,10 +1229,12 @@ function TimerBar({
         transition: `${duration / 1000}s width linear`,
         fontSize: '12px',
         lineHeight: '10px',
-        textShadow: '1px 1px 2px black',
+        // textShadow: '1px 1px 2px black',
         textAlign: 'left',
         padding: '1px 6px',
         display: 'flex',
+        overflow: 'visible',
+        whiteSpace: 'nowrap',
         // alignItems: 'center',
       }}
     >
