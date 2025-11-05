@@ -8,7 +8,7 @@ import { JeopardyTopBar } from '../TopBar/TopBar';
 import { Jeopardy } from '../Jeopardy/Jeopardy';
 import { type Socket } from 'socket.io-client';
 
-export default function App() {
+export function App() {
   const [participants, setParticipants] = useState<User[]>([]);
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [myName, setMyName] = useState('');
@@ -73,7 +73,7 @@ export default function App() {
                 </ActionIcon>
               }
             />
-            <Divider></Divider>
+            <Divider my="md" />
             <Chat
               chat={chat}
               scrollTimestamp={scrollTimestamp}

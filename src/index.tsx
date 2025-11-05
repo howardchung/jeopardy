@@ -1,6 +1,6 @@
 import '@mantine/core/styles.css';
 import { createRoot } from 'react-dom/client';
-import App from './components/App';
+import { App } from './components/App/App';
 import { JeopardyHome } from './components/Home/Home';
 import React from 'react';
 import { createTheme, MantineProvider } from '@mantine/core';
