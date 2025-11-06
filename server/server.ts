@@ -16,7 +16,7 @@ const rooms = new Map<string, Room>();
 const app = new Hono();
 app.use('*', cors());
 app.use('*', compress());
-app.get('/build/*', serveStatic({root: './build' }));
+app.use(serveStatic({root: './build' }));
 app.get('/ping', async (req) => {
   return req.json('pong');
 });
