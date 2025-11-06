@@ -3,15 +3,14 @@
   "version": "0.1.2",
   "private": true,
   "dependencies": {
-    "@mantine/core": "^8.3.5",
+    "@hono/node-server": "^1.19.6",
+    "@mantine/core": "^8.3.6",
     "@tabler/icons-react": "^3.35.0",
-    "compression": "^1.7.5",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^5.0.1",
-    "ioredis": "^5.4.2",
+    "dotenv": "^17.2.3",
+    "hono": "^4.10.4",
+    "ioredis": "^5.8.2",
     "openai": "^5.1.1",
-    "papaparse": "^5.5.1",
+    "papaparse": "^5.5.3",
     "react": "^18.3.1",
     "react-countup": "^6.5.3",
     "react-dom": "^18.3.1",
@@ -47,15 +46,12 @@
     ]
   },
   "devDependencies": {
-    "@types/compression": "^1.7.5",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/node": "^22.10.5",
-    "@types/papaparse": "^5.3.15",
+    "@types/node": "^24.10.0",
+    "@types/papaparse": "^5.5.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "typescript": "^5.9.2",
-    "vite": "^7.1.6"
+    "typescript": "^5.9.3",
+    "vite": "^7.2.1"
   },
   "engines": {
     "node": "24"
