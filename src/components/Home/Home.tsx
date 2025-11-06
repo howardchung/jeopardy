@@ -69,7 +69,7 @@ const Hero = ({
           <div className={styles.subText}>
             <CountUp start={9000} end={epCount} delay={0} duration={3} />{' '}
             episodes featuring{' '}
-            <CountUp start={600000} end={qCount} delay={0} duration={3} /> clues
+            <CountUp start={500000} end={qCount} delay={0} duration={3} /> clues
           </div>
           {action}
         </div>

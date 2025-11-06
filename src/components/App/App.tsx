@@ -73,7 +73,7 @@ export function App() {
                 </ActionIcon>
               }
             />
-            <Divider my="md" />
+            <Divider my="sm" />
             <Chat
               chat={chat}
               scrollTimestamp={scrollTimestamp}
