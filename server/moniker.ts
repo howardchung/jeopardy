@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 
 let adjectives = fs
   .readFileSync(process.cwd() + '/words/adjectives.txt')

@@ -1,5 +1,5 @@
-import { gunzipSync } from 'zlib';
-import fs from 'fs';
+import { gunzipSync } from 'node:zlib';
+import fs from 'node:fs';
 import config from './config.ts';
 
 let qs = 0;
