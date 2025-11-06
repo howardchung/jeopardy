@@ -26,7 +26,7 @@ app.get('/metadata', async (req) => {
 });
 
 app.get('/stats', async (req) => {
-  if (req.req.param('key') && req.req.param('key') === config.STATS_KEY) {
+  if (req.req.query('key') && req.req.query('key') === config.STATS_KEY) {
     const roomData: any[] = [];
     let currentUsers = 0;
     rooms.forEach((room) => {
@@ -91,7 +91,7 @@ app.get('/stats', async (req) => {
 });
 
 app.get('/jeopardyResults', async (req) => {
-  if (req.req.param('key') && req.req.param('key') === config.STATS_KEY) {
+  if (req.req.query('key') && req.req.query('key') === config.STATS_KEY) {
     const data = await redis?.lrange('jpd:results', 0, -1);
     return req.json(data);
   } else {
@@ -100,18 +100,8 @@ app.get('/jeopardyResults', async (req) => {
   }
 });
 
-app.get('/nonTrivialJudges', async (req) => {
-  if (req.req.param('key') && req.req.param('key') === config.STATS_KEY) {
-    const data = await redis?.lrange('jpd:nonTrivialJudges', 0, -1);
-    return req.json(data);
-  } else {
-    req.status(403);
-    return req.json({ error: 'Access Denied' });
-  }
-});
-
 app.get('/aiJudges', async (req) => {
-  if (req.req.param('key') && req.req.param('key') === config.STATS_KEY) {
+  if (req.req.query('key') && req.req.query('key') === config.STATS_KEY) {
     const data = await redis?.lrange('jpd:aiJudges', 0, -1);
     return req.json(data);
   } else {
@@ -138,16 +128,6 @@ app.get('/generateName', async (req) => {
   return req.text(makeUserName());
 });
 
-const server = serve({
-  fetch: app.fetch,
-  // port: Number(config.PORT),
-});
-server.close();
-const io = new Server(server, {
-  cors: { origin: '*' },
-  transports: ['websocket'],
-});
-
 setInterval(freeUnusedRooms, 5 * 60 * 1000);
 async function freeUnusedRooms() {
   // Only run if redis persistence is turned on
@@ -166,6 +146,16 @@ async function freeUnusedRooms() {
     });
   }
 }
+
+const server = serve({
+  fetch: app.fetch,
+  // port: Number(config.PORT),
+});
+server.close();
+const io = new Server(server, {
+  cors: { origin: '*' },
+  transports: ['websocket'],
+});
 
 if (redis) {
   // Load rooms from Redis
