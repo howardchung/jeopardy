@@ -1,6 +1,6 @@
 import './App.css';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActionIcon, Divider, Grid, TextInput } from '@mantine/core';
+import { ActionIcon, Grid, TextInput } from '@mantine/core';
 import { IconArrowsShuffle } from '@tabler/icons-react';
 import { serverPath, generateName } from '../../utils';
 import { Chat } from '../Chat/Chat';
@@ -73,7 +73,6 @@ export function App() {
                 </ActionIcon>
               }
             />
-            <Divider my="sm" />
             <Chat
               chat={chat}
               scrollTimestamp={scrollTimestamp}
