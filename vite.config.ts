@@ -4,6 +4,7 @@ import fs from 'node:fs';
 export default {
   build: {
     outDir: 'build',
+    // sourcemap: true,
   },
   server: {
     https:

@@ -15,7 +15,6 @@
     "react": "^18.3.1",
     "react-countup": "^6.5.3",
     "react-dom": "^18.3.1",
-    "react-markdown": "^9.0.3",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   },
@@ -29,6 +28,7 @@
     "typecheck": "tsc --project src/tsconfig.json --noEmit",
     "dev": "node --watch server/server.ts",
     "prettier": "npx prettier --write .",
+    "analyze": "npx source-map-explorer 'build/assets/*.js' --html result.html --no-border-checks",
     "updateEps": "curl -sSL -O https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz"
   },
   "eslintConfig": {

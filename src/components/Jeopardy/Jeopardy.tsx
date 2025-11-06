@@ -23,12 +23,10 @@ import {
   getOrCreateClientId,
 } from '../../utils';
 import { io, type Socket } from 'socket.io-client';
-import ReactMarkdown from 'react-markdown';
 import { type PublicGameState } from '../../../server/gamestate';
 import { cyrb53 } from '../../../server/hash';
 import {
   IconArrowBackUp,
-  IconBook,
   IconBulb,
   IconCheck,
   IconCornerDownRight,
@@ -845,7 +843,9 @@ export class Jeopardy extends React.Component<{
                     </div>
                     {
                       <div className={`clue`}>
-                        <ReactMarkdown
+                        {game.board[game.currentQ] &&
+                          game.board[game.currentQ].question}
+                        {/* <ReactMarkdown
                           components={{
                             //This custom renderer changes how images are rendered
                             //we use it to constrain the max width of an image to its container
@@ -870,9 +870,7 @@ export class Jeopardy extends React.Component<{
                             ),
                           }}
                         >
-                          {game.board[game.currentQ] &&
-                            game.board[game.currentQ].question}
-                        </ReactMarkdown>
+                        </ReactMarkdown> */}
                       </div>
                     }
                     <div className="" style={{ height: '60px' }}>
