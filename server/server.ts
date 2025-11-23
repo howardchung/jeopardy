@@ -17,16 +17,16 @@ const app = new Hono();
 app.use('*', cors());
 app.use('*', compress());
 app.use(serveStatic({root: './build' }));
-app.get('/ping', async (req) => {
-  return req.json('pong');
+app.get('/ping', async (c) => {
+  return c.json('pong');
 });
 
-app.get('/metadata', async (req) => {
-  return req.json(getJDataStats());
+app.get('/metadata', async (c) => {
+  return c.json(getJDataStats());
 });
 
-app.get('/stats', async (req) => {
-  if (req.req.query('key') && req.req.query('key') === config.STATS_KEY) {
+app.get('/stats', async (c) => {
+  if (c.req.query('key') && c.req.query('key') === config.STATS_KEY) {
     const roomData: any[] = [];
     let currentUsers = 0;
     rooms.forEach((room) => {
@@ -61,7 +61,7 @@ app.get('/stats', async (req) => {
     const jeopardyResults = await redis?.llen('jpd:results');
     const aiJudges = await redis?.llen('jpd:aiJudges');
 
-    return req.json({
+    return c.json({
       uptime: process.uptime(),
       roomCount: rooms.size,
       cpuUsage,
@@ -85,32 +85,32 @@ app.get('/stats', async (req) => {
       rooms: roomData,
     });
   } else {
-    req.status(403);
-    return req.json({ error: 'Access Denied' });
+    c.status(403);
+    return c.json({ error: 'Access Denied' });
   }
 });
 
-app.get('/jeopardyResults', async (req) => {
-  if (req.req.query('key') && req.req.query('key') === config.STATS_KEY) {
+app.get('/jeopardyResults', async (c) => {
+  if (c.req.query('key') && c.req.query('key') === config.STATS_KEY) {
     const data = await redis?.lrange('jpd:results', 0, -1);
-    return req.json(data);
+    return c.json(data);
   } else {
-    req.status(403);
-    return req.json({ error: 'Access Denied' });
+    c.status(403);
+    return c.json({ error: 'Access Denied' });
   }
 });
 
-app.get('/aiJudges', async (req) => {
-  if (req.req.query('key') && req.req.query('key') === config.STATS_KEY) {
+app.get('/aiJudges', async (c) => {
+  if (c.req.query('key') && c.req.query('key') === config.STATS_KEY) {
     const data = await redis?.lrange('jpd:aiJudges', 0, -1);
-    return req.json(data);
+    return c.json(data);
   } else {
-    req.status(403);
-    return req.json({ error: 'Access Denied' });
+    c.status(403);
+    return c.json({ error: 'Access Denied' });
   }
 });
 
-app.post('/createRoom', async (req) => {
+app.post('/createRoom', async (c) => {
   const genName = () => '/' + makeRoomName();
   let name = genName();
   // Keep retrying until no collision
@@ -121,11 +121,11 @@ app.post('/createRoom', async (req) => {
   const newRoom = new Room(io, name);
   newRoom.saveRoom();
   rooms.set(name, newRoom);
-  return req.json({ name: name.slice(1) });
+  return c.json({ name: name.slice(1) });
 });
 
-app.get('/generateName', async (req) => {
-  return req.text(makeUserName());
+app.get('/generateName', async (c) => {
+  return c.text(makeUserName());
 });
 
 setInterval(freeUnusedRooms, 5 * 60 * 1000);
@@ -149,7 +149,6 @@ async function freeUnusedRooms() {
 
 const server = serve({
   fetch: app.fetch,
-  // port: Number(config.PORT),
 });
 server.close();
 const io = new Server(server, {
