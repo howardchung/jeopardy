@@ -4,10 +4,10 @@
   "private": true,
   "dependencies": {
     "@hono/node-server": "^1.19.6",
-    "@mantine/core": "^8.3.6",
+    "@mantine/core": "^8.3.9",
     "@tabler/icons-react": "^3.35.0",
     "dotenv": "^17.2.3",
-    "hono": "^4.10.4",
+    "hono": "^4.10.7",
     "ioredis": "^5.8.2",
     "openai": "^5.1.1",
     "papaparse": "^5.5.3",
@@ -46,12 +46,12 @@
     ]
   },
   "devDependencies": {
-    "@types/node": "^24.10.0",
+    "@types/node": "^24.10.1",
     "@types/papaparse": "^5.5.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "typescript": "^5.9.3",
-    "vite": "^7.2.1"
+    "vite": "^7.2.4"
   },
   "engines": {
     "node": "24"
