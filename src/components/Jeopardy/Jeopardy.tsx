@@ -610,9 +610,9 @@ export class Jeopardy extends React.Component<{
         )}
         {this.state.overlayMsg && <ErrorModal error={this.state.overlayMsg} />}
         <div className="controls">
-          <Menu shadow="md">
+          <Menu>
             <Menu.Target>
-              <Button size="sm" leftSection={<IconStarFilled size={20} />}>
+              <Button size="sm" leftSection={<IconStarFilled size={20} />} style={{ flexShrink: 0 }}>
                 New Game
               </Button>
             </Menu.Target>
@@ -744,7 +744,7 @@ export class Jeopardy extends React.Component<{
                 </Button> */}
           {game && game.airDate && (
             <Badge
-              style={{ display: 'flex', alignItems: 'center', height: '36px' }}
+              style={{ display: 'flex', alignItems: 'center', height: '36px', flexShrink: 0 }}
               color={getColor((game && game.info) || 'regular')}
               size="md"
               radius="sm"
