@@ -61,8 +61,7 @@ export class Room {
         );
         const afterLength = this.getAllPlayers();
         if (
-          beforeLength !== afterLength &&
-          this.getConnectedPlayers().length > 0
+          beforeLength !== afterLength
         ) {
           this.sendRoster();
         }
@@ -89,6 +88,7 @@ export class Room {
           name: undefined,
           connected: true,
           disconnectTime: 0,
+          spectator: false,
         });
       }
       this.clientIds[clientId] = socket.id;
@@ -110,6 +110,13 @@ export class Room {
           this.sendRoster();
         }
       });
+      socket.on('JPD:spectate', (spectate: boolean) => {
+        const target = this.getAllPlayers().find((p) => p.id === socket.id);
+        if (target) {
+          target.spectator = Boolean(spectate);
+          this.sendRoster();
+        }
+      });
       // socket.on('JPD:cmdIntro', () => {
       //   this.io.of(this.roomId).emit('JPD:playIntro');
       // });
@@ -124,14 +131,20 @@ export class Room {
       });
       socket.on('JPD:pickQ', (id: string) => {
         if (this.settings.host && socket.id !== this.settings.host) {
+          // Not the host
+          return;
+        }
+        if (this.isSpectator(socket.id)) {
+          // Don't allow spectators to pick (avoid them getting daily doubles)
           return;
         }
         if (
           this.jpd.public.picker &&
-          // If the picker is disconnected, allow anyone to pick to avoid blocking game
-          this.getConnectedPlayers().find(
+          // Only allow designated picker to pick
+          // If they're disconnected or spectating, skip check to avoid blocking game
+          this.getActivePlayers().find(
             (p) => p.id === this.jpd.public.picker,
-          ) &&
+          )?.connected &&
           this.jpd.public.picker !== socket.id
         ) {
           return;
@@ -142,6 +155,10 @@ export class Room {
         if (!this.jpd.public.board[id]) {
           return;
         }
+        // Undo no longer possible after next question is picked
+        this.jpdSnapshot = undefined;
+        this.undoActivated = undefined;
+        this.aiJudged = undefined;
         this.jpd.public.currentQ = id;
         this.jpd.public.currentValue = this.jpd.public.board[id].value;
         // check if it's a daily double
@@ -163,20 +180,18 @@ export class Room {
             }
           });
           this.io.of(this.roomId).emit('JPD:playDailyDouble');
+          this.sendState();
         } else {
           // Put Q in public state
-          this.jpd.public.board[this.jpd.public.currentQ].question =
-            this.jpd.board[this.jpd.public.currentQ].q;
-          this.triggerPlayClue();
+          this.revealQuestion();
         }
-        // Undo no longer possible after next question is picked
-        this.jpdSnapshot = undefined;
-        this.undoActivated = undefined;
-        this.aiJudged = undefined;
-        this.sendState();
       });
       socket.on('JPD:buzz', () => {
         if (!this.jpd.public.canBuzz) {
+          return;
+        }
+        if (this.isSpectator(socket.id)) {
+          // Don't allow spectators to buzz
           return;
         }
         if (this.jpd.public.buzzes[socket.id]) {
@@ -198,27 +213,53 @@ export class Room {
           // Answer too long
           return;
         }
-        console.log('[ANSWER]', socket.id, question, answer);
+        if (this.isSpectator(socket.id)) {
+          // Don't allow spectators to answer
+          return;
+        }
         if (answer) {
           this.jpd.answers[socket.id] = answer;
         }
         this.jpd.public.submitted[socket.id] = true;
         this.sendState();
         if (
+          // In final, we always wait the full designated time
           this.jpd.public.round !== 'final' &&
-          // If a player disconnects, don't wait for their answer
-          this.getConnectedPlayers().every(
-            (p) => p.id in this.jpd.public.submitted,
+          // Otherwise if all connected players have submitted, move on
+          this.getActivePlayers().every(
+            (p) => p.id in this.jpd.public.submitted || !p.connected,
           )
         ) {
           this.revealAnswer();
         }
       });
 
-      socket.on('JPD:wager', (wager) => this.submitWager(socket.id, wager));
-      socket.on('JPD:judge', (data) => this.doHumanJudge(socket, data));
+      socket.on('JPD:wager', (wager) => {
+        if (this.isSpectator(socket.id)) {
+          // Don't allow spectators to wager
+          return;
+        }
+        this.submitWager(socket.id, wager);
+      });
+      socket.on('JPD:judge', (data) => {
+        if (this.settings.host && socket.id !== this.settings.host) {
+          // Not the host
+          return;
+        }
+        if (this.isSpectator(socket.id)) {
+          return;
+        }
+        this.doHumanJudge(socket, data);
+      });
       socket.on('JPD:bulkJudge', (data) => {
         if (!data) {
+          return;
+        }
+        if (this.settings.host && socket.id !== this.settings.host) {
+          // Not the host
+          return;
+        }
+        if (this.isSpectator(socket.id)) {
           return;
         }
         // Check if the next player to be judged is in the input data
@@ -246,6 +287,9 @@ export class Room {
       socket.on('JPD:undo', () => {
         if (this.settings.host && socket.id !== this.settings.host) {
           // Not the host
+          return;
+        }
+        if (this.isSpectator(socket.id)) {
           return;
         }
         // Reset the game state to the last snapshot
@@ -294,15 +338,6 @@ export class Room {
         this.addChatMessage(socket, chatMsg);
       });
       socket.on('disconnect', () => {
-        if (this.jpd && this.jpd.public) {
-          // If player who needs to submit wager leaves, submit 0
-          if (
-            this.jpd.public.waitingForWager &&
-            this.jpd.public.waitingForWager[socket.id]
-          ) {
-            this.submitWager(socket.id, 0);
-          }
-        }
         // Mark the user disconnected
         let target = this.getAllPlayers().find((p) => p.id === socket.id);
         if (target) {
@@ -408,22 +443,19 @@ export class Room {
     this.saveRoom();
   };
 
-  getConnectedPlayers = () => {
-    // Returns players that are currently connected and not spectators
-    return this.roster.filter((p) => p.connected);
-  };
-
   getActivePlayers = () => {
     // Returns all players not marked as spectator (includes disconnected)
-    // Currently just returns all players
-    // In the future we might want to ignore spectators
-    return this.roster;
+    return this.roster.filter((p) => !p.spectator);
   };
 
   getAllPlayers = () => {
     // Return all players regardless of connection state or spectator
     return this.roster;
   };
+
+  isSpectator = (id: string) => {
+    return this.getAllPlayers().find(p => p.id === id)?.spectator;
+  }
 
   handleReconnect = (newId: string, oldId: string) => {
     console.log('[RECONNECT] transfer %s to %s', oldId, newId);
@@ -469,8 +501,6 @@ export class Room {
       delete this.jpd.wagers[oldId];
     }
     if (this.jpd.public.waitingForWager?.[oldId]) {
-      // Current behavior is to submit wager 0 if disconnecting
-      // So there should be no state to transfer
       this.jpd.public.waitingForWager[newId] = true;
       delete this.jpd.public.waitingForWager[oldId];
     }
@@ -662,9 +692,9 @@ export class Room {
       // If double, person with lowest score is picker
       // Unless we are allowing multiple corrects or there's a host
       if (!this.settings.allowMultipleCorrect && !this.settings.host) {
-        // Pick the lowest score out of the currently connected players
+        // Pick the lowest score out of the active players
         // This is nlogn rather than n, but prob ok for small numbers of players
-        const playersWithScores = this.getConnectedPlayers().map((p) => ({
+        const playersWithScores = this.getActivePlayers().map((p) => ({
           id: p.id,
           score: this.jpd.public.scores[p.id] || 0,
         }));
@@ -778,8 +808,8 @@ export class Room {
       this.jpd.public.canNextQ = true;
     }
     if (this.jpd.public.currentJudgeAnswer) {
-      // In Final, reveal one at a time rather than all at once (for dramatic purposes)
-      // Note: Looks like we just bulk reveal answers elsewhere, so this is just wagers
+      // In Final, we should reveal one at a time rather than all at once (for dramatic purposes)
+      // Note: Looks like we bulk reveal answers in revealAnswer(), so this is just wagers
       this.jpd.public.wagers[this.jpd.public.currentJudgeAnswer] =
         this.jpd.wagers[this.jpd.public.currentJudgeAnswer];
       this.jpd.public.answers[this.jpd.public.currentJudgeAnswer] =
@@ -903,7 +933,7 @@ export class Room {
     }
     if (this.settings.host && socket && socket?.id !== this.settings.host) {
       // Not the host
-      return;
+      return false;
     }
     this.jpd.public.judges[id] = correct;
     console.log('[JUDGE]', id, correct);
@@ -977,24 +1007,16 @@ export class Room {
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 0);
     }
     let numWager = Number(wager);
-    if (Number.isNaN(Number(wager))) {
+    if (Number.isNaN(numWager)) {
       numWager = minWager;
     } else {
       numWager = Math.min(Math.max(numWager, minWager), maxWager);
     }
-    console.log('[WAGER]', id, wager, numWager);
     if (id === this.jpd.public.dailyDoublePlayer && this.jpd.public.currentQ) {
       this.jpd.wagers[id] = numWager;
       this.jpd.public.wagers[id] = numWager;
-      this.jpd.public.waitingForWager = undefined;
-      if (this.jpd.public.board[this.jpd.public.currentQ]) {
-        this.jpd.public.board[this.jpd.public.currentQ].question =
-          this.jpd.board[this.jpd.public.currentQ]?.q;
-      }
-      this.triggerPlayClue();
-      this.sendState();
-    }
-    if (this.jpd.public.round === 'final' && this.jpd.public.currentQ) {
+      this.revealQuestion();
+    } else if (this.jpd.public.round === 'final' && this.jpd.public.currentQ) {
       // store the wagers privately until everyone's made one
       this.jpd.wagers[id] = numWager;
       if (this.jpd.public.waitingForWager) {
@@ -1002,25 +1024,36 @@ export class Room {
       }
       if (Object.keys(this.jpd.public.waitingForWager ?? {}).length === 0) {
         // if final, reveal clue if all players made wager
-        this.jpd.public.waitingForWager = undefined;
-        if (this.jpd.public.board[this.jpd.public.currentQ]) {
-          this.jpd.public.board[this.jpd.public.currentQ].question =
-            this.jpd.board[this.jpd.public.currentQ]?.q;
-        }
-        this.triggerPlayClue();
+        this.revealQuestion();
+      } else {
+        this.sendState();
       }
-      this.sendState();
     }
   };
 
   setWagerTimeout = (durationMs: number, endTS?: number) => {
     this.jpd.public.wagerEndTS = endTS ?? Date.now() + durationMs;
     this.wagerTimeout = setTimeout(() => {
-      Object.keys(this.jpd.public.waitingForWager ?? {}).forEach((id) => {
-        this.submitWager(id, 0);
-      });
+      if (Object.keys(this.jpd.public.waitingForWager ?? {}).length === 0) {
+        // if no active players, need to move on anyway
+        this.revealQuestion();
+      } else {
+        Object.keys(this.jpd.public.waitingForWager ?? {}).forEach((id) => {
+          this.submitWager(id, 0);
+        });
+      }
     }, durationMs);
   };
+
+  revealQuestion = () => {
+    this.jpd.public.waitingForWager = undefined;
+    if (this.jpd.public.board[this.jpd.public.currentQ]) {
+      this.jpd.public.board[this.jpd.public.currentQ].question =
+        this.jpd.board[this.jpd.public.currentQ]?.q;
+    }
+    this.triggerPlayClue();
+    this.sendState();
+  }
 
   triggerPlayClue = () => {
     clearTimeout(this.wagerTimeout);
@@ -1042,7 +1075,6 @@ export class Room {
       const totalSyll = syllCountArr.reduce((a: number, b: number) => a + b, 0);
       // Minimum 1 second speaking time
       speakingTime = Math.max((totalSyll / 4) * 1000, 1000);
-      console.log('[TRIGGERPLAYCLUE]', clue.question, totalSyll, speakingTime);
       this.jpd.public.playClueEndTS = Date.now() + speakingTime;
     }
     this.setPlayClueTimeout(speakingTime);

@@ -3,6 +3,7 @@ interface User {
   name?: string;
   connected: boolean;
   disconnectTime: number;
+  spectator: boolean;
 }
 
 interface ChatMessage {

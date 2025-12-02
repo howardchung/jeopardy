@@ -170,7 +170,7 @@ const formatMessage = (cmd: string, msg: string): React.ReactNode | string => {
       }`}</span>
     );
   } else if (cmd === 'answer') {
-    return `Correct answer: ${msg}`;
+    return `Answer: ${msg}`;
   }
   return cmd;
 };

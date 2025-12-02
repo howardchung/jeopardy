@@ -31,6 +31,7 @@ import {
   IconCheck,
   IconCornerDownRight,
   IconDownload,
+  IconEye,
   IconGavel,
   IconHandFinger,
   IconHome,
@@ -549,7 +550,8 @@ export class Jeopardy extends React.Component<{
     const game = this.state.game;
     const categories = this.getCategories();
     const participants = this.props.participants;
-    const canJudge = !game?.host || this.socket?.id === game?.host;
+    const isSpectator = participants.find(p => p.id === this.socket?.id)?.spectator;
+    const canJudge = !isSpectator && (!game?.host || this.socket?.id === game?.host);
     return (
       <>
         {this.state.showCustomModal && (
@@ -689,15 +691,14 @@ export class Jeopardy extends React.Component<{
           >
             <IconSettings size={20} />
           </ActionIcon>
-          {canJudge && (
-            <ActionIcon
-              onClick={() => this.socket?.emit('JPD:undo')}
-              title="Undo Judge"
-              size="lg"
-            >
-              <IconArrowBackUp size={20} />
-            </ActionIcon>
-          )}
+          <ActionIcon
+            onClick={() => this.socket?.emit('JPD:undo')}
+            title="Undo Judge"
+            size="lg"
+            disabled={!canJudge}
+          >
+            <IconArrowBackUp size={20} />
+          </ActionIcon>
           <div className="controlToggle">
             <Switch
               checked={!this.state.readingDisabled}
@@ -712,50 +713,31 @@ export class Jeopardy extends React.Component<{
               }}
               label="Reading"
             />
-            {/* <Button
-                  color={this.state.readingDisabled ? 'red' : 'green'}
-                  onClick={() => {
-                    const checked = !this.state.readingDisabled;
-                    this.setState({ readingDisabled: checked });
-                    if (checked) {
-                      window.localStorage.setItem(
-                        'jeopardy-readingDisabled',
-                        '1',
-                      );
-                    } else {
-                      window.localStorage.removeItem(
-                        'jeopardy-readingDisabled',
-                      );
-                    }
-                  }}
-                  leftSection={<IconBook name="book" />}
-                >
-                  {this.state.readingDisabled ? 'Reading off' : 'Reading on'}
-                </Button> */}
           </div>
           <div className="controlToggle">
             <Switch
               checked={game?.enableAIJudge}
-              onChange={() => {
+              onChange={(e) => {
                 this.socket?.emit(
                   'JPD:enableAiJudge',
-                  !Boolean(game?.enableAIJudge),
+                  e.target.checked,
                 );
               }}
               label="AI Judge"
             />
-            {/* <Button
-                  color={game?.enableAIJudge ? 'green' : 'red'}
-                  onClick={() => {
-                    this.socket?.emit(
-                      'JPD:enableAiJudge',
-                      !Boolean(game?.enableAIJudge),
-                    );
-                  }}
-                  leftSection={<IconBulb />}
-                >
-                  {game?.enableAIJudge ? 'AI Judge on' : 'AI Judge off'}
-                </Button> */}
+          </div>
+          <div className="controlToggle">
+            <Switch
+              checked={isSpectator}
+              onChange={(e) => {
+                this.socket?.emit(
+                  'JPD:spectate',
+                  e.target.checked,
+                );
+              }}
+              label="Spectator"
+            />
+          </div>
             {/* <Button
                   onClick={() => this.socket?.emit('JPD:cmdIntro')}
                   icon
@@ -765,7 +747,6 @@ export class Jeopardy extends React.Component<{
                   <Icon name="film" />
                   Play Intro
                 </Button> */}
-          </div>
           {game && game.airDate && (
             <Badge
               style={{ display: 'flex', alignItems: 'center', height: '36px' }}
@@ -879,6 +860,7 @@ export class Jeopardy extends React.Component<{
                       !game.buzzes[this.socket.id!] &&
                       !game.submitted[this.socket.id!] &&
                       !game.currentDailyDouble &&
+                      !isSpectator &&
                       game.round !== 'final' ? (
                         <div style={{ display: 'flex' }}>
                           <Button
@@ -1109,6 +1091,9 @@ export class Jeopardy extends React.Component<{
                         {!p.connected ? (
                           <IconPlug color="red" title="Disconnected" />
                         ) : null}
+                        {p.spectator ? (
+                          <IconEye title="Spectator" />
+                        ) : null}
                       </div>
                     )}
                     {game && p.id === game.currentJudgeAnswer && canJudge ? (
@@ -1284,7 +1269,7 @@ const BulkJudgeModal = ({
           <Table.Tr>
             <Table.Th>Answer</Table.Th>
             <Table.Th>Decision</Table.Th>
-            <Table.Th>Responses</Table.Th>
+            <Table.Th>Players</Table.Th>
           </Table.Tr>
         </Table.Thead>
         {distinctAnswers.map((answer) => {

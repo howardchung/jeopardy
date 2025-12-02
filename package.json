@@ -25,7 +25,7 @@
     "buildReact": "vite build && npm run typecheck",
     "typecheckServer": "tsc --project server/tsconfig.json",
     "typecheck": "tsc --project src/tsconfig.json --noEmit",
-    "dev": "node --watch server/server.ts",
+    "dev": "node --watch-path server server/server.ts",
     "prettier": "npx prettier --write .",
     "analyze": "npx source-map-explorer 'build/assets/*.js' --html result.html --no-border-checks",
     "updateEps": "curl -sSL -O https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz"
