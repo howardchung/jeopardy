@@ -60,9 +60,7 @@ export class Room {
           (p) => p.connected || now - p.disconnectTime < 60 * 60 * 1000,
         );
         const afterLength = this.getAllPlayers();
-        if (
-          beforeLength !== afterLength
-        ) {
+        if (beforeLength !== afterLength) {
           this.sendRoster();
         }
       },
@@ -142,9 +140,8 @@ export class Room {
           this.jpd.public.picker &&
           // Only allow designated picker to pick
           // If they're disconnected or spectating, skip check to avoid blocking game
-          this.getActivePlayers().find(
-            (p) => p.id === this.jpd.public.picker,
-          )?.connected &&
+          this.getActivePlayers().find((p) => p.id === this.jpd.public.picker)
+            ?.connected &&
           this.jpd.public.picker !== socket.id
         ) {
           return;
@@ -454,8 +451,8 @@ export class Room {
   };
 
   isSpectator = (id: string) => {
-    return this.getAllPlayers().find(p => p.id === id)?.spectator;
-  }
+    return this.getAllPlayers().find((p) => p.id === id)?.spectator;
+  };
 
   handleReconnect = (newId: string, oldId: string) => {
     console.log('[RECONNECT] transfer %s to %s', oldId, newId);
@@ -595,12 +592,12 @@ export class Room {
         );
       }
       if (number === 'ddtest') {
-        loadedData = {...jData['8000']};
+        loadedData = { ...jData['8000'] };
         loadedData['jeopardy'] = loadedData['jeopardy'].filter(
           (q: any) => q.dd,
         );
       } else if (number === 'finaltest') {
-        loadedData = {...jData['8000']};
+        loadedData = { ...jData['8000'] };
       } else {
         if (!number) {
           // Random an episode
@@ -1053,7 +1050,7 @@ export class Room {
     }
     this.triggerPlayClue();
     this.sendState();
-  }
+  };
 
   triggerPlayClue = () => {
     clearTimeout(this.wagerTimeout);

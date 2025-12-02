@@ -23,7 +23,6 @@ async function loadJData(fileName?: string) {
           'https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz',
         );
         buf = Buffer.from(await response.arrayBuffer());
-
       } catch (e) {
         console.log(e);
       }

@@ -550,8 +550,11 @@ export class Jeopardy extends React.Component<{
     const game = this.state.game;
     const categories = this.getCategories();
     const participants = this.props.participants;
-    const isSpectator = participants.find(p => p.id === this.socket?.id)?.spectator;
-    const canJudge = !isSpectator && (!game?.host || this.socket?.id === game?.host);
+    const isSpectator = participants.find(
+      (p) => p.id === this.socket?.id,
+    )?.spectator;
+    const canJudge =
+      !isSpectator && (!game?.host || this.socket?.id === game?.host);
     return (
       <>
         {this.state.showCustomModal && (
@@ -606,9 +609,7 @@ export class Jeopardy extends React.Component<{
           />
         )}
         {this.state.overlayMsg && <ErrorModal error={this.state.overlayMsg} />}
-        <div
-          className="controls"
-        >
+        <div className="controls">
           <Menu shadow="md">
             <Menu.Target>
               <Button size="sm" leftSection={<IconStarFilled size={20} />}>
@@ -718,10 +719,7 @@ export class Jeopardy extends React.Component<{
             <Switch
               checked={game?.enableAIJudge}
               onChange={(e) => {
-                this.socket?.emit(
-                  'JPD:enableAiJudge',
-                  e.target.checked,
-                );
+                this.socket?.emit('JPD:enableAiJudge', e.target.checked);
               }}
               label="AI Judge"
             />
@@ -730,15 +728,12 @@ export class Jeopardy extends React.Component<{
             <Switch
               checked={isSpectator}
               onChange={(e) => {
-                this.socket?.emit(
-                  'JPD:spectate',
-                  e.target.checked,
-                );
+                this.socket?.emit('JPD:spectate', e.target.checked);
               }}
               label="Spectator"
             />
           </div>
-            {/* <Button
+          {/* <Button
                   onClick={() => this.socket?.emit('JPD:cmdIntro')}
                   icon
                   labelPosition="left"
@@ -931,7 +926,7 @@ export class Jeopardy extends React.Component<{
                         <NumberInput
                           styles={{
                             label: { textShadow: '1px 1px 2px black' },
-                            section: { marginRight: '4px' }
+                            section: { marginRight: '4px' },
                           }}
                           label={`Wager (${
                             getWagerBounds(
@@ -1091,9 +1086,7 @@ export class Jeopardy extends React.Component<{
                         {!p.connected ? (
                           <IconPlug color="red" title="Disconnected" />
                         ) : null}
-                        {p.spectator ? (
-                          <IconEye title="Spectator" />
-                        ) : null}
+                        {p.spectator ? <IconEye title="Spectator" /> : null}
                       </div>
                     )}
                     {game && p.id === game.currentJudgeAnswer && canJudge ? (
@@ -1355,9 +1348,9 @@ const SettingsModal = ({
   onSubmit: (settings: GameSettings) => void;
   settings: GameSettings;
 }) => {
-  const [answerTimeout, setAnswerTimeout] = useState<number | string |undefined>(
-    settings.answerTimeout || 20,
-  );
+  const [answerTimeout, setAnswerTimeout] = useState<
+    number | string | undefined
+  >(settings.answerTimeout || 20);
   const [finalTimeout, setFinalTimeout] = useState<number | string | undefined>(
     settings.finalTimeout || 30,
   );

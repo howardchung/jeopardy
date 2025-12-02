@@ -33,10 +33,10 @@ export function Chat(props: ChatProps) {
   const isChatNearBottom = () => {
     return Boolean(
       messagesRef.current &&
-        messagesRef.current.scrollHeight -
-          messagesRef.current.scrollTop -
-          messagesRef.current.offsetHeight <
-          100,
+      messagesRef.current.scrollHeight -
+        messagesRef.current.scrollTop -
+        messagesRef.current.offsetHeight <
+        100,
     );
   };
 
