@@ -72,7 +72,7 @@
 
 @media only screen and (max-width: 600px) {
   .board {
-    overflow-x: scroll;
+    overflow-x: auto;
     justify-content: start;
   }
 }
@@ -137,6 +137,7 @@
   position: relative;
   margin: 0 auto;
   height: 100%;
+  gap: 4px;
 }
 
 .clueContainer.dailyDouble {
@@ -157,11 +158,12 @@
   flex-grow: 1;
   display: flex;
   align-items: center;
+  height: 80%;
 }
 
 @media only screen and (max-width: 600px) {
   .clue {
-    overflow-y: scroll;
+    overflow-y: auto;
     align-items: start;
   }
 }

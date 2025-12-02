@@ -810,46 +810,19 @@ export class Jeopardy extends React.Component<{
                         : ''
                     }`}
                   >
-                    <div className="category" style={{ height: '30px' }}>
+                    <div className="category">
                       {game.board[game.currentQ] &&
                         game.board[game.currentQ].category}
                     </div>
-                    <div className="category" style={{ height: '30px' }}>
+                    <div className="category">
                       {Boolean(game.currentValue) && game.currentValue}
                     </div>
                     {
-                      <div className={`clue`}>
-                        {game.board[game.currentQ] &&
-                          game.board[game.currentQ].question}
-                        {/* <ReactMarkdown
-                          components={{
-                            //This custom renderer changes how images are rendered
-                            //we use it to constrain the max width of an image to its container
-                            img: ({
-                              alt,
-                              src,
-                              title,
-                            }: {
-                              alt?: string;
-                              src?: string;
-                              title?: string;
-                            }) => (
-                              <img
-                                alt={alt}
-                                src={src}
-                                title={title}
-                                style={{
-                                  maxWidth: '80%',
-                                  maxHeight: '350px',
-                                }}
-                              />
-                            ),
-                          }}
-                        >
-                        </ReactMarkdown> */}
+                      <div className={"clue"}>
+                        {renderQuestion(game.board[game.currentQ].question)}
                       </div>
                     }
-                    <div className="" style={{ height: '60px' }}>
+                    <div>
                       {!game.currentAnswer &&
                       this.socket &&
                       !game.buzzes[this.socket.id!] &&
@@ -955,7 +928,7 @@ export class Jeopardy extends React.Component<{
                         />
                       ) : null}
                     </div>
-                    <div className={`answer`} style={{ height: '30px' }}>
+                    <div className={`answer`}>
                       {game.currentAnswer}
                     </div>
                     {Boolean(game.playClueEndTS) && (
@@ -979,40 +952,33 @@ export class Jeopardy extends React.Component<{
                         text="Waiting for wagers. . ."
                       />
                     )}
-                    {game.canNextQ && (
                       <div
                         style={{
                           position: 'absolute',
                           top: '0px',
                           right: '0px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
                         }}
                       >
-                        <Button
+                        {game.canNextQ && <Button
                           onClick={() => this.socket?.emit('JPD:skipQ')}
                           leftSection={<IconPlayerTrackNextFilled />}
                         >
                           Next
-                        </Button>
+                        </Button>}
+                        {game.currentAnswer && canJudge && (
+                          <Button
+                            onClick={() =>
+                              this.setState({ showJudgingModal: true })
+                            }
+                            leftSection={<IconGavel />}
+                          >
+                            Judge
+                          </Button>
+                        )}
                       </div>
-                    )}
-                    {game.currentAnswer && canJudge && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          bottom: '0px',
-                          right: '0px',
-                        }}
-                      >
-                        <Button
-                          onClick={() =>
-                            this.setState({ showJudgingModal: true })
-                          }
-                          leftSection={<IconGavel />}
-                        >
-                          Bulk Judge
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -1332,7 +1298,7 @@ const BulkJudgeModal = ({
             onClose();
           }}
         >
-          Bulk Judge
+          Judge
         </Button>
       </div>
     </Modal>
@@ -1463,4 +1429,16 @@ export const ErrorModal = ({ error }: { error: string }) => {
       </div>
     </Modal>
   );
+};
+
+const renderQuestion = (input: string | undefined): React.ReactNode | null => {
+  if (!input) {
+    return null;
+  }
+  // If a valid image string, return an image
+  let regex = /^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|heic|heif)\??.*$/gim;
+  if (input?.match(regex)) {
+    return <img style={{ width: '100%', height: '100%', objectFit: 'contain' }} src={input} />;
+  }
+  return input;
 };
