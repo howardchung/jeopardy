@@ -4,46 +4,39 @@ import config from './config.ts';
 
 let qs = 0;
 let eps = 0;
+let jData: any;
 // On boot, start with the initial data included in repo
-console.time('load');
-let jData = JSON.parse(
-  gunzipSync(fs.readFileSync('./jeopardy.json.gz')).toString(),
-);
-updateJDataStats();
-console.timeEnd('load');
-console.log('loaded %d episodes', Object.keys(jData).length);
-let etag: string | null = null;
-
+await loadJData('./jeopardy.json.gz');
+loadJData();
 // Periodically refetch the latest episode data and replace it in memory
-setInterval(refreshEpisodes, 24 * 60 * 60 * 1000);
-refreshEpisodes();
+setInterval(loadJData, 24 * 60 * 60 * 1000);
 
-async function refreshEpisodes() {
-  if (config.NODE_ENV === 'development') {
-    return;
-  }
-  console.time('reload');
-  try {
-    const response = await fetch(
-      'https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz',
-    );
-    const newEtag = response.headers.get('etag');
-    console.log(newEtag, etag);
-    if (newEtag !== etag) {
-      const arrayBuf = await response.arrayBuffer();
-      const buf = Buffer.from(arrayBuf);
-      jData = JSON.parse(gunzipSync(buf).toString());
-      updateJDataStats();
-      etag = newEtag;
+async function loadJData(fileName?: string) {
+  console.time('load');
+  let buf: Buffer | undefined;
+  if (fileName) {
+    buf = fs.readFileSync('./jeopardy.json.gz');
+  } else {
+    if (config.NODE_ENV !== 'development') {
+      try {
+        const response = await fetch(
+          'https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz',
+        );
+        buf = Buffer.from(await response.arrayBuffer());
+
+      } catch (e) {
+        console.log(e);
+      }
     }
-  } catch (e) {
-    console.log(e);
   }
-  console.timeEnd('reload');
+  if (buf) {
+    jData = JSON.parse(gunzipSync(buf).toString());
+    updateJDataStats();
+  }
+  console.timeEnd('load');
 }
 
 function updateJDataStats() {
-  console.time('count');
   qs = 0;
   eps = 0;
   Object.keys(jData).forEach((key) => {
@@ -52,7 +45,6 @@ function updateJDataStats() {
     qs += jData[key].double.length;
     qs + jData[key].final.length;
   });
-  console.timeEnd('count');
 }
 
 export function getJData() {
