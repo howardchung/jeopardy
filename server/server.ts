@@ -33,7 +33,7 @@ app.get('/stats', async (c) => {
       const obj = {
         creationTime: room.creationTime,
         roomId: room.roomId,
-        rosterLength: room.getConnectedPlayers().length,
+        rosterLength: room.getAllPlayers().filter(p => p.connected).length,
       };
       currentUsers += obj.rosterLength;
       roomData.push(obj);
