@@ -110,7 +110,7 @@ export class Jeopardy extends React.Component<{
   socket: Socket | undefined = undefined;
 
   async componentDidMount() {
-    window.speechSynthesis.getVoices();
+    window.speechSynthesis?.getVoices();
 
     document.onkeydown = this.onKeydown;
 
@@ -434,21 +434,21 @@ export class Jeopardy extends React.Component<{
       return;
     }
     await new Promise((resolve) => {
-      window.speechSynthesis.cancel();
+      window.speechSynthesis?.cancel();
       const utterThis = new SpeechSynthesisUtterance(text);
       // let retryCount = 0;
       // while (speechSynthesis.getVoices().length === 0 && retryCount < 3) {
       //   retryCount += 1;
       //   await new Promise((resolve) => setTimeout(resolve, 500));
       // }
-      let voices = window.speechSynthesis.getVoices();
+      let voices = window.speechSynthesis?.getVoices();
       let target = voices.find(
         (voice) => voice.name === 'Google UK English Male',
       );
       if (target) {
         utterThis.voice = target;
       }
-      window.speechSynthesis.speak(utterThis);
+      window.speechSynthesis?.speak(utterThis);
       utterThis.onend = resolve;
       utterThis.onerror = resolve;
     });
