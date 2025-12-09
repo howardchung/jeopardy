@@ -18,13 +18,11 @@ async function loadJData(fileName?: string) {
     buf = fs.readFileSync('./jeopardy.json.gz');
   } else {
     if (config.NODE_ENV !== 'development') {
-      try {
-        const response = await fetch(
-          'https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz',
-        );
-        buf = Buffer.from(await response.arrayBuffer());
-      } catch (e) {
-        console.log(e);
+      const resp = await fetch(
+        'https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz',
+      );
+      if (resp.ok) {
+        buf = Buffer.from(await resp.arrayBuffer());
       }
     }
   }

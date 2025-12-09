@@ -7,7 +7,7 @@ import './TopBar.css';
 
 export function NewRoomButton({ size }: { size?: string }) {
   const createRoom = useCallback(async () => {
-    const response = await window.fetch(serverPath + '/createRoom', {
+    const response = await fetch(serverPath + '/createRoom', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

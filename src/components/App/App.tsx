@@ -18,7 +18,7 @@ export function App() {
   useEffect(() => {
     const heartbeat = window.setInterval(
       () => {
-        window.fetch(serverPath + '/ping');
+        fetch(serverPath + '/ping');
       },
       10 * 60 * 1000,
     );
