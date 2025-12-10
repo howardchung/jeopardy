@@ -6,7 +6,6 @@
     "@hono/node-server": "^1.19.7",
     "@mantine/core": "^8.3.10",
     "@tabler/icons-react": "^3.35.0",
-    "dotenv": "^17.2.3",
     "hono": "^4.10.8",
     "ioredis": "^5.8.2",
     "openai": "^5.1.1",

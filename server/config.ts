@@ -1,4 +1,10 @@
-import 'dotenv/config';
+import { loadEnvFile } from 'node:process';
+
+try {
+  loadEnvFile();
+} catch (e) {
+  console.log(e);
+}
 
 const defaults = {
   SSL_KEY_FILE: '', // Optional, Filename of SSL key (to use https)
