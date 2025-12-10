@@ -37,11 +37,13 @@ export const getGameState = (
   },
   jeopardy?: RawQuestion[],
   double?: RawQuestion[],
+  triple?: RawQuestion[],
   final?: RawQuestion[],
 ) => {
   return {
     jeopardy,
     double,
+    triple,
     final,
     answers: {} as Record<string, string>,
     wagers: {} as Record<string, number>,
@@ -53,7 +55,7 @@ export const getGameState = (
       info: options.info,
       board: {} as { [key: string]: Question },
       scores: {} as Record<string, number>, // player scores
-      round: '', // jeopardy or double or final
+      round: 'start' as RoundName,
       picker: undefined as string | undefined, // If null let anyone pick, otherwise last correct answer
       // below is populated in emitstate from settings
       host: undefined as string | undefined,

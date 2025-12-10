@@ -1194,6 +1194,8 @@ function getWagerBounds(round: string, score: number) {
     maxWager = Math.max(score || 0, 1000);
   } else if (round === 'double') {
     maxWager = Math.max(score || 0, 2000);
+  } else if (round === 'triple') {
+    maxWager = Math.max(score || 0, 3000);
   } else if (round === 'final') {
     minWager = 0;
     maxWager = Math.max(score || 0, 0);
