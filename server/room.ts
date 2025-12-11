@@ -54,10 +54,12 @@ export class Room {
     this.cleanupInterval = setInterval(
       () => {
         // Remove players that have been disconnected for a long time
+        // NOTE: If we're waiting to judge this player's answer, removing them will block the game from continuing
+        // Waiting for wager is OK because we automatically move on after timeout
         const beforeLength = this.getAllPlayers();
         const now = Date.now();
         this.roster = this.roster.filter(
-          (p) => p.connected || now - p.disconnectTime < 60 * 60 * 1000,
+          (p) => p.connected || this.jpd.public.currentJudgeAnswer === p.id || now - p.disconnectTime < 60 * 60 * 1000,
         );
         const afterLength = this.getAllPlayers();
         if (beforeLength !== afterLength) {
@@ -139,7 +141,7 @@ export class Room {
         if (
           this.jpd.public.picker &&
           // Only allow designated picker to pick
-          // If they're disconnected or spectating, skip check to avoid blocking game
+          // If they're disconnected or spectating or gone, skip check to avoid blocking game
           this.getActivePlayers().find((p) => p.id === this.jpd.public.picker)
             ?.connected &&
           this.jpd.public.picker !== socket.id
