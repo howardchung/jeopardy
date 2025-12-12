@@ -533,7 +533,7 @@ export class Room {
       try {
         const parse = Papa.parse<any>(custom, { header: true });
         const typed = [];
-        let round = '';
+        let round: RoundName = 'start';
         let cat = '';
         let curX = 0;
         let curY = 0;
@@ -555,6 +555,8 @@ export class Room {
           let multiplier = 1;
           if (round === 'double') {
             multiplier = 2;
+          } else if (round === 'triple') {
+            multiplier = 3;
           } else if (round === 'final') {
             multiplier = 0;
           }
@@ -576,6 +578,7 @@ export class Room {
           epNum: 'Custom',
           jeopardy: typed.filter((d: any) => d.round === 'jeopardy'),
           double: typed.filter((d: any) => d.round === 'double'),
+          triple: typed.filter((d: any) => d.round === 'triple'),
           final: typed.filter((d: any) => d.round === 'final'),
         };
         redisCount('customGames');
@@ -610,7 +613,7 @@ export class Room {
     }
     if (loadedData) {
       redisCount('newGames');
-      const { epNum, airDate, info, jeopardy, double, final } = loadedData;
+      const { epNum, airDate, info, jeopardy, double, triple, final } = loadedData;
       this.jpd = getGameState(
         {
           epNum,
@@ -619,6 +622,7 @@ export class Room {
         },
         jeopardy,
         double,
+        triple,
         final,
       );
       this.jpdSnapshot = undefined;
@@ -636,7 +640,7 @@ export class Room {
         this.settings.answerTimeout = Number(answerTimeout) * 1000;
       }
       if (number === 'finaltest') {
-        this.jpd.public.round = 'double';
+        this.jpd.public.round = 'triple';
       }
       this.nextRound();
     }
@@ -686,8 +690,13 @@ export class Room {
     this.resetAfterQuestion();
     // host is made picker in resetAfterQuestion, so any picker changes here should be behind host check
     // advance round counter
-    if (this.jpd.public.round === 'jeopardy') {
-      this.jpd.public.round = 'double';
+    if (this.jpd.public.round === 'jeopardy' || this.jpd.public.round === 'double') {
+      if (this.jpd.public.round === 'jeopardy') {
+        this.jpd.public.round = 'double';
+      }
+      if (this.jpd.public.round === 'double') {
+        this.jpd.public.round = 'triple';
+      }
       // If double, person with lowest score is picker
       // Unless we are allowing multiple corrects or there's a host
       if (!this.settings.allowMultipleCorrect && !this.settings.host) {
@@ -700,7 +709,7 @@ export class Room {
         playersWithScores.sort((a, b) => a.score - b.score);
         this.jpd.public.picker = playersWithScores[0]?.id;
       }
-    } else if (this.jpd.public.round === 'double') {
+    } else if (this.jpd.public.round === 'triple') {
       this.jpd.public.round = 'final';
       const now = Date.now();
       this.jpd.public.waitingForWager = {};
@@ -739,9 +748,7 @@ export class Room {
       this.jpd.public.round = 'jeopardy';
     }
     if (
-      this.jpd.public.round === 'jeopardy' ||
-      this.jpd.public.round === 'double' ||
-      this.jpd.public.round === 'final'
+      this.jpd.public.round !== 'end'
     ) {
       this.jpd.board = constructBoard((this.jpd as any)[this.jpd.public.round]);
       this.jpd.public.board = constructPublicBoard(
@@ -753,8 +760,7 @@ export class Room {
     }
     this.sendState();
     if (
-      this.jpd.public.round === 'jeopardy' ||
-      this.jpd.public.round === 'double'
+      this.jpd.public.round !== 'final' && this.jpd.public.round !== 'end'
     ) {
       this.playCategories();
     }
@@ -1001,6 +1007,8 @@ export class Room {
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 1000);
     } else if (this.jpd.public.round === 'double') {
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 2000);
+    } else if (this.jpd.public.round === 'triple') {
+      maxWager = Math.max(this.jpd.public.scores[id] || 0, 3000);
     } else if (this.jpd.public.round === 'final') {
       minWager = 0;
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 0);

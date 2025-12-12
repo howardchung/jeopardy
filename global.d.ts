@@ -45,3 +45,5 @@ type GameOptions = {
   // timeout to use for final wagers and answers (all players participate)
   finalTimeout?: number;
 };
+
+type RoundName = 'start' | 'jeopardy' | 'double' | 'triple' | 'final' | 'end';
