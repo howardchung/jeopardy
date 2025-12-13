@@ -4,17 +4,12 @@
   "private": true,
   "dependencies": {
     "@hono/node-server": "^1.19.7",
-    "@mantine/core": "^8.3.10",
     "@tabler/icons-react": "^3.35.0",
     "hono": "^4.10.8",
     "ioredis": "^5.8.2",
     "openai": "^5.1.1",
     "papaparse": "^5.5.3",
-    "react": "^18.3.1",
-    "react-countup": "^6.5.3",
-    "react-dom": "^18.3.1",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io": "^4.8.1"
   },
   "type": "module",
   "scripts": {
@@ -49,6 +44,11 @@
     "@types/papaparse": "^5.5.1",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "@mantine/core": "^8.3.10",
+    "react": "^18.3.1",
+    "react-countup": "^6.5.3",
+    "react-dom": "^18.3.1",
+    "socket.io-client": "^4.8.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.7"
   },
