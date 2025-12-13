@@ -1445,7 +1445,7 @@ const renderQuestion = (input: string | undefined): React.ReactNode | null => {
     return null;
   }
   // If a valid image string, return an image
-  let regex = /^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|heic|heif)\??.*$/gim;
+  let regex = /^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|heic|heif|jfif)\??.*$/gim;
   if (input?.match(regex)) {
     return (
       <img

@@ -2,15 +2,6 @@
   "name": "jeopardy",
   "version": "0.1.2",
   "private": true,
-  "dependencies": {
-    "@hono/node-server": "^1.19.7",
-    "hono": "^4.10.8",
-    "ioredis": "^5.8.2",
-    "openai": "^5.1.1",
-    "papaparse": "^5.5.3",
-    "socket.io": "^4.8.1"
-  },
-  "type": "module",
   "scripts": {
     "server": "node server/server.ts",
     "ui": "vite --host",
@@ -23,20 +14,13 @@
     "analyze": "npx source-map-explorer 'build/assets/*.js' --html result.html --no-border-checks",
     "updateEps": "curl -sSL -O https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz"
   },
-  "eslintConfig": {
-    "extends": "react-app"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "dependencies": {
+    "@hono/node-server": "^1.19.7",
+    "hono": "^4.10.8",
+    "ioredis": "^5.8.2",
+    "openai": "^5.1.1",
+    "papaparse": "^5.5.3",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@tabler/icons-react": "^3.35.0",
@@ -51,6 +35,22 @@
     "socket.io-client": "^4.8.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.7"
+  },
+  "type": "module",
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   },
   "engines": {
     "node": "24"
