@@ -1,6 +1,6 @@
 export const getPerQuestionState = () => {
   return {
-    currentQ: '',
+    currentQ: "",
     currentAnswer: undefined as string | undefined,
     currentValue: 0,
     playClueEndTS: 0,
@@ -53,7 +53,7 @@ export const getGameState = (
       info: options.info,
       board: {} as { [key: string]: Question },
       scores: {} as Record<string, number>, // player scores
-      round: '', // jeopardy or double or final
+      round: "", // jeopardy or double or final
       picker: undefined as string | undefined, // If null let anyone pick, otherwise last correct answer
       // below is populated in emitstate from settings
       host: undefined as string | undefined,
@@ -63,4 +63,4 @@ export const getGameState = (
     },
   };
 };
-export type PublicGameState = ReturnType<typeof getGameState>['public'];
+export type PublicGameState = ReturnType<typeof getGameState>["public"];

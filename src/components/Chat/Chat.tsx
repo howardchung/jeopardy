@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ActionIcon, Avatar, Button, Group, TextInput } from '@mantine/core';
-import { getColorHex, getDefaultPicture } from '../../utils';
-import { Socket } from 'socket.io-client';
-import { IconCpu, IconSend } from '@tabler/icons-react';
-import './Chat.css';
+import React, { useEffect, useRef, useState } from "react";
+import { ActionIcon, Avatar, Button, Group, TextInput } from "@mantine/core";
+import { getColorHex, getDefaultPicture } from "../../utils";
+import { Socket } from "socket.io-client";
+import { IconCpu, IconSend } from "@tabler/icons-react";
+import "./Chat.css";
 
 interface ChatProps {
   chat: ChatMessage[];
@@ -14,7 +14,7 @@ interface ChatProps {
 }
 
 export function Chat(props: ChatProps) {
-  const [chatMsg, setChatMsg] = useState('');
+  const [chatMsg, setChatMsg] = useState("");
   const [isNearBottom, setIsNearBottom] = useState(true);
   const messagesRef = useRef<HTMLDivElement>(null);
 
@@ -26,8 +26,8 @@ export function Chat(props: ChatProps) {
     if (!chatMsg || !props.socket) {
       return;
     }
-    setChatMsg('');
-    props.socket.emit('CMD:chat', chatMsg);
+    setChatMsg("");
+    props.socket.emit("CMD:chat", chatMsg);
   };
 
   const isChatNearBottom = () => {
@@ -52,9 +52,9 @@ export function Chat(props: ChatProps) {
 
   useEffect(() => {
     scrollToBottom();
-    messagesRef.current?.addEventListener('scroll', onScroll);
+    messagesRef.current?.addEventListener("scroll", onScroll);
     return () => {
-      messagesRef.current?.removeEventListener('scroll', onScroll);
+      messagesRef.current?.removeEventListener("scroll", onScroll);
     };
   }, []);
 
@@ -70,9 +70,9 @@ export function Chat(props: ChatProps) {
     <div
       className={props.className}
       style={{
-        display: props.hide ? 'none' : 'flex',
-        flexDirection: 'column',
-        flexGrow: '1',
+        display: props.hide ? "none" : "flex",
+        flexDirection: "column",
+        flexGrow: "1",
         minHeight: 0,
         marginTop: 0,
         marginBottom: 0,
@@ -81,7 +81,7 @@ export function Chat(props: ChatProps) {
       <div
         className="chatContainer"
         ref={messagesRef}
-        style={{ position: 'relative' }}
+        style={{ position: "relative" }}
       >
         <div className="chatMessages">
           {props.chat.map((msg) => (
@@ -94,10 +94,10 @@ export function Chat(props: ChatProps) {
             size="xs"
             onClick={scrollToBottom}
             style={{
-              position: 'sticky',
+              position: "sticky",
               bottom: 0,
-              display: 'block',
-              margin: '0 auto',
+              display: "block",
+              margin: "0 auto",
             }}
           >
             Jump to bottom
@@ -105,7 +105,7 @@ export function Chat(props: ChatProps) {
         )}
       </div>
       <TextInput
-        onKeyDown={(e: any) => e.key === 'Enter' && sendChatMsg()}
+        onKeyDown={(e: any) => e.key === "Enter" && sendChatMsg()}
         onChange={updateChatMsg}
         value={chatMsg}
         rightSection={
@@ -135,14 +135,14 @@ const ChatMessage = ({
   bot?: boolean;
 }) => {
   return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
       <Avatar
-        src={bot ? undefined : getDefaultPicture(name ?? '', getColorHex(id))}
+        src={bot ? undefined : getDefaultPicture(name ?? "", getColorHex(id))}
       >
         {bot ? <IconCpu /> : null}
       </Avatar>
       <div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
           <div className="light username">{name || id}</div>
           <div className="dark timestamp">
             <div title={new Date(timestamp).toDateString()}>
@@ -158,18 +158,18 @@ const ChatMessage = ({
 };
 
 const formatMessage = (cmd: string, msg: string): React.ReactNode | string => {
-  if (cmd === 'judge') {
+  if (cmd === "judge") {
     const { id, correct, answer, delta, name, confidence } = JSON.parse(msg);
     return (
       <span
-        style={{ color: correct ? '#21ba45' : '#db2828' }}
-      >{`ruled ${name} ${correct ? 'correct' : 'incorrect'}: ${answer} (${
-        delta >= 0 ? '+' : ''
+        style={{ color: correct ? "#21ba45" : "#db2828" }}
+      >{`ruled ${name} ${correct ? "correct" : "incorrect"}: ${answer} (${
+        delta >= 0 ? "+" : ""
       }${delta}) ${
-        confidence != null ? `(${(confidence * 100).toFixed(0)}% conf.)` : ''
+        confidence != null ? `(${(confidence * 100).toFixed(0)}% conf.)` : ""
       }`}</span>
     );
-  } else if (cmd === 'answer') {
+  } else if (cmd === "answer") {
     return `Answer: ${msg}`;
   }
   return cmd;

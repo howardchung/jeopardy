@@ -1,25 +1,25 @@
-import { gunzipSync } from 'node:zlib';
-import fs from 'node:fs';
-import config from './config.ts';
+import { gunzipSync } from "node:zlib";
+import fs from "node:fs";
+import config from "./config.ts";
 
 let qs = 0;
 let eps = 0;
 let jData: any;
 // On boot, start with the initial data included in repo
-await loadJData('./jeopardy.json.gz');
+await loadJData("./jeopardy.json.gz");
 loadJData();
 // Periodically refetch the latest episode data and replace it in memory
 setInterval(loadJData, 24 * 60 * 60 * 1000);
 
 async function loadJData(fileName?: string) {
-  console.time('load');
+  console.time("load");
   let buf: Buffer | undefined;
   if (fileName) {
-    buf = fs.readFileSync('./jeopardy.json.gz');
+    buf = fs.readFileSync("./jeopardy.json.gz");
   } else {
-    if (config.NODE_ENV !== 'development') {
+    if (config.NODE_ENV !== "development") {
       const resp = await fetch(
-        'https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz',
+        "https://github.com/howardchung/j-archive-parser/raw/release/jeopardy.json.gz",
       );
       if (resp.ok) {
         buf = Buffer.from(await resp.arrayBuffer());
@@ -30,7 +30,7 @@ async function loadJData(fileName?: string) {
     jData = JSON.parse(gunzipSync(buf).toString());
     updateJDataStats();
   }
-  console.timeEnd('load');
+  console.timeEnd("load");
 }
 
 function updateJDataStats() {

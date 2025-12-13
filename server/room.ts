@@ -1,11 +1,11 @@
-import { Socket, Server } from 'socket.io';
-import Papa from 'papaparse';
-import { redis, redisCount } from './redis.ts';
-import { genAITextToSpeech } from './aivoice.ts';
-import { getOpenAIDecision, openai } from './openai.ts';
-import config from './config.ts';
-import { getGameState, getPerQuestionState } from './gamestate.ts';
-import { getJData } from './jData.ts';
+import { Socket, Server } from "socket.io";
+import Papa from "papaparse";
+import { redis, redisCount } from "./redis.ts";
+import { genAITextToSpeech } from "./aivoice.ts";
+import { getOpenAIDecision, openai } from "./openai.ts";
+import config from "./config.ts";
+import { getGameState, getPerQuestionState } from "./gamestate.ts";
+import { getJData } from "./jData.ts";
 
 export class Room {
   // Serialized state
@@ -59,7 +59,10 @@ export class Room {
         const beforeLength = this.getAllPlayers();
         const now = Date.now();
         this.roster = this.roster.filter(
-          (p) => p.connected || this.jpd.public.currentJudgeAnswer === p.id || now - p.disconnectTime < 60 * 60 * 1000,
+          (p) =>
+            p.connected ||
+            this.jpd.public.currentJudgeAnswer === p.id ||
+            now - p.disconnectTime < 60 * 60 * 1000,
         );
         const afterLength = this.getAllPlayers();
         if (beforeLength !== afterLength) {
@@ -69,7 +72,7 @@ export class Room {
       30 * 60 * 1000,
     );
 
-    io.of(roomId).on('connection', (socket: Socket) => {
+    io.of(roomId).on("connection", (socket: Socket) => {
       this.jpd.public.scores[socket.id] = 0;
 
       const clientId = socket.handshake.query?.clientId as string;
@@ -95,9 +98,9 @@ export class Room {
 
       this.sendState();
       this.sendRoster();
-      socket.emit('chatinit', this.chat);
+      socket.emit("chatinit", this.chat);
 
-      socket.on('CMD:name', (data: string) => {
+      socket.on("CMD:name", (data: string) => {
         if (!data) {
           return;
         }
@@ -110,7 +113,7 @@ export class Room {
           this.sendRoster();
         }
       });
-      socket.on('JPD:spectate', (spectate: boolean) => {
+      socket.on("JPD:spectate", (spectate: boolean) => {
         const target = this.getAllPlayers().find((p) => p.id === socket.id);
         if (target) {
           target.spectator = Boolean(spectate);
@@ -120,16 +123,16 @@ export class Room {
       // socket.on('JPD:cmdIntro', () => {
       //   this.io.of(this.roomId).emit('JPD:playIntro');
       // });
-      socket.on('JPD:start', (options, data) => {
+      socket.on("JPD:start", (options, data) => {
         if (data && data.length > 1000000) {
           return;
         }
-        if (typeof options !== 'object') {
+        if (typeof options !== "object") {
           return;
         }
         this.loadEpisode(socket, options, data);
       });
-      socket.on('JPD:pickQ', (id: string) => {
+      socket.on("JPD:pickQ", (id: string) => {
         if (this.settings.host && socket.id !== this.settings.host) {
           // Not the host
           return;
@@ -178,14 +181,14 @@ export class Room {
               this.jpd.public.submitted[p.id] = true;
             }
           });
-          this.io.of(this.roomId).emit('JPD:playDailyDouble');
+          this.io.of(this.roomId).emit("JPD:playDailyDouble");
           this.sendState();
         } else {
           // Put Q in public state
           this.revealQuestion();
         }
       });
-      socket.on('JPD:buzz', () => {
+      socket.on("JPD:buzz", () => {
         if (!this.jpd.public.canBuzz) {
           return;
         }
@@ -199,7 +202,7 @@ export class Room {
         this.jpd.public.buzzes[socket.id] = Date.now();
         this.sendState();
       });
-      socket.on('JPD:answer', (question, answer) => {
+      socket.on("JPD:answer", (question, answer) => {
         if (question !== this.jpd.public.currentQ) {
           // Not submitting for right question
           return;
@@ -223,7 +226,7 @@ export class Room {
         this.sendState();
         if (
           // In final, we always wait the full designated time
-          this.jpd.public.round !== 'final' &&
+          this.jpd.public.round !== "final" &&
           // Otherwise if all connected players have submitted, move on
           this.getActivePlayers().every(
             (p) => p.id in this.jpd.public.submitted || !p.connected,
@@ -233,14 +236,14 @@ export class Room {
         }
       });
 
-      socket.on('JPD:wager', (wager) => {
+      socket.on("JPD:wager", (wager) => {
         if (this.isSpectator(socket.id)) {
           // Don't allow spectators to wager
           return;
         }
         this.submitWager(socket.id, wager);
       });
-      socket.on('JPD:judge', (data) => {
+      socket.on("JPD:judge", (data) => {
         if (this.settings.host && socket.id !== this.settings.host) {
           // Not the host
           return;
@@ -250,7 +253,7 @@ export class Room {
         }
         this.doHumanJudge(socket, data);
       });
-      socket.on('JPD:bulkJudge', (data) => {
+      socket.on("JPD:bulkJudge", (data) => {
         if (!data) {
           return;
         }
@@ -271,7 +274,7 @@ export class Room {
         ) {
           // The bulkjudge may not contain all decisions. Stop if we did as many decisions as the input data
           count += 1;
-          console.log('[BULKJUDGE]', count, data.length);
+          console.log("[BULKJUDGE]", count, data.length);
           const id = this.jpd.public.currentJudgeAnswer;
           const match = data.find((d: any) => d.id === id);
           if (match) {
@@ -283,7 +286,7 @@ export class Room {
           }
         }
       });
-      socket.on('JPD:undo', () => {
+      socket.on("JPD:undo", () => {
         if (this.settings.host && socket.id !== this.settings.host) {
           // Not the host
           return;
@@ -294,9 +297,9 @@ export class Room {
         // Reset the game state to the last snapshot
         // Snapshot updates at each revealAnswer
         if (this.jpdSnapshot) {
-          redisCount('undo');
+          redisCount("undo");
           if (this.aiJudged) {
-            redisCount('aiUndo');
+            redisCount("aiUndo");
             this.aiJudged = undefined;
           }
           this.undoActivated = true;
@@ -305,38 +308,38 @@ export class Room {
           this.sendState();
         }
       });
-      socket.on('JPD:skipQ', () => {
+      socket.on("JPD:skipQ", () => {
         if (this.jpd.public.canNextQ) {
           // We are in the post-judging phase and can move on
           this.nextQuestion();
         }
       });
-      socket.on('JPD:enableAiJudge', (enable: boolean) => {
+      socket.on("JPD:enableAiJudge", (enable: boolean) => {
         this.settings.enableAIJudge = Boolean(enable);
         this.sendState();
         // optional: If we're in the judging phase, trigger the AI judge here
         // That way we can decide to use AI judge after the first answer has already been revealed
       });
-      socket.on('CMD:chat', (data: string) => {
+      socket.on("CMD:chat", (data: string) => {
         if (data && data.length > 10000) {
           // TODO add some validation on client side too so we don't just drop long messages
           return;
         }
-        if (data === '/clear') {
+        if (data === "/clear") {
           this.chat.length = 0;
-          io.of(roomId).emit('chatinit', this.chat);
+          io.of(roomId).emit("chatinit", this.chat);
           return;
         }
-        if (data.startsWith('/aivoices')) {
+        if (data.startsWith("/aivoices")) {
           const rvcServer =
-            data.split(' ')[1] ?? 'https://azure.howardchung.net/rvc';
+            data.split(" ")[1] ?? "https://azure.howardchung.net/rvc";
           this.pregenAIVoices(rvcServer);
         }
         const sender = this.getAllPlayers().find((p) => p.id === socket.id);
         const chatMsg = { id: socket.id, name: sender?.name, msg: data };
         this.addChatMessage(socket, chatMsg);
       });
-      socket.on('disconnect', () => {
+      socket.on("disconnect", () => {
         // Mark the user disconnected
         let target = this.getAllPlayers().find((p) => p.id === socket.id);
         if (target) {
@@ -407,7 +410,7 @@ export class Room {
       await redis?.persist(key);
     }
     this.lastUpdateTime = new Date();
-    redisCount('saves');
+    redisCount("saves");
   };
 
   addChatMessage = (socket: Socket | undefined, chatMsg: any) => {
@@ -417,7 +420,7 @@ export class Room {
     };
     this.chat.push(chatWithTime);
     this.chat = this.chat.splice(-100);
-    this.io.of(this.roomId).emit('REC:chat', chatWithTime);
+    this.io.of(this.roomId).emit("REC:chat", chatWithTime);
     this.saveRoom();
   };
 
@@ -427,7 +430,7 @@ export class Room {
     this.jpd.public.host = this.settings.host;
     this.jpd.public.enableAIJudge = this.settings.enableAIJudge;
     this.jpd.public.enableAIVoices = this.settings.enableAIVoices;
-    this.io.of(this.roomId).emit('JPD:state', this.jpd.public);
+    this.io.of(this.roomId).emit("JPD:state", this.jpd.public);
     this.saveRoom();
   };
 
@@ -438,7 +441,7 @@ export class Room {
         (this.jpd.public?.scores[b.id] || 0) -
         (this.jpd.public?.scores[a.id] || 0),
     );
-    this.io.of(this.roomId).emit('roster', this.roster);
+    this.io.of(this.roomId).emit("roster", this.roster);
     this.saveRoom();
   };
 
@@ -457,7 +460,7 @@ export class Room {
   };
 
   handleReconnect = (newId: string, oldId: string) => {
-    console.log('[RECONNECT] transfer %s to %s', oldId, newId);
+    console.log("[RECONNECT] transfer %s to %s", oldId, newId);
     // Update the roster with the new ID and connected state
     const target = this.getAllPlayers().find((p) => p.id === oldId);
     if (target) {
@@ -527,14 +530,14 @@ export class Room {
       allowMultipleCorrect,
       enableAIJudge,
     } = options;
-    console.log('[LOADEPISODE]', number, filter, Boolean(custom));
+    console.log("[LOADEPISODE]", number, filter, Boolean(custom));
     let loadedData = null;
     if (custom) {
       try {
         const parse = Papa.parse<any>(custom, { header: true });
         const typed = [];
-        let round = '';
-        let cat = '';
+        let round = "";
+        let cat = "";
         let curX = 0;
         let curY = 0;
         for (let i = 0; i < parse.data.length; i++) {
@@ -553,9 +556,9 @@ export class Room {
           round = d.round;
           cat = d.cat;
           let multiplier = 1;
-          if (round === 'double') {
+          if (round === "double") {
             multiplier = 2;
-          } else if (round === 'final') {
+          } else if (round === "final") {
             multiplier = 0;
           }
           if (d.q && d.a) {
@@ -564,7 +567,7 @@ export class Room {
               cat: d.cat,
               q: d.q,
               a: d.a,
-              dd: d.dd?.toLowerCase() === 'true',
+              dd: d.dd?.toLowerCase() === "true",
               val: curY * 200 * multiplier,
               x: curX,
               y: curY,
@@ -572,13 +575,13 @@ export class Room {
           }
         }
         loadedData = {
-          airDate: new Date().toISOString().split('T')[0],
-          epNum: 'Custom',
-          jeopardy: typed.filter((d: any) => d.round === 'jeopardy'),
-          double: typed.filter((d: any) => d.round === 'double'),
-          final: typed.filter((d: any) => d.round === 'final'),
+          airDate: new Date().toISOString().split("T")[0],
+          epNum: "Custom",
+          jeopardy: typed.filter((d: any) => d.round === "jeopardy"),
+          double: typed.filter((d: any) => d.round === "double"),
+          final: typed.filter((d: any) => d.round === "final"),
         };
-        redisCount('customGames');
+        redisCount("customGames");
       } catch (e) {
         console.warn(e);
       }
@@ -593,13 +596,13 @@ export class Room {
             (jData as any)[num].info && (jData as any)[num].info === filter,
         );
       }
-      if (number === 'ddtest') {
-        loadedData = { ...jData['8000'] };
-        loadedData['jeopardy'] = loadedData['jeopardy'].filter(
+      if (number === "ddtest") {
+        loadedData = { ...jData["8000"] };
+        loadedData["jeopardy"] = loadedData["jeopardy"].filter(
           (q: any) => q.dd,
         );
-      } else if (number === 'finaltest') {
-        loadedData = { ...jData['8000'] };
+      } else if (number === "finaltest") {
+        loadedData = { ...jData["8000"] };
       } else {
         if (!number) {
           // Random an episode
@@ -609,7 +612,7 @@ export class Room {
       }
     }
     if (loadedData) {
-      redisCount('newGames');
+      redisCount("newGames");
       const { epNum, airDate, info, jeopardy, double, final } = loadedData;
       this.jpd = getGameState(
         {
@@ -635,15 +638,15 @@ export class Room {
       if (Number(answerTimeout)) {
         this.settings.answerTimeout = Number(answerTimeout) * 1000;
       }
-      if (number === 'finaltest') {
-        this.jpd.public.round = 'double';
+      if (number === "finaltest") {
+        this.jpd.public.round = "double";
       }
       this.nextRound();
     }
   };
 
   playCategories = () => {
-    this.io.of(this.roomId).emit('JPD:playCategories');
+    this.io.of(this.roomId).emit("JPD:playCategories");
   };
 
   resetAfterQuestion = () => {
@@ -662,9 +665,9 @@ export class Room {
   nextQuestion = () => {
     // Show the correct answer in the game log
     this.addChatMessage(undefined, {
-      id: '',
-      name: 'System',
-      cmd: 'answer',
+      id: "",
+      name: "System",
+      cmd: "answer",
       msg: this.jpd.public.currentAnswer,
       bot: true,
     });
@@ -678,7 +681,7 @@ export class Room {
     } else {
       this.sendState();
       // TODO may want to introduce some delay here to make sure our state is updated before reading selection
-      this.io.of(this.roomId).emit('JPD:playMakeSelection');
+      this.io.of(this.roomId).emit("JPD:playMakeSelection");
     }
   };
 
@@ -686,8 +689,8 @@ export class Room {
     this.resetAfterQuestion();
     // host is made picker in resetAfterQuestion, so any picker changes here should be behind host check
     // advance round counter
-    if (this.jpd.public.round === 'jeopardy') {
-      this.jpd.public.round = 'double';
+    if (this.jpd.public.round === "jeopardy") {
+      this.jpd.public.round = "double";
       // If double, person with lowest score is picker
       // Unless we are allowing multiple corrects or there's a host
       if (!this.settings.allowMultipleCorrect && !this.settings.host) {
@@ -700,8 +703,8 @@ export class Room {
         playersWithScores.sort((a, b) => a.score - b.score);
         this.jpd.public.picker = playersWithScores[0]?.id;
       }
-    } else if (this.jpd.public.round === 'double') {
-      this.jpd.public.round = 'final';
+    } else if (this.jpd.public.round === "double") {
+      this.jpd.public.round = "final";
       const now = Date.now();
       this.jpd.public.waitingForWager = {};
       // There's no picker for final. In host mode we set one above
@@ -712,7 +715,7 @@ export class Room {
       });
       this.setWagerTimeout(this.settings.finalTimeout);
       // autopick the question
-      this.jpd.public.currentQ = '1_1';
+      this.jpd.public.currentQ = "1_1";
       // autobuzz the players in ascending score order
       let playerIds = this.getActivePlayers().map((p) => p.id);
       playerIds.sort(
@@ -724,9 +727,9 @@ export class Room {
         this.jpd.public.buzzes[pid] = now;
       });
       // Play the category sound
-      this.io.of(this.roomId).emit('JPD:playRightanswer');
-    } else if (this.jpd.public.round === 'final') {
-      this.jpd.public.round = 'end';
+      this.io.of(this.roomId).emit("JPD:playRightanswer");
+    } else if (this.jpd.public.round === "final") {
+      this.jpd.public.round = "end";
       // Log the results
       const scores = Object.entries(this.jpd.public.scores);
       scores.sort((a, b) => b[1] - a[1]);
@@ -734,14 +737,14 @@ export class Room {
         this.getAllPlayers().find((p) => p.id === score[0])?.name,
         score[1],
       ]);
-      redis?.lpush('jpd:results', JSON.stringify(scoresNames));
+      redis?.lpush("jpd:results", JSON.stringify(scoresNames));
     } else {
-      this.jpd.public.round = 'jeopardy';
+      this.jpd.public.round = "jeopardy";
     }
     if (
-      this.jpd.public.round === 'jeopardy' ||
-      this.jpd.public.round === 'double' ||
-      this.jpd.public.round === 'final'
+      this.jpd.public.round === "jeopardy" ||
+      this.jpd.public.round === "double" ||
+      this.jpd.public.round === "final"
     ) {
       this.jpd.board = constructBoard((this.jpd as any)[this.jpd.public.round]);
       this.jpd.public.board = constructPublicBoard(
@@ -753,8 +756,8 @@ export class Room {
     }
     this.sendState();
     if (
-      this.jpd.public.round === 'jeopardy' ||
-      this.jpd.public.round === 'double'
+      this.jpd.public.round === "jeopardy" ||
+      this.jpd.public.round === "double"
     ) {
       this.playCategories();
     }
@@ -767,8 +770,8 @@ export class Room {
 
   setQuestionAnswerTimeout = (durationMs: number) => {
     this.questionAnswerTimeout = setTimeout(() => {
-      if (this.jpd.public.round !== 'final') {
-        this.io.of(this.roomId).emit('JPD:playTimesUp');
+      if (this.jpd.public.round !== "final") {
+        this.io.of(this.roomId).emit("JPD:playTimesUp");
       }
       this.revealAnswer();
     }, durationMs);
@@ -781,7 +784,7 @@ export class Room {
     // Add empty answers for anyone who buzzed but didn't submit anything
     Object.keys(this.jpd.public.buzzes).forEach((key) => {
       if (!this.jpd.answers[key]) {
-        this.jpd.answers[key] = '';
+        this.jpd.answers[key] = "";
       }
     });
     this.jpd.public.canBuzz = false;
@@ -825,7 +828,7 @@ export class Room {
       )
     ) {
       console.log(
-        '[ADVANCEJUDGING] player not found, moving on:',
+        "[ADVANCEJUDGING] player not found, moving on:",
         this.jpd.public.currentJudgeAnswer,
       );
       this.advanceJudging(skipRemaining);
@@ -851,43 +854,43 @@ export class Room {
 
   doAiJudge = async (data: { currentQ: string; id: string }) => {
     // count the number of automatic judges
-    redisCount('aiJudge');
+    redisCount("aiJudge");
     // currentQ: The board coordinates of the current question, e.g. 1_3
     // id: socket id of the person being judged
     const { currentQ, id } = data;
     // The question text
-    const q = this.jpd.board[currentQ]?.q ?? '';
-    const a = this.jpd.public.currentAnswer ?? '';
+    const q = this.jpd.board[currentQ]?.q ?? "";
+    const a = this.jpd.public.currentAnswer ?? "";
     const response = this.jpd.public.answers[id];
     let correct: boolean | null = null;
-    if (response === '') {
+    if (response === "") {
       // empty response is always wrong
       correct = false;
-      redisCount('aiShortcut');
+      redisCount("aiShortcut");
     } else if (response.toLowerCase().trim() === a.toLowerCase().trim()) {
       // exact match is always right
       correct = true;
-      redisCount('aiShortcut');
+      redisCount("aiShortcut");
     } else {
       // count the number of calls to chatgpt
-      redisCount('aiChatGpt');
+      redisCount("aiChatGpt");
       try {
         const decision = await getOpenAIDecision(q, a, response);
-        console.log('[AIDECISION]', id, q, a, response, decision);
+        console.log("[AIDECISION]", id, q, a, response, decision);
         if (decision && decision.correct != null) {
           correct = decision.correct;
         } else {
-          redisCount('aiRefuse');
+          redisCount("aiRefuse");
         }
         // Log the AI decision to measure accuracy
         // If the user undoes and then chooses differently than AI, then that's a failed decision
         // Alternative: we can just highlight what the AI thinks is correct instead of auto-applying the decision, then we'll have user feedback for sure
         // If undefined, AI refused to answer
         redis?.lpush(
-          'jpd:aiJudges',
+          "jpd:aiJudges",
           JSON.stringify({ q, a, response, correct: decision?.correct }),
         );
-        redis?.ltrim('jpd:aiJudges', 0, 1000);
+        redis?.ltrim("jpd:aiJudges", 0, 1000);
       } catch (e) {
         console.log(e);
       }
@@ -935,7 +938,7 @@ export class Room {
       return false;
     }
     this.jpd.public.judges[id] = correct;
-    console.log('[JUDGE]', id, correct);
+    console.log("[JUDGE]", id, correct);
     if (!this.jpd.public.scores[id]) {
       this.jpd.public.scores[id] = 0;
     }
@@ -956,11 +959,11 @@ export class Room {
         (p) => p.id === socket?.id,
       )?.name;
       const msg = {
-        id: socket?.id ?? '',
+        id: socket?.id ?? "",
         // name of judge
-        name: userName ?? 'System',
+        name: userName ?? "System",
         bot: !Boolean(userName),
-        cmd: 'judge',
+        cmd: "judge",
         msg: JSON.stringify({
           id: id,
           // name of person being judged
@@ -977,7 +980,7 @@ export class Room {
       }
     }
     const allowMultipleCorrect =
-      this.jpd.public.round === 'final' || this.settings.allowMultipleCorrect;
+      this.jpd.public.round === "final" || this.settings.allowMultipleCorrect;
     const skipRemaining = !allowMultipleCorrect && correct === true;
     this.advanceJudging(skipRemaining);
 
@@ -997,11 +1000,11 @@ export class Room {
     // Can bet up to current score, minimum of 1000 in single or 2000 in double, 0 in final
     let maxWager = 0;
     let minWager = 5;
-    if (this.jpd.public.round === 'jeopardy') {
+    if (this.jpd.public.round === "jeopardy") {
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 1000);
-    } else if (this.jpd.public.round === 'double') {
+    } else if (this.jpd.public.round === "double") {
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 2000);
-    } else if (this.jpd.public.round === 'final') {
+    } else if (this.jpd.public.round === "final") {
       minWager = 0;
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 0);
     }
@@ -1015,7 +1018,7 @@ export class Room {
       this.jpd.wagers[id] = numWager;
       this.jpd.public.wagers[id] = numWager;
       this.revealQuestion();
-    } else if (this.jpd.public.round === 'final' && this.jpd.public.currentQ) {
+    } else if (this.jpd.public.round === "final" && this.jpd.public.currentQ) {
       // store the wagers privately until everyone's made one
       this.jpd.wagers[id] = numWager;
       if (this.jpd.public.waitingForWager) {
@@ -1060,16 +1063,16 @@ export class Room {
     const clue = this.jpd.public.board[this.jpd.public.currentQ];
     this.io
       .of(this.roomId)
-      .emit('JPD:playClue', this.jpd.public.currentQ, clue && clue.question);
+      .emit("JPD:playClue", this.jpd.public.currentQ, clue && clue.question);
     let speakingTime = 0;
     if (clue && clue.question) {
       // Allow some time for reading the text, based on content
       // Count syllables in text, assume speaking rate of 4 syll/sec
       const syllCountArr = clue.question
         // Remove parenthetical starts and blanks
-        .replace(/^\(.*\)/, '')
-        .replace(/_+/g, ' blank ')
-        .split(' ')
+        .replace(/^\(.*\)/, "")
+        .replace(/_+/g, " blank ")
+        .split(" ")
         .map((word: string) => syllableCount(word));
       const totalSyll = syllCountArr.reduce((a: number, b: number) => a + b, 0);
       // Minimum 1 second speaking time
@@ -1089,10 +1092,10 @@ export class Room {
     clearTimeout(this.playClueTimeout);
     this.jpd.public.playClueEndTS = 0;
     this.jpd.public.buzzUnlockTS = Date.now();
-    if (this.jpd.public.round === 'final') {
+    if (this.jpd.public.round === "final") {
       this.unlockAnswer(this.settings.finalTimeout);
       // Play final jeopardy music
-      this.io.of(this.roomId).emit('JPD:playFinalJeopardy');
+      this.io.of(this.roomId).emit("JPD:playFinalJeopardy");
     } else {
       if (!this.jpd.public.currentDailyDouble) {
         // DD already handles buzzing automatically
@@ -1118,7 +1121,7 @@ export class Room {
         ...(this.jpd.double?.map((item) => item.cat) ?? []),
       ].filter(Boolean),
     );
-    console.log('%s strings to generate', strings.size);
+    console.log("%s strings to generate", strings.size);
     const items = Array.from(strings);
     const start = Date.now();
     let cursor = items.entries();
@@ -1130,20 +1133,20 @@ export class Room {
     let success = 0;
     let count = 0;
     Array(numWorkers)
-      .fill('')
+      .fill("")
       .forEach(async (_, workerIndex) => {
         for (let [i, text] of cursor) {
           try {
-            const url = await genAITextToSpeech(rvcHost, text ?? '');
+            const url = await genAITextToSpeech(rvcHost, text ?? "");
             // Report progress back in chat messages
             if (url) {
               this.addChatMessage(undefined, {
-                id: '',
-                name: 'System',
+                id: "",
+                name: "System",
                 bot: true,
-                msg: 'generated ai voice ' + i + ': ' + url,
+                msg: "generated ai voice " + i + ": " + url,
               });
-              redisCount('aiVoice');
+              redisCount("aiVoice");
               success += 1;
             }
           } catch (e) {
@@ -1155,16 +1158,16 @@ export class Room {
         if (count === items.length) {
           const end = Date.now();
           this.addChatMessage(undefined, {
-            id: '',
-            name: 'System',
+            id: "",
+            name: "System",
             bot: true,
             msg:
               success +
-              '/' +
+              "/" +
               count +
-              ' voices generated in ' +
+              " voices generated in " +
               (end - start) +
-              'ms',
+              "ms",
           });
         }
       });
@@ -1197,8 +1200,8 @@ function syllableCount(word: string) {
   if (word.length <= 3) {
     return 1;
   }
-  word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, ''); //word.sub!(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '')
-  word = word.replace(/^y/, '');
+  word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, ""); //word.sub!(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '')
+  word = word.replace(/^y/, "");
   let vowels = word.match(/[aeiouy]{1,2}/g);
   // Use 3 as the default if no letters, it's probably a year
   return vowels ? vowels.length : 3;

@@ -19,6 +19,6 @@ jobs:
       - name: Push to dokku
         uses: dokku/github-action@master
         with:
-          git_push_flags: '--force'
-          git_remote_url: 'ssh://dokku@jeopardy.centralus.cloudapp.azure.com:22/jeopardy.app'
+          git_push_flags: "--force"
+          git_remote_url: "ssh://dokku@jeopardy.centralus.cloudapp.azure.com:22/jeopardy.app"
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}

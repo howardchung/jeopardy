@@ -1,5 +1,5 @@
-import OpenAI from 'openai';
-import config from './config.ts';
+import OpenAI from "openai";
+import config from "./config.ts";
 
 export const openai = config.OPENAI_SECRET_KEY
   ? new OpenAI({ apiKey: config.OPENAI_SECRET_KEY })
@@ -35,28 +35,28 @@ export async function getOpenAIDecision(
     return null;
   }
   const suffix = `question: '${question}', correct: '${answer}', response: '${response}'`;
-  console.log('[AIINPUT]', suffix);
+  console.log("[AIINPUT]", suffix);
   // Concatenate the prompt and the suffix for AI completion
   const result = await openai.chat.completions.create({
-    model: 'gpt-5-nano',
-    service_tier: 'auto', // Use flex processing when possible to save money
-    messages: [{ role: 'developer', content: prompt + suffix }],
+    model: "gpt-5-nano",
+    service_tier: "auto", // Use flex processing when possible to save money
+    messages: [{ role: "developer", content: prompt + suffix }],
     response_format: {
-      type: 'json_schema',
+      type: "json_schema",
       json_schema: {
-        name: 'trivia_judgment',
+        name: "trivia_judgment",
         strict: true,
         schema: {
-          type: 'object',
+          type: "object",
           properties: {
             correct: {
-              type: 'boolean',
+              type: "boolean",
             },
             // confidence: {
             //   type: 'number',
             // },
           },
-          required: ['correct'],
+          required: ["correct"],
           additionalProperties: false,
         },
       },

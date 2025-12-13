@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   Button,
   TextInput,
@@ -11,8 +11,8 @@ import {
   ActionIcon,
   Select,
   Switch,
-} from '@mantine/core';
-import './Jeopardy.css';
+} from "@mantine/core";
+import "./Jeopardy.css";
 import {
   getDefaultPicture,
   getColorHex,
@@ -21,10 +21,10 @@ import {
   generateName,
   serverPath,
   getOrCreateClientId,
-} from '../../utils';
-import { io, type Socket } from 'socket.io-client';
-import { type PublicGameState } from '../../../server/gamestate';
-import { cyrb53 } from '../../../server/hash';
+} from "../../utils";
+import { io, type Socket } from "socket.io-client";
+import { type PublicGameState } from "../../../server/gamestate";
+import { cyrb53 } from "../../../server/hash";
 import {
   IconArrowBackUp,
   IconBulb,
@@ -42,13 +42,13 @@ import {
   IconStarFilled,
   IconUpload,
   IconX,
-} from '@tabler/icons-react';
+} from "@tabler/icons-react";
 
-const dailyDouble = new Audio('/jeopardy/jeopardy-daily-double.mp3');
-const boardFill = new Audio('/jeopardy/jeopardy-board-fill.mp3');
-const think = new Audio('/jeopardy/jeopardy-think.mp3');
-const timesUp = new Audio('/jeopardy/jeopardy-times-up.mp3');
-const rightAnswer = new Audio('/jeopardy/jeopardy-rightanswer.mp3');
+const dailyDouble = new Audio("/jeopardy/jeopardy-daily-double.mp3");
+const boardFill = new Audio("/jeopardy/jeopardy-board-fill.mp3");
+const think = new Audio("/jeopardy/jeopardy-think.mp3");
+const timesUp = new Audio("/jeopardy/jeopardy-times-up.mp3");
+const rightAnswer = new Audio("/jeopardy/jeopardy-rightanswer.mp3");
 
 type GameSettings = {
   answerTimeout?: number;
@@ -60,7 +60,7 @@ type GameSettings = {
 
 const loadSavedSettings = (): GameSettings => {
   try {
-    const saved = window.localStorage.getItem('jeopardy-gameSettings');
+    const saved = window.localStorage.getItem("jeopardy-gameSettings");
     if (saved) {
       return JSON.parse(saved);
     }
@@ -71,11 +71,11 @@ const loadSavedSettings = (): GameSettings => {
 };
 
 // room ID from url
-let roomId = '/default';
+let roomId = "/default";
 const urlParams = new URLSearchParams(window.location.search);
-const query = urlParams.get('game');
+const query = urlParams.get("game");
 if (query) {
-  roomId = '/' + query;
+  roomId = "/" + query;
 }
 
 export class Jeopardy extends React.Component<{
@@ -90,11 +90,11 @@ export class Jeopardy extends React.Component<{
   public state = {
     game: undefined as PublicGameState | undefined,
     isIntroPlaying: false,
-    localAnswer: '',
-    localWager: '',
+    localAnswer: "",
+    localWager: "",
     localAnswerSubmitted: false,
     localWagerSubmitted: false,
-    localEpNum: '',
+    localEpNum: "",
     categoryMask: Array(6).fill(true),
     categoryReadTime: 0,
     clueMask: {} as any,
@@ -104,7 +104,7 @@ export class Jeopardy extends React.Component<{
     showJudgingModal: false,
     showSettingsModal: false,
     settings: loadSavedSettings(),
-    overlayMsg: '',
+    overlayMsg: "",
   };
   buzzLock = 0;
   socket: Socket | undefined = undefined;
@@ -116,62 +116,62 @@ export class Jeopardy extends React.Component<{
 
     this.setState({
       readingDisabled: Boolean(
-        window.localStorage.getItem('jeopardy-readingDisabled'),
+        window.localStorage.getItem("jeopardy-readingDisabled"),
       ),
     });
     const socket = io(serverPath + roomId, {
-      transports: ['websocket'],
+      transports: ["websocket"],
       query: {
         clientId: getOrCreateClientId(),
       },
     });
     this.socket = socket;
     this.props.setSocket(socket);
-    socket.on('connect', async () => {
+    socket.on("connect", async () => {
       // Load username from localstorage
-      let userName = window.localStorage.getItem('watchparty-username');
+      let userName = window.localStorage.getItem("watchparty-username");
       this.props.updateName(userName || (await generateName()));
     });
-    socket.on('connect_error', (err: any) => {
+    socket.on("connect_error", (err: any) => {
       console.error(err);
-      if (err.message === 'Invalid namespace') {
+      if (err.message === "Invalid namespace") {
         this.setState({ overlayMsg: "Couldn't load this room." });
       }
     });
-    socket.on('REC:chat', (data: ChatMessage) => {
-      if (document.visibilityState && document.visibilityState !== 'visible') {
-        new Audio('/clearly.mp3').play();
+    socket.on("REC:chat", (data: ChatMessage) => {
+      if (document.visibilityState && document.visibilityState !== "visible") {
+        new Audio("/clearly.mp3").play();
       }
       // There may be race condition issues if we append using [...this.state.chat, data]
       this.props.chat.push(data);
       this.props.setChat(this.props.chat);
       this.props.setScrollTimestamp(Number(new Date()));
     });
-    socket.on('roster', (data: User[]) => {
+    socket.on("roster", (data: User[]) => {
       this.props.setParticipants(data);
     });
-    socket.on('chatinit', (data: any) => {
+    socket.on("chatinit", (data: any) => {
       this.props.setChat(data);
       this.props.setScrollTimestamp(0);
     });
-    socket.on('JPD:state', (game: PublicGameState) => {
+    socket.on("JPD:state", (game: PublicGameState) => {
       this.setState({ game, localEpNum: game.epNum });
     });
     // socket.on('JPD:playIntro', () => {
     //   this.playIntro();
     // });
-    socket.on('JPD:playTimesUp', () => {
+    socket.on("JPD:playTimesUp", () => {
       timesUp.play();
     });
-    socket.on('JPD:playDailyDouble', () => {
+    socket.on("JPD:playDailyDouble", () => {
       dailyDouble.volume = 0.5;
       dailyDouble.play();
     });
-    socket.on('JPD:playFinalJeopardy', async () => {
+    socket.on("JPD:playFinalJeopardy", async () => {
       think.volume = 0.5;
       think.play();
     });
-    socket.on('JPD:playRightanswer', () => {
+    socket.on("JPD:playRightanswer", () => {
       rightAnswer.play();
     });
     // socket.on('JPD:playMakeSelection', () => {
@@ -190,19 +190,19 @@ export class Jeopardy extends React.Component<{
     //     );
     //   }
     // });
-    socket.on('JPD:playClue', async (qid: string, text: string) => {
+    socket.on("JPD:playClue", async (qid: string, text: string) => {
       this.setState({
-        localAnswer: '',
-        localWager: '',
+        localAnswer: "",
+        localWager: "",
         localWagerSubmitted: false,
         localAnswerSubmitted: false,
       });
       // Read the question
       // console.log('JPD:playClue', text);
       // Remove parenthetical starts and blanks
-      await this.sayText(text.replace(/^\(.*\)/, '').replace(/_+/g, ' blank '));
+      await this.sayText(text.replace(/^\(.*\)/, "").replace(/_+/g, " blank "));
     });
-    socket.on('JPD:playCategories', async () => {
+    socket.on("JPD:playCategories", async () => {
       const now = Date.now();
       const clueMask: any = {};
       const clueMaskOrder = [];
@@ -251,7 +251,7 @@ export class Jeopardy extends React.Component<{
   }
 
   componentWillUnmount() {
-    document.removeEventListener('keydown', this.onKeydown);
+    document.removeEventListener("keydown", this.onKeydown);
     this.socket?.close();
     this.socket = undefined;
     this.props.setSocket(undefined);
@@ -261,30 +261,30 @@ export class Jeopardy extends React.Component<{
     if (!prevState.game?.currentQ && this.state.game?.currentQ) {
       // Run growing clue animation
       const clue = document.getElementById(
-        'clueContainerContainer',
+        "clueContainerContainer",
       ) as HTMLElement;
-      const board = document.getElementById('board') as HTMLElement;
+      const board = document.getElementById("board") as HTMLElement;
       const box = document.getElementById(
         this.state.game?.currentQ,
       ) as HTMLElement;
-      clue.style.position = 'absolute';
-      clue.style.left = box.offsetLeft + 'px';
-      clue.style.top = box.offsetTop + 'px';
+      clue.style.position = "absolute";
+      clue.style.left = box.offsetLeft + "px";
+      clue.style.top = box.offsetTop + "px";
       setTimeout(() => {
-        clue.style.left = board.scrollLeft + 'px';
-        clue.style.top = '0px';
-        clue.style.transform = 'scale(1)';
+        clue.style.left = board.scrollLeft + "px";
+        clue.style.top = "0px";
+        clue.style.transform = "scale(1)";
       }, 1);
     }
   }
 
   onKeydown = (e: any) => {
-    if (!document.activeElement || document.activeElement.tagName === 'BODY') {
-      if (e.key === ' ') {
+    if (!document.activeElement || document.activeElement.tagName === "BODY") {
+      if (e.key === " ") {
         e.preventDefault();
         this.onBuzz();
       }
-      if (e.key === 'p') {
+      if (e.key === "p") {
         e.preventDefault();
         if (this.state.game?.canBuzz) {
           this.submitAnswer(null);
@@ -308,22 +308,22 @@ export class Jeopardy extends React.Component<{
       filter: options.filter,
       ...this.state.settings,
     };
-    this.socket?.emit('JPD:start', combined, customGame);
+    this.socket?.emit("JPD:start", combined, customGame);
   };
 
   customGame = () => {
     // Create an input element
-    const inputElement = document.createElement('input');
+    const inputElement = document.createElement("input");
 
     // Set its type to file
-    inputElement.type = 'file';
+    inputElement.type = "file";
 
     // Set accept to the file types you want the user to select.
     // Include both the file extension and the mime type
     // inputElement.accept = accept;
 
     // set onchange event to call callback when user has selected file
-    inputElement.addEventListener('change', () => {
+    inputElement.addEventListener("change", () => {
       const file = inputElement.files![0];
       // Read the file
       const reader = new FileReader();
@@ -336,7 +336,7 @@ export class Jeopardy extends React.Component<{
     });
 
     // dispatch a click event to open the file dialog
-    inputElement.dispatchEvent(new MouseEvent('click'));
+    inputElement.dispatchEvent(new MouseEvent("click"));
   };
 
   // playIntro = async () => {
@@ -396,7 +396,7 @@ export class Jeopardy extends React.Component<{
       await new Promise((resolve) => setTimeout(resolve, 2000));
       return;
     }
-    if (text.startsWith('!')) {
+    if (text.startsWith("!")) {
       // This is probably markdown
       return;
     }
@@ -408,8 +408,8 @@ export class Jeopardy extends React.Component<{
           const hash = cyrb53(text).toString();
           const aiVoice = new Audio(
             this.state.game?.enableAIVoices +
-              '/gradio_api/file=audio/output/{hash}.mp3'.replace(
-                '{hash}',
+              "/gradio_api/file=audio/output/{hash}.mp3".replace(
+                "{hash}",
                 hash,
               ),
           );
@@ -443,7 +443,7 @@ export class Jeopardy extends React.Component<{
       // }
       let voices = window.speechSynthesis?.getVoices();
       let target = voices.find(
-        (voice) => voice.name === 'Google UK English Male',
+        (voice) => voice.name === "Google UK English Male",
       );
       if (target) {
         utterThis.voice = target;
@@ -455,27 +455,27 @@ export class Jeopardy extends React.Component<{
   };
 
   pickQ = (id: string) => {
-    this.socket?.emit('JPD:pickQ', id);
+    this.socket?.emit("JPD:pickQ", id);
   };
 
   submitWager = () => {
-    this.socket?.emit('JPD:wager', this.state.localWager);
-    this.setState({ localWager: '', localWagerSubmitted: true });
+    this.socket?.emit("JPD:wager", this.state.localWager);
+    this.setState({ localWager: "", localWagerSubmitted: true });
   };
 
   submitAnswer = (answer = null) => {
     if (!this.state.localAnswerSubmitted) {
       this.socket?.emit(
-        'JPD:answer',
+        "JPD:answer",
         this.state.game?.currentQ,
         answer || this.state.localAnswer,
       );
-      this.setState({ localAnswer: '', localAnswerSubmitted: true });
+      this.setState({ localAnswer: "", localAnswerSubmitted: true });
     }
   };
 
   judgeAnswer = (id: string, correct: boolean | null) => {
-    this.socket?.emit('JPD:judge', {
+    this.socket?.emit("JPD:judge", {
       currentQ: this.state.game?.currentQ,
       id,
       correct,
@@ -484,7 +484,7 @@ export class Jeopardy extends React.Component<{
 
   bulkJudgeAnswer = (data: { id: string; correct: boolean | null }[]) => {
     this.socket?.emit(
-      'JPD:bulkJudge',
+      "JPD:bulkJudge",
       data.map((d) => ({ ...d, currentQ: this.state.game?.currentQ })),
     );
   };
@@ -494,9 +494,9 @@ export class Jeopardy extends React.Component<{
     if (!game || !game.board) {
       return [];
     }
-    let categories: string[] = Array(6).fill('');
+    let categories: string[] = Array(6).fill("");
     Object.keys(game.board).forEach((key) => {
-      const col = Number(key.split('_')[0]) - 1;
+      const col = Number(key.split("_")[0]) - 1;
       categories[col] = game.board[key].category;
     });
     return categories;
@@ -520,7 +520,7 @@ export class Jeopardy extends React.Component<{
   onBuzz = () => {
     const game = this.state.game;
     if (game?.canBuzz && !this.buzzLock && !this.state.buzzFrozen) {
-      this.socket?.emit('JPD:buzz');
+      this.socket?.emit("JPD:buzz");
     } else {
       // Freeze the buzzer for 0.25 seconds
       // setState takes a little bit, so also set a local var to prevent spam
@@ -539,7 +539,7 @@ export class Jeopardy extends React.Component<{
   saveSettings = (settings: GameSettings) => {
     // serialize to localStorage so settings persist on reload
     window.localStorage.setItem(
-      'jeopardy-gameSettings',
+      "jeopardy-gameSettings",
       JSON.stringify(settings),
     );
     // update state
@@ -612,18 +612,22 @@ export class Jeopardy extends React.Component<{
         <div className="controls">
           <Menu>
             <Menu.Target>
-              <Button size="sm" leftSection={<IconStarFilled size={20} />} style={{ flexShrink: 0 }}>
+              <Button
+                size="sm"
+                leftSection={<IconStarFilled size={20} />}
+                style={{ flexShrink: 0 }}
+              >
                 New Game
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Label>Game #</Menu.Label>
               <TextInput
-                style={{ padding: '8px', paddingTop: '0px' }}
+                style={{ padding: "8px", paddingTop: "0px" }}
                 value={this.state.localEpNum}
                 onChange={(e) => this.setState({ localEpNum: e.target.value })}
                 onKeyDown={(e: any) =>
-                  e.key === 'Enter' &&
+                  e.key === "Enter" &&
                   this.newGame({ number: this.state.localEpNum })
                 }
                 rightSection={
@@ -640,28 +644,28 @@ export class Jeopardy extends React.Component<{
               <Menu.Divider />
               <Menu.Label>Random</Menu.Label>
               {[
-                { key: 'all', value: null, text: 'Any' },
-                { key: 'kids', value: 'kids', text: 'Kids Week' },
-                { key: 'teen', value: 'teen', text: 'Teen Tournament' },
+                { key: "all", value: null, text: "Any" },
+                { key: "kids", value: "kids", text: "Kids Week" },
+                { key: "teen", value: "teen", text: "Teen Tournament" },
                 {
-                  key: 'college',
-                  value: 'college',
-                  text: 'College Championship',
+                  key: "college",
+                  value: "college",
+                  text: "College Championship",
                 },
                 {
-                  key: 'celebrity',
-                  value: 'celebrity',
-                  text: 'Celebrity Jeopardy',
+                  key: "celebrity",
+                  value: "celebrity",
+                  text: "Celebrity Jeopardy",
                 },
                 {
-                  key: 'teacher',
-                  value: 'teacher',
-                  text: 'Teachers Tournament',
+                  key: "teacher",
+                  value: "teacher",
+                  text: "Teachers Tournament",
                 },
                 {
-                  key: 'champions',
-                  value: 'champions',
-                  text: 'Tournament of Champions',
+                  key: "champions",
+                  value: "champions",
+                  text: "Tournament of Champions",
                 },
               ].map((item) => (
                 <Menu.Item
@@ -676,7 +680,7 @@ export class Jeopardy extends React.Component<{
               <Menu.Divider />
               <Menu.Label>Custom</Menu.Label>
               <Menu.Item
-                key={'custom'}
+                key={"custom"}
                 onClick={() => {
                   this.setState({ showCustomModal: true });
                 }}
@@ -693,7 +697,7 @@ export class Jeopardy extends React.Component<{
             <IconSettings size={20} />
           </ActionIcon>
           <ActionIcon
-            onClick={() => this.socket?.emit('JPD:undo')}
+            onClick={() => this.socket?.emit("JPD:undo")}
             title="Undo Judge"
             size="lg"
             disabled={!canJudge}
@@ -707,9 +711,9 @@ export class Jeopardy extends React.Component<{
                 const checked = !this.state.readingDisabled;
                 this.setState({ readingDisabled: checked });
                 if (checked) {
-                  window.localStorage.setItem('jeopardy-readingDisabled', '1');
+                  window.localStorage.setItem("jeopardy-readingDisabled", "1");
                 } else {
-                  window.localStorage.removeItem('jeopardy-readingDisabled');
+                  window.localStorage.removeItem("jeopardy-readingDisabled");
                 }
               }}
               label="Reading"
@@ -719,7 +723,7 @@ export class Jeopardy extends React.Component<{
             <Switch
               checked={game?.enableAIJudge}
               onChange={(e) => {
-                this.socket?.emit('JPD:enableAiJudge', e.target.checked);
+                this.socket?.emit("JPD:enableAiJudge", e.target.checked);
               }}
               label="AI Judge"
             />
@@ -728,7 +732,7 @@ export class Jeopardy extends React.Component<{
             <Switch
               checked={isSpectator}
               onChange={(e) => {
-                this.socket?.emit('JPD:spectate', e.target.checked);
+                this.socket?.emit("JPD:spectate", e.target.checked);
               }}
               label="Spectator"
             />
@@ -744,37 +748,42 @@ export class Jeopardy extends React.Component<{
                 </Button> */}
           {game && game.airDate && (
             <Badge
-              style={{ display: 'flex', alignItems: 'center', height: '36px', flexShrink: 0 }}
-              color={getColor((game && game.info) || 'regular')}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                height: "36px",
+                flexShrink: 0,
+              }}
+              color={getColor((game && game.info) || "regular")}
               size="md"
               radius="sm"
             >
-              {new Date(game.airDate + 'T00:00').toLocaleDateString([], {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
+              {new Date(game.airDate + "T00:00").toLocaleDateString([], {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
               })}
-              {game && game.info ? ' - ' + game.info : ''}
+              {game && game.info ? " - " + game.info : ""}
             </Badge>
           )}
         </div>
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            gap: '4px',
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            gap: "4px",
           }}
         >
-          <div style={{ display: 'flex', flexGrow: 1 }}>
+          <div style={{ display: "flex", flexGrow: 1 }}>
             <div
               id="board"
-              className={`board ${this.state.game?.currentQ ? 'currentQ' : ''}`}
+              className={`board ${this.state.game?.currentQ ? "currentQ" : ""}`}
             >
               {this.state.isIntroPlaying && <div id="intro" />}
               {categories.map((cat, i) => (
                 <div key={i} className="category box">
-                  {this.state.categoryMask[i] ? cat : ''}
+                  {this.state.categoryMask[i] ? cat : ""}
                 </div>
               ))}
               {Array.from(Array(5)).map((_, i) => {
@@ -788,9 +797,9 @@ export class Jeopardy extends React.Component<{
                           key={id}
                           id={id}
                           onClick={clue ? () => this.pickQ(id) : undefined}
-                          className={`${clue ? 'value' : ''} box`}
+                          className={`${clue ? "value" : ""} box`}
                         >
-                          {!this.state.clueMask[id] && clue ? clue.value : ''}
+                          {!this.state.clueMask[id] && clue ? clue.value : ""}
                         </div>
                       );
                     })}
@@ -806,8 +815,8 @@ export class Jeopardy extends React.Component<{
                     id="clueContainer"
                     className={`clueContainer ${
                       game.currentDailyDouble && game.waitingForWager
-                        ? 'dailyDouble'
-                        : ''
+                        ? "dailyDouble"
+                        : ""
                     }`}
                   >
                     <div className="category">
@@ -829,11 +838,11 @@ export class Jeopardy extends React.Component<{
                       !game.submitted[this.socket.id!] &&
                       !game.currentDailyDouble &&
                       !isSpectator &&
-                      game.round !== 'final' ? (
-                        <div style={{ display: 'flex' }}>
+                      game.round !== "final" ? (
+                        <div style={{ display: "flex" }}>
                           <Button
                             disabled={this.state.buzzFrozen}
-                            color={game.canBuzz ? 'green' : 'grey'}
+                            color={game.canBuzz ? "green" : "grey"}
                             size="xl"
                             onClick={this.onBuzz}
                             leftSection={
@@ -844,15 +853,15 @@ export class Jeopardy extends React.Component<{
                           </Button>
                           <div
                             style={{
-                              position: 'absolute',
-                              top: '0px',
-                              right: '0px',
+                              position: "absolute",
+                              top: "0px",
+                              right: "0px",
                               zIndex: 1,
                             }}
                           >
                             <Button
                               disabled={this.state.buzzFrozen}
-                              color={game.canBuzz ? 'red' : 'grey'}
+                              color={game.canBuzz ? "red" : "grey"}
                               onClick={() => {
                                 if (game.canBuzz) {
                                   this.submitAnswer(null);
@@ -884,7 +893,7 @@ export class Jeopardy extends React.Component<{
                             this.setState({ localAnswer: e.target.value })
                           }
                           onKeyDown={(e: any) =>
-                            e.key === 'Enter' && this.submitAnswer()
+                            e.key === "Enter" && this.submitAnswer()
                           }
                           rightSection={
                             <ActionIcon onClick={() => this.submitAnswer()}>
@@ -898,8 +907,8 @@ export class Jeopardy extends React.Component<{
                       game.waitingForWager[this.socket.id!] ? (
                         <NumberInput
                           styles={{
-                            label: { textShadow: '1px 1px 2px black' },
-                            section: { marginRight: '4px' },
+                            label: { textShadow: "1px 1px 2px black" },
+                            section: { marginRight: "4px" },
                           }}
                           label={`Wager (${
                             getWagerBounds(
@@ -917,7 +926,7 @@ export class Jeopardy extends React.Component<{
                             this.setState({ localWager: value })
                           }
                           onKeyDown={(e: any) =>
-                            e.key === 'Enter' && this.submitWager()
+                            e.key === "Enter" && this.submitWager()
                           }
                           rightSection={
                             <ActionIcon onClick={() => this.submitWager()}>
@@ -928,9 +937,7 @@ export class Jeopardy extends React.Component<{
                         />
                       ) : null}
                     </div>
-                    <div className={`answer`}>
-                      {game.currentAnswer}
-                    </div>
+                    <div className={`answer`}>{game.currentAnswer}</div>
                     {Boolean(game.playClueEndTS) && (
                       <TimerBar
                         duration={game.playClueEndTS - game.serverTime}
@@ -952,48 +959,50 @@ export class Jeopardy extends React.Component<{
                         text="Waiting for wagers. . ."
                       />
                     )}
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: '0px',
-                          right: '0px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                        }}
-                      >
-                        {game.canNextQ && <Button
-                          onClick={() => this.socket?.emit('JPD:skipQ')}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "0px",
+                        right: "0px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                      }}
+                    >
+                      {game.canNextQ && (
+                        <Button
+                          onClick={() => this.socket?.emit("JPD:skipQ")}
                           leftSection={<IconPlayerTrackNextFilled />}
                         >
                           Next
-                        </Button>}
-                        {game.currentAnswer && canJudge && (
-                          <Button
-                            onClick={() =>
-                              this.setState({ showJudgingModal: true })
-                            }
-                            leftSection={<IconGavel />}
-                          >
-                            Judge
-                          </Button>
-                        )}
-                      </div>
+                        </Button>
+                      )}
+                      {game.currentAnswer && canJudge && (
+                        <Button
+                          onClick={() =>
+                            this.setState({ showJudgingModal: true })
+                          }
+                          leftSection={<IconGavel />}
+                        >
+                          Judge
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
-              {game && game.round === 'end' && (
+              {game && game.round === "end" && (
                 <div id="endgame">
-                  <h1 style={{ color: 'white' }}>Winner!</h1>
-                  <div style={{ display: 'flex' }}>
+                  <h1 style={{ color: "white" }}>Winner!</h1>
+                  <div style={{ display: "flex" }}>
                     {this.getWinners().map((winnerId: string) => (
                       <img
                         key={winnerId}
                         alt=""
-                        style={{ width: '200px', height: '200px' }}
+                        style={{ width: "200px", height: "200px" }}
                         src={getDefaultPicture(
                           participants.find((p) => p.id === winnerId)?.name ??
-                            '',
+                            "",
                           getColorHex(winnerId),
                         )}
                       />
@@ -1003,39 +1012,39 @@ export class Jeopardy extends React.Component<{
               )}
             </div>
           </div>
-          <div style={{ display: 'flex', overflowX: 'auto', flexShrink: 0 }}>
+          <div style={{ display: "flex", overflowX: "auto", flexShrink: 0 }}>
             {participants.map((p) => {
               return (
                 <div key={p.id} className="scoreboard">
-                  <div className="picture" style={{ position: 'relative' }}>
+                  <div className="picture" style={{ position: "relative" }}>
                     <img
                       alt=""
-                      src={getDefaultPicture(p.name ?? '', getColorHex(p.id))}
+                      src={getDefaultPicture(p.name ?? "", getColorHex(p.id))}
                     />
                     <div
                       style={{
-                        position: 'absolute',
-                        bottom: '4px',
-                        left: '0px',
-                        width: '100%',
-                        backgroundColor: '#' + getColorHex(p.id),
-                        color: 'white',
-                        borderRadius: '4px',
-                        fontSize: '10px',
+                        position: "absolute",
+                        bottom: "4px",
+                        left: "0px",
+                        width: "100%",
+                        backgroundColor: "#" + getColorHex(p.id),
+                        color: "white",
+                        borderRadius: "4px",
+                        fontSize: "10px",
                         fontWeight: 700,
-                        display: 'flex',
+                        display: "flex",
                       }}
                     >
                       <div
                         title={p.name || p.id}
                         style={{
-                          width: '100%',
-                          backdropFilter: 'brightness(80%)',
-                          padding: '4px',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          display: 'inline-block',
+                          width: "100%",
+                          backdropFilter: "brightness(80%)",
+                          padding: "4px",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          display: "inline-block",
                         }}
                       >
                         {p.name || p.id}
@@ -1083,23 +1092,23 @@ export class Jeopardy extends React.Component<{
                   </div>
                   <div
                     className={`points ${
-                      game && game.scores[p.id] < 0 ? 'negative' : ''
+                      game && game.scores[p.id] < 0 ? "negative" : ""
                     }`}
                   >
                     {(game?.scores[p.id] || 0).toLocaleString()}
                   </div>
                   <div
                     className={`answerBox ${
-                      game?.buzzes[p.id] ? 'buzz' : ''
-                    } ${game?.judges[p.id] === false ? 'negative' : ''}`}
+                      game?.buzzes[p.id] ? "buzz" : ""
+                    } ${game?.judges[p.id] === false ? "negative" : ""}`}
                   >
                     {game && game.answers[p.id]}
                     {game && p.id in game.wagers ? (
                       <div
                         style={{
-                          position: 'absolute',
-                          top: '2px',
-                          right: '2px',
+                          position: "absolute",
+                          top: "2px",
+                          right: "2px",
                         }}
                       >
                         <Badge title="Wager" color="gray" size="xs" radius="xs">
@@ -1110,16 +1119,16 @@ export class Jeopardy extends React.Component<{
                     <div className="timeOffset">
                       {this.getBuzzOffset(p.id) && this.getBuzzOffset(p.id) > 0
                         ? `+${(this.getBuzzOffset(p.id) / 1000).toFixed(3)}`
-                        : ''}
+                        : ""}
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
-          {false && process.env.NODE_ENV === 'development' && (
+          {false && process.env.NODE_ENV === "development" && (
             <pre
-              style={{ color: 'white', height: '200px', overflow: 'scroll' }}
+              style={{ color: "white", height: "200px", overflow: "scroll" }}
             >
               {JSON.stringify(game, null, 2)}
             </pre>
@@ -1162,21 +1171,21 @@ function TimerBar({
   return (
     <div
       style={{
-        position: 'absolute',
-        bottom: '0px',
-        left: '0px',
-        height: '14px',
-        width: width + '%',
-        backgroundColor: secondary ? '#16AB39' : '#0E6EB8',
+        position: "absolute",
+        bottom: "0px",
+        left: "0px",
+        height: "14px",
+        width: width + "%",
+        backgroundColor: secondary ? "#16AB39" : "#0E6EB8",
         transition: `${duration / 1000}s width linear`,
-        fontSize: '12px',
-        lineHeight: '10px',
+        fontSize: "12px",
+        lineHeight: "10px",
         // textShadow: '1px 1px 2px black',
-        textAlign: 'left',
-        padding: '1px 6px',
-        display: 'flex',
-        overflow: 'visible',
-        whiteSpace: 'nowrap',
+        textAlign: "left",
+        padding: "1px 6px",
+        display: "flex",
+        overflow: "visible",
+        whiteSpace: "nowrap",
         // alignItems: 'center',
       }}
     >
@@ -1190,11 +1199,11 @@ function getWagerBounds(round: string, score: number) {
   // Can bet up to current score, minimum of 1000 in single or 2000 in double, 0 in final
   let maxWager = 0;
   let minWager = 5;
-  if (round === 'jeopardy') {
+  if (round === "jeopardy") {
     maxWager = Math.max(score || 0, 1000);
-  } else if (round === 'double') {
+  } else if (round === "double") {
     maxWager = Math.max(score || 0, 2000);
-  } else if (round === 'final') {
+  } else if (round === "final") {
     minWager = 0;
     maxWager = Math.max(score || 0, 0);
   }
@@ -1240,9 +1249,9 @@ const BulkJudgeModal = ({
                   placeholder="Select"
                   value={decisions[answer]}
                   data={[
-                    { value: 'true', label: 'Correct' },
-                    { value: 'false', label: 'Incorrect' },
-                    { value: 'skip', label: 'Skip' },
+                    { value: "true", label: "Correct" },
+                    { value: "false", label: "Incorrect" },
+                    { value: "skip", label: "Skip" },
                   ]}
                   onChange={(value, option) => {
                     const newDecisions = {
@@ -1262,9 +1271,9 @@ const BulkJudgeModal = ({
                   .map((p) => {
                     return (
                       <img
-                        style={{ width: '30px' }}
+                        style={{ width: "30px" }}
                         alt=""
-                        src={getDefaultPicture(p.name ?? '', getColorHex(p.id))}
+                        src={getDefaultPicture(p.name ?? "", getColorHex(p.id))}
                       />
                     );
                   })}
@@ -1275,9 +1284,9 @@ const BulkJudgeModal = ({
       </Table>
       <div
         style={{
-          marginTop: '10px',
-          display: 'flex',
-          justifyContent: 'flex-end',
+          marginTop: "10px",
+          display: "flex",
+          justifyContent: "flex-end",
         }}
       >
         <Button
@@ -1290,7 +1299,7 @@ const BulkJudgeModal = ({
               const decision = decisions[answer];
               return {
                 id: ans[0],
-                correct: decision === 'skip' ? null : JSON.parse(decision),
+                correct: decision === "skip" ? null : JSON.parse(decision),
               };
             });
             bulkJudge(arr);
@@ -1332,7 +1341,7 @@ const SettingsModal = ({
   return (
     <Modal opened onClose={onClose} title="Settings">
       <h4>Settings will be applied to any new games you create.</h4>
-      <div style={{ gap: '4px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ gap: "4px", display: "flex", flexDirection: "column" }}>
         <Switch
           checked={makeMeHost}
           onChange={(e) => setMakeMeHost(e.currentTarget.checked)}
@@ -1350,10 +1359,10 @@ const SettingsModal = ({
         />
         <div
           style={{
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center',
-            fontSize: '14px',
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
+            fontSize: "14px",
           }}
         >
           <NumberInput
@@ -1367,10 +1376,10 @@ const SettingsModal = ({
         </div>
         <div
           style={{
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center',
-            fontSize: '14px',
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
+            fontSize: "14px",
           }}
         >
           <NumberInput
@@ -1385,9 +1394,9 @@ const SettingsModal = ({
       </div>
       <div
         style={{
-          display: 'flex',
-          marginTop: '10px',
-          justifyContent: 'flex-end',
+          display: "flex",
+          marginTop: "10px",
+          justifyContent: "flex-end",
         }}
       >
         <Button
@@ -1413,14 +1422,14 @@ const SettingsModal = ({
 export const ErrorModal = ({ error }: { error: string }) => {
   return (
     <Modal opened onClose={() => {}}>
-      <Title order={1} style={{ textAlign: 'center' }}>
+      <Title order={1} style={{ textAlign: "center" }}>
         {error}
       </Title>
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div style={{ display: "flex", justifyContent: "center" }}>
         <Button
           size="xl"
           onClick={() => {
-            window.location.href = '/';
+            window.location.href = "/";
           }}
           leftSection={<IconHome />}
         >
@@ -1438,7 +1447,12 @@ const renderQuestion = (input: string | undefined): React.ReactNode | null => {
   // If a valid image string, return an image
   let regex = /^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|heic|heif)\??.*$/gim;
   if (input?.match(regex)) {
-    return <img style={{ width: '100%', height: '100%', objectFit: 'contain' }} src={input} />;
+    return (
+      <img
+        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        src={input}
+      />
+    );
   }
   return input;
 };

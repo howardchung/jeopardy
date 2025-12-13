@@ -1,39 +1,39 @@
-import util from 'node:util';
-import { Hono } from 'hono';
-import { compress } from 'hono/compress';
-import { serve } from '@hono/node-server';
-import { serveStatic } from '@hono/node-server/serve-static';
-import { cors } from 'hono/cors';
-import os from 'node:os';
-import { Server } from 'socket.io';
-import { Room } from './room.ts';
-import { redis, getRedisCountDay } from './redis.ts';
-import { makeRoomName, makeUserName } from './moniker.ts';
-import config from './config.ts';
-import { getJDataStats } from './jData.ts';
+import util from "node:util";
+import { Hono } from "hono";
+import { compress } from "hono/compress";
+import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
+import { cors } from "hono/cors";
+import os from "node:os";
+import { Server } from "socket.io";
+import { Room } from "./room.ts";
+import { redis, getRedisCountDay } from "./redis.ts";
+import { makeRoomName, makeUserName } from "./moniker.ts";
+import config from "./config.ts";
+import { getJDataStats } from "./jData.ts";
 
 const rooms = new Map<string, Room>();
 const app = new Hono();
-app.use('*', cors());
-app.use('*', compress());
-app.use(serveStatic({ root: './build' }));
-app.get('/ping', async (c) => {
-  return c.json('pong');
+app.use("*", cors());
+app.use("*", compress());
+app.use(serveStatic({ root: "./build" }));
+app.get("/ping", async (c) => {
+  return c.json("pong");
 });
 
-app.get('/metadata', async (c) => {
+app.get("/metadata", async (c) => {
   return c.json(getJDataStats());
 });
 
-app.get('/stats', async (c) => {
-  if (c.req.query('key') && c.req.query('key') === config.STATS_KEY) {
+app.get("/stats", async (c) => {
+  if (c.req.query("key") && c.req.query("key") === config.STATS_KEY) {
     const roomData: any[] = [];
     let currentUsers = 0;
     rooms.forEach((room) => {
       const obj = {
         creationTime: room.creationTime,
         roomId: room.roomId,
-        rosterLength: room.getAllPlayers().filter(p => p.connected).length,
+        rosterLength: room.getAllPlayers().filter((p) => p.connected).length,
       };
       currentUsers += obj.rosterLength;
       roomData.push(obj);
@@ -42,24 +42,24 @@ app.get('/stats', async (c) => {
     roomData.sort((a, b) => b.creationTime - a.creationTime);
     const cpuUsage = os.loadavg();
     const redisUsage = (await redis?.info())
-      ?.split('\n')
-      .find((line) => line.startsWith('used_memory:'))
-      ?.split(':')[1]
+      ?.split("\n")
+      .find((line) => line.startsWith("used_memory:"))
+      ?.split(":")[1]
       .trim();
     // const chatMessages = await getRedisCountDay('chatMessages');
-    const newGamesLastDay = await getRedisCountDay('newGames');
-    const customGamesLastDay = await getRedisCountDay('customGames');
-    const aiJudgeLastDay = await getRedisCountDay('aiJudge');
-    const aiShortcutLastDay = await getRedisCountDay('aiShortcut');
-    const aiChatGptLastDay = await getRedisCountDay('aiChatGpt');
-    const aiRefuseLastDay = await getRedisCountDay('aiRefuse');
-    const undoLastDay = await getRedisCountDay('undo');
-    const aiUndoLastDay = await getRedisCountDay('aiUndo');
-    const aiVoiceLastDay = await getRedisCountDay('aiVoice');
-    const savesLastDay = await getRedisCountDay('saves');
-    const nonTrivialJudges = await redis?.llen('jpd:nonTrivialJudges');
-    const jeopardyResults = await redis?.llen('jpd:results');
-    const aiJudges = await redis?.llen('jpd:aiJudges');
+    const newGamesLastDay = await getRedisCountDay("newGames");
+    const customGamesLastDay = await getRedisCountDay("customGames");
+    const aiJudgeLastDay = await getRedisCountDay("aiJudge");
+    const aiShortcutLastDay = await getRedisCountDay("aiShortcut");
+    const aiChatGptLastDay = await getRedisCountDay("aiChatGpt");
+    const aiRefuseLastDay = await getRedisCountDay("aiRefuse");
+    const undoLastDay = await getRedisCountDay("undo");
+    const aiUndoLastDay = await getRedisCountDay("aiUndo");
+    const aiVoiceLastDay = await getRedisCountDay("aiVoice");
+    const savesLastDay = await getRedisCountDay("saves");
+    const nonTrivialJudges = await redis?.llen("jpd:nonTrivialJudges");
+    const jeopardyResults = await redis?.llen("jpd:results");
+    const aiJudges = await redis?.llen("jpd:aiJudges");
 
     return c.json({
       uptime: process.uptime(),
@@ -86,45 +86,45 @@ app.get('/stats', async (c) => {
     });
   } else {
     c.status(403);
-    return c.json({ error: 'Access Denied' });
+    return c.json({ error: "Access Denied" });
   }
 });
 
-app.get('/jeopardyResults', async (c) => {
-  if (c.req.query('key') && c.req.query('key') === config.STATS_KEY) {
-    const data = await redis?.lrange('jpd:results', 0, -1);
+app.get("/jeopardyResults", async (c) => {
+  if (c.req.query("key") && c.req.query("key") === config.STATS_KEY) {
+    const data = await redis?.lrange("jpd:results", 0, -1);
     return c.json(data);
   } else {
     c.status(403);
-    return c.json({ error: 'Access Denied' });
+    return c.json({ error: "Access Denied" });
   }
 });
 
-app.get('/aiJudges', async (c) => {
-  if (c.req.query('key') && c.req.query('key') === config.STATS_KEY) {
-    const data = await redis?.lrange('jpd:aiJudges', 0, -1);
+app.get("/aiJudges", async (c) => {
+  if (c.req.query("key") && c.req.query("key") === config.STATS_KEY) {
+    const data = await redis?.lrange("jpd:aiJudges", 0, -1);
     return c.json(data);
   } else {
     c.status(403);
-    return c.json({ error: 'Access Denied' });
+    return c.json({ error: "Access Denied" });
   }
 });
 
-app.post('/createRoom', async (c) => {
-  const genName = () => '/' + makeRoomName();
+app.post("/createRoom", async (c) => {
+  const genName = () => "/" + makeRoomName();
   let name = genName();
   // Keep retrying until no collision
   while (rooms.has(name)) {
     name = genName();
   }
-  console.log('createRoom: ', name);
+  console.log("createRoom: ", name);
   const newRoom = new Room(io, name);
   newRoom.saveRoom();
   rooms.set(name, newRoom);
   return c.json({ name: name.slice(1) });
 });
 
-app.get('/generateName', async (c) => {
+app.get("/generateName", async (c) => {
   return c.text(makeUserName());
 });
 
@@ -152,15 +152,15 @@ const server = serve({
 });
 server.close();
 const io = new Server(server, {
-  cors: { origin: '*' },
-  transports: ['websocket'],
+  cors: { origin: "*" },
+  transports: ["websocket"],
 });
 
 if (redis) {
   // Load rooms from Redis
-  console.log('loading rooms from redis');
-  const keys = await redis.keys('/*');
-  console.log(util.format('found %s rooms in redis', keys.length));
+  console.log("loading rooms from redis");
+  const keys = await redis.keys("/*");
+  console.log(util.format("found %s rooms in redis", keys.length));
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     const roomData = await redis.get(key);

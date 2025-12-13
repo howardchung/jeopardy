@@ -1,29 +1,29 @@
 @font-face {
-  font-family: 'Korinna';
+  font-family: "Korinna";
   font-style: normal;
   font-weight: 400;
-  src: url('./korinna-regular.otf');
+  src: url("./korinna-regular.otf");
 }
 
 @font-face {
-  font-family: 'Swiss 911';
+  font-family: "Swiss 911";
   font-style: normal;
   font-weight: 400;
-  src: url('./swiss911-xcm-bt.ttf');
+  src: url("./swiss911-xcm-bt.ttf");
 }
 
 @font-face {
-  font-family: 'Univers';
+  font-family: "Univers";
   font-style: normal;
   font-weight: 400;
-  src: url('./univers-75-black.ttf');
+  src: url("./univers-75-black.ttf");
 }
 
 @font-face {
-  font-family: 'Gyparody';
+  font-family: "Gyparody";
   font-style: normal;
   font-weight: 400;
-  src: url('./gyparody.ttf');
+  src: url("./gyparody.ttf");
 }
 
 .controlsContainer {
@@ -96,7 +96,7 @@
 }
 
 .category {
-  font-family: 'Swiss 911';
+  font-family: "Swiss 911";
   font-size: 1.25em;
   line-height: 1em;
   letter-spacing: 1px;
@@ -105,7 +105,7 @@
 }
 
 .value {
-  font-family: 'Swiss 911';
+  font-family: "Swiss 911";
   font-size: 3em;
   line-height: 1em;
   color: #d7a04b;
@@ -142,12 +142,12 @@
   background-position-x: center;
   background-size: contain;
   background-repeat: no-repeat;
-  background-image: url('./jeopardy-daily-double.png');
+  background-image: url("./jeopardy-daily-double.png");
   background-color: rgba(0, 0, 0, 1);
 }
 
 .clue {
-  font-family: 'Korinna';
+  font-family: "Korinna";
   text-transform: uppercase;
   color: white;
   font-size: 2em;
@@ -167,7 +167,7 @@
 }
 
 .answer {
-  font-family: 'Korinna';
+  font-family: "Korinna";
   text-transform: uppercase;
   color: white;
   font-size: 22px;
@@ -200,7 +200,7 @@
 }
 
 .scoreboard .points {
-  font-family: 'Univers';
+  font-family: "Univers";
   color: white;
   background-color: #0000b5;
   display: flex;
@@ -229,7 +229,7 @@
 }
 
 .scoreboard .answerBox {
-  font-family: 'Korinna';
+  font-family: "Korinna";
   color: white;
   background-color: #0000b5;
   display: flex;

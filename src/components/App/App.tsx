@@ -1,24 +1,24 @@
-import './App.css';
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActionIcon, Grid, TextInput } from '@mantine/core';
-import { IconArrowsShuffle } from '@tabler/icons-react';
-import { serverPath, generateName } from '../../utils';
-import { Chat } from '../Chat/Chat';
-import { JeopardyTopBar } from '../TopBar/TopBar';
-import { Jeopardy } from '../Jeopardy/Jeopardy';
-import { type Socket } from 'socket.io-client';
+import "./App.css";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActionIcon, Grid, TextInput } from "@mantine/core";
+import { IconArrowsShuffle } from "@tabler/icons-react";
+import { serverPath, generateName } from "../../utils";
+import { Chat } from "../Chat/Chat";
+import { JeopardyTopBar } from "../TopBar/TopBar";
+import { Jeopardy } from "../Jeopardy/Jeopardy";
+import { type Socket } from "socket.io-client";
 
 export function App() {
   const [participants, setParticipants] = useState<User[]>([]);
   const [chat, setChat] = useState<ChatMessage[]>([]);
-  const [myName, setMyName] = useState('');
+  const [myName, setMyName] = useState("");
   const [scrollTimestamp, setScrollTimestamp] = useState(0);
   const [socket, setSocket] = useState<Socket | undefined>(undefined);
 
   useEffect(() => {
     const heartbeat = window.setInterval(
       () => {
-        fetch(serverPath + '/ping');
+        fetch(serverPath + "/ping");
       },
       10 * 60 * 1000,
     );
@@ -31,8 +31,8 @@ export function App() {
     (name: string) => {
       if (socket) {
         setMyName(name);
-        socket.emit('CMD:name', name);
-        window.localStorage.setItem('watchparty-username', name);
+        socket.emit("CMD:name", name);
+        window.localStorage.setItem("watchparty-username", name);
       }
     },
     [socket],
@@ -42,9 +42,9 @@ export function App() {
     <React.Fragment>
       <JeopardyTopBar />
       {
-        <Grid style={{ paddingLeft: '10px', paddingRight: '10px' }} gutter={10}>
+        <Grid style={{ paddingLeft: "10px", paddingRight: "10px" }} gutter={10}>
           <Grid.Col
-            style={{ position: 'relative' }}
+            style={{ position: "relative" }}
             span={{ base: 12, md: 9 }}
             className="fullHeightColumn"
           >
@@ -60,7 +60,7 @@ export function App() {
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 3 }} className="fullHeightColumn">
             <TextInput
-              leftSection={<div style={{ whiteSpace: 'nowrap' }}>Name:</div>}
+              leftSection={<div style={{ whiteSpace: "nowrap" }}>Name:</div>}
               leftSectionWidth={60}
               value={myName}
               onChange={(e) => updateName(e.target.value)}
