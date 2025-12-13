@@ -396,8 +396,8 @@ export class Jeopardy extends React.Component<{
       await new Promise((resolve) => setTimeout(resolve, 2000));
       return;
     }
-    if (text.startsWith("!")) {
-      // This is probably markdown
+    if (text.startsWith("!") || text.startsWith("http")) {
+      // This is probably markdown or image
       return;
     }
     // if enabled, attempt using pregen AI voice
@@ -843,7 +843,7 @@ export class Jeopardy extends React.Component<{
                           <Button
                             disabled={this.state.buzzFrozen}
                             color={game.canBuzz ? "green" : "grey"}
-                            size="xl"
+                            size="lg"
                             onClick={this.onBuzz}
                             leftSection={
                               game.canBuzz ? <IconBulb /> : <IconLock />
@@ -1427,7 +1427,7 @@ export const ErrorModal = ({ error }: { error: string }) => {
       </Title>
       <div style={{ display: "flex", justifyContent: "center" }}>
         <Button
-          size="xl"
+          size="lg"
           onClick={() => {
             window.location.href = "/";
           }}
