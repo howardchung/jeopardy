@@ -4,7 +4,6 @@
   "private": true,
   "dependencies": {
     "@hono/node-server": "^1.19.7",
-    "@tabler/icons-react": "^3.35.0",
     "hono": "^4.10.8",
     "ioredis": "^5.8.2",
     "openai": "^5.1.1",
@@ -40,6 +39,7 @@
     ]
   },
   "devDependencies": {
+    "@tabler/icons-react": "^3.35.0",
     "@types/node": "^24.10.2",
     "@types/papaparse": "^5.5.1",
     "@types/react": "^18.3.18",
