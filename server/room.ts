@@ -56,7 +56,7 @@ export class Room {
         // Remove players that have been disconnected for a long time
         // NOTE: If we're waiting to judge this player's answer, removing them will block the game from continuing
         // Waiting for wager is OK because we automatically move on after timeout
-        const beforeLength = this.getAllPlayers();
+        const beforeLength = this.roster.length;
         const now = Date.now();
         this.roster = this.roster.filter(
           (p) =>
@@ -64,37 +64,50 @@ export class Room {
             this.jpd.public.currentJudgeAnswer === p.id ||
             now - p.disconnectTime < 60 * 60 * 1000,
         );
-        const afterLength = this.getAllPlayers();
+        const afterLength = this.roster.length;
         if (beforeLength !== afterLength) {
           this.sendRoster();
         }
       },
-      30 * 60 * 1000,
+      10 * 60 * 1000,
     );
 
     io.of(roomId).on("connection", (socket: Socket) => {
-      this.jpd.public.scores[socket.id] = 0;
-
+      // We use the clientId for game state
+      // This avoids potentially unreliable reconnection issues since socket.id changes on each reconnection
+      // TODO We should probably validate that a reconnecting player is who they say they are (maybe via a second secret string passed on initial connection?)
+      // Otherwise a malicious user can spoof as another player (but we kind of trust the players anyway for judging)
       const clientId = socket.handshake.query?.clientId as string;
-      // clientid map keeps track of the unique clients we've seen
-      // if we saw this ID already, do the reconnect logic (transfer state)
-      // The list is persisted, so if the server reboots, all clients reconnect and should have state restored
-      if (this.clientIds[clientId]) {
-        const newId = socket.id;
-        const oldId = this.clientIds[clientId];
-        this.handleReconnect(newId, oldId);
+      if (!isValidUUID(clientId)) {
+        // Prevent prototype pollution since clientId is user input by validating UUID
+        socket.disconnect();
+        return;
       }
-      if (!this.getAllPlayers().find((p) => p.id === socket.id)) {
+
+      // clientid map keeps track of the unique clients we've seen
+      // maybe set the value to a second secret string that's used to compare when reconnecting to verify it's the same user (prevent spoofing)
+      // The list is persisted, so if the server reboots, all clients reconnect and should have state restored
+      if (!this.clientIds[clientId]) {
+        this.clientIds[clientId] = "1";
+        this.jpd.public.scores[clientId] = 0;
+      }
+
+      // Add to roster, or update if they're just reconnecting
+      const existingIndex = this.roster.findIndex((p) => p.id === clientId);
+      if (existingIndex === -1) {
         // New client joining, add to roster
         this.roster.push({
-          id: socket.id,
+          id: clientId,
           name: undefined,
           connected: true,
           disconnectTime: 0,
           spectator: false,
         });
+      } else {
+        // Reconnecting user
+        this.roster[existingIndex].connected = true;
+        this.roster[existingIndex].disconnectTime = 0;
       }
-      this.clientIds[clientId] = socket.id;
 
       this.sendState();
       this.sendRoster();
@@ -104,19 +117,19 @@ export class Room {
         if (!data) {
           return;
         }
-        if (data && data.length > 100) {
+        if (data && data.length > 50) {
           return;
         }
-        const target = this.getAllPlayers().find((p) => p.id === socket.id);
-        if (target) {
-          target.name = data;
+        const targetIndex = this.roster.findIndex((p) => p.id === clientId);
+        if (targetIndex >= 0) {
+          this.roster[targetIndex].name = data;
           this.sendRoster();
         }
       });
       socket.on("JPD:spectate", (spectate: boolean) => {
-        const target = this.getAllPlayers().find((p) => p.id === socket.id);
-        if (target) {
-          target.spectator = Boolean(spectate);
+        const targetIndex = this.roster.findIndex((p) => p.id === clientId);
+        if (targetIndex >= 0) {
+          this.roster[targetIndex].spectator = Boolean(spectate);
           this.sendRoster();
         }
       });
@@ -130,14 +143,14 @@ export class Room {
         if (typeof options !== "object") {
           return;
         }
-        this.loadEpisode(socket, options, data);
+        this.loadEpisode(clientId, options, data);
       });
       socket.on("JPD:pickQ", (id: string) => {
-        if (this.settings.host && socket.id !== this.settings.host) {
+        if (this.settings.host && clientId !== this.settings.host) {
           // Not the host
           return;
         }
-        if (this.isSpectator(socket.id)) {
+        if (this.isSpectator(clientId)) {
           // Don't allow spectators to pick (avoid them getting daily doubles)
           return;
         }
@@ -147,7 +160,7 @@ export class Room {
           // If they're disconnected or spectating or gone, skip check to avoid blocking game
           this.getActivePlayers().find((p) => p.id === this.jpd.public.picker)
             ?.connected &&
-          this.jpd.public.picker !== socket.id
+          this.jpd.public.picker !== clientId
         ) {
           return;
         }
@@ -167,15 +180,15 @@ export class Room {
         if (this.jpd.board[id].dd && !this.settings.allowMultipleCorrect) {
           // if it is, don't show it yet, we need to collect wager info based only on category
           this.jpd.public.currentDailyDouble = true;
-          this.jpd.public.dailyDoublePlayer = socket.id;
-          this.jpd.public.waitingForWager = { [socket.id]: true };
+          this.jpd.public.dailyDoublePlayer = clientId;
+          this.jpd.public.waitingForWager = { [clientId]: true };
           this.setWagerTimeout(this.settings.answerTimeout);
           // Autobuzz the player who picked the DD, all others pass
           // Note: if a player joins during wagering, they might not be marked as passed (submitted)
           // Currently client doesn't show the answer box because it checks for buzzed in players
           // But there's probably no server block on them submitting answers
           this.getActivePlayers().forEach((p) => {
-            if (p.id === socket.id) {
+            if (p.id === clientId) {
               this.jpd.public.buzzes[p.id] = Date.now();
             } else {
               this.jpd.public.submitted[p.id] = true;
@@ -192,14 +205,14 @@ export class Room {
         if (!this.jpd.public.canBuzz) {
           return;
         }
-        if (this.isSpectator(socket.id)) {
+        if (this.isSpectator(clientId)) {
           // Don't allow spectators to buzz
           return;
         }
-        if (this.jpd.public.buzzes[socket.id]) {
+        if (this.jpd.public.buzzes[clientId]) {
           return;
         }
-        this.jpd.public.buzzes[socket.id] = Date.now();
+        this.jpd.public.buzzes[clientId] = Date.now();
         this.sendState();
       });
       socket.on("JPD:answer", (question, answer) => {
@@ -211,18 +224,20 @@ export class Room {
           // Time was already up
           return;
         }
-        if (answer && answer.length > 10000) {
+        if (answer && answer.length > 1000) {
           // Answer too long
           return;
         }
-        if (this.isSpectator(socket.id)) {
+        if (this.isSpectator(clientId)) {
           // Don't allow spectators to answer
           return;
         }
-        if (answer) {
-          this.jpd.answers[socket.id] = answer;
+        if (this.jpd.public.submitted[clientId]) {
+          // Answer was already submitted
+          return;
         }
-        this.jpd.public.submitted[socket.id] = true;
+        this.jpd.answers[clientId] = answer;
+        this.jpd.public.submitted[clientId] = true;
         this.sendState();
         if (
           // In final, we always wait the full designated time
@@ -237,61 +252,28 @@ export class Room {
       });
 
       socket.on("JPD:wager", (wager) => {
-        if (this.isSpectator(socket.id)) {
+        if (this.isSpectator(clientId)) {
           // Don't allow spectators to wager
           return;
         }
-        this.submitWager(socket.id, wager);
+        this.submitWager(clientId, wager);
       });
       socket.on("JPD:judge", (data) => {
-        if (this.settings.host && socket.id !== this.settings.host) {
+        if (this.settings.host && clientId !== this.settings.host) {
           // Not the host
           return;
         }
-        if (this.isSpectator(socket.id)) {
+        if (this.isSpectator(clientId)) {
           return;
         }
-        this.doHumanJudge(socket, data);
-      });
-      socket.on("JPD:bulkJudge", (data) => {
-        if (!data) {
-          return;
-        }
-        if (this.settings.host && socket.id !== this.settings.host) {
-          // Not the host
-          return;
-        }
-        if (this.isSpectator(socket.id)) {
-          return;
-        }
-        // Check if the next player to be judged is in the input data
-        // If so, doJudge for that player
-        // Check if we advanced to the next question, otherwise keep doing
-        let count = 0;
-        while (
-          this.jpd.public.currentJudgeAnswer !== undefined &&
-          count <= data.length
-        ) {
-          // The bulkjudge may not contain all decisions. Stop if we did as many decisions as the input data
-          count += 1;
-          console.log("[BULKJUDGE]", count, data.length);
-          const id = this.jpd.public.currentJudgeAnswer;
-          const match = data.find((d: any) => d.id === id);
-          if (match) {
-            this.doHumanJudge(socket, match);
-          } else {
-            // Player to be judged isn't in the input
-            // Stop judging and revert to manual (or let the user resubmit, we should prevent duplicates)
-            break;
-          }
-        }
+        this.doHumanJudge(clientId, data);
       });
       socket.on("JPD:undo", () => {
-        if (this.settings.host && socket.id !== this.settings.host) {
+        if (this.settings.host && clientId !== this.settings.host) {
           // Not the host
           return;
         }
-        if (this.isSpectator(socket.id)) {
+        if (this.isSpectator(clientId)) {
           return;
         }
         // Reset the game state to the last snapshot
@@ -321,7 +303,7 @@ export class Room {
         // That way we can decide to use AI judge after the first answer has already been revealed
       });
       socket.on("CMD:chat", (data: string) => {
-        if (data && data.length > 10000) {
+        if (data && data.length > 5000) {
           // TODO add some validation on client side too so we don't just drop long messages
           return;
         }
@@ -335,16 +317,16 @@ export class Room {
             data.split(" ")[1] ?? "https://azure.howardchung.net/rvc";
           this.pregenAIVoices(rvcServer);
         }
-        const sender = this.getAllPlayers().find((p) => p.id === socket.id);
-        const chatMsg = { id: socket.id, name: sender?.name, msg: data };
-        this.addChatMessage(socket, chatMsg);
+        const sender = this.roster.find((p) => p.id === clientId);
+        const chatMsg = { id: clientId, name: sender?.name, msg: data };
+        this.addChatMessage(chatMsg);
       });
       socket.on("disconnect", () => {
         // Mark the user disconnected
-        let target = this.getAllPlayers().find((p) => p.id === socket.id);
-        if (target) {
-          target.connected = false;
-          target.disconnectTime = Date.now();
+        let targetIndex = this.roster.findIndex((p) => p.id === clientId);
+        if (targetIndex >= 0) {
+          this.roster[targetIndex].connected = false;
+          this.roster[targetIndex].disconnectTime = Date.now();
         }
         this.sendRoster();
       });
@@ -413,7 +395,7 @@ export class Room {
     redisCount("saves");
   };
 
-  addChatMessage = (socket: Socket | undefined, chatMsg: any) => {
+  addChatMessage = (chatMsg: any) => {
     const chatWithTime: ChatMessage = {
       ...chatMsg,
       timestamp: new Date().toISOString(),
@@ -450,77 +432,11 @@ export class Room {
     return this.roster.filter((p) => !p.spectator);
   };
 
-  getAllPlayers = () => {
-    // Return all players regardless of connection state or spectator
-    return this.roster;
-  };
-
   isSpectator = (id: string) => {
-    return this.getAllPlayers().find((p) => p.id === id)?.spectator;
+    return this.roster.find((p) => p.id === id)?.spectator;
   };
 
-  handleReconnect = (newId: string, oldId: string) => {
-    console.log("[RECONNECT] transfer %s to %s", oldId, newId);
-    // Update the roster with the new ID and connected state
-    const target = this.getAllPlayers().find((p) => p.id === oldId);
-    if (target) {
-      target.id = newId;
-      target.connected = true;
-      target.disconnectTime = 0;
-    }
-    if (this.jpd.public.scores?.[oldId]) {
-      this.jpd.public.scores[newId] = this.jpd.public.scores[oldId];
-      delete this.jpd.public.scores[oldId];
-    }
-    if (this.jpd.public.buzzes?.[oldId]) {
-      this.jpd.public.buzzes[newId] = this.jpd.public.buzzes[oldId];
-      delete this.jpd.public.buzzes[oldId];
-    }
-    if (this.jpd.public.judges?.[oldId]) {
-      this.jpd.public.judges[newId] = this.jpd.public.judges[oldId];
-      delete this.jpd.public.judges[oldId];
-    }
-    if (this.jpd.public.submitted?.[oldId]) {
-      this.jpd.public.submitted[newId] = this.jpd.public.submitted[oldId];
-      delete this.jpd.public.submitted[oldId];
-    }
-    if (this.jpd.public.answers?.[oldId]) {
-      this.jpd.public.answers[newId] = this.jpd.public.answers[oldId];
-      delete this.jpd.public.answers[oldId];
-    }
-    if (this.jpd.public.wagers?.[oldId]) {
-      this.jpd.public.wagers[newId] = this.jpd.public.wagers[oldId];
-      delete this.jpd.public.wagers[oldId];
-    }
-    // Note: two copies of answers and wagers exist, a public and non-public version, so we need to copy both
-    // Alternatively, we can just have some state to tracks whether to emit the answers and wagers and keep both in public only
-    if (this.jpd.answers?.[oldId]) {
-      this.jpd.answers[newId] = this.jpd.answers[oldId];
-      delete this.jpd.answers[oldId];
-    }
-    if (this.jpd.wagers?.[oldId]) {
-      this.jpd.wagers[newId] = this.jpd.wagers[oldId];
-      delete this.jpd.wagers[oldId];
-    }
-    if (this.jpd.public.waitingForWager?.[oldId]) {
-      this.jpd.public.waitingForWager[newId] = true;
-      delete this.jpd.public.waitingForWager[oldId];
-    }
-    if (this.jpd.public.currentJudgeAnswer === oldId) {
-      this.jpd.public.currentJudgeAnswer = newId;
-    }
-    if (this.jpd.public.dailyDoublePlayer === oldId) {
-      this.jpd.public.dailyDoublePlayer = newId;
-    }
-    if (this.jpd.public.picker === oldId) {
-      this.jpd.public.picker = newId;
-    }
-    if (this.settings.host === oldId) {
-      this.settings.host = newId;
-    }
-  };
-
-  loadEpisode = (socket: Socket, options: GameOptions, custom: string) => {
+  loadEpisode = (clientId: string, options: GameOptions, custom: string) => {
     let {
       number,
       filter,
@@ -604,8 +520,11 @@ export class Room {
         loadedData["jeopardy"] = loadedData["jeopardy"].filter(
           (q: any) => q.dd,
         );
+        loadedData["double"] = loadedData["double"].filter((q: any) => q.dd);
       } else if (number === "finaltest") {
         loadedData = { ...jData["8000"] };
+        loadedData.jeopardy = [];
+        loadedData.double = [];
       } else {
         if (!number) {
           // Random an episode
@@ -630,21 +549,14 @@ export class Room {
         final,
       );
       this.jpdSnapshot = undefined;
-      this.settings.host = makeMeHost ? socket.id : undefined;
-      if (allowMultipleCorrect) {
-        this.settings.allowMultipleCorrect = allowMultipleCorrect;
-      }
-      if (enableAIJudge) {
-        this.settings.enableAIJudge = enableAIJudge;
-      }
+      this.settings.host = makeMeHost ? clientId : undefined;
+      this.settings.allowMultipleCorrect = Boolean(allowMultipleCorrect);
+      this.settings.enableAIJudge = Boolean(enableAIJudge);
       if (Number(finalTimeout)) {
         this.settings.finalTimeout = Number(finalTimeout) * 1000;
       }
       if (Number(answerTimeout)) {
         this.settings.answerTimeout = Number(answerTimeout) * 1000;
-      }
-      if (number === "finaltest") {
-        this.jpd.public.round = "triple";
       }
       this.nextRound();
     }
@@ -669,7 +581,7 @@ export class Room {
 
   nextQuestion = () => {
     // Show the correct answer in the game log
-    this.addChatMessage(undefined, {
+    this.addChatMessage({
       id: "",
       name: "System",
       cmd: "answer",
@@ -700,8 +612,7 @@ export class Room {
     ) {
       if (this.jpd.public.round === "jeopardy") {
         this.jpd.public.round = "double";
-      }
-      if (this.jpd.public.round === "double") {
+      } else if (this.jpd.public.round === "double") {
         this.jpd.public.round = "triple";
       }
       // If double, person with lowest score is picker
@@ -747,7 +658,7 @@ export class Room {
       const scores = Object.entries(this.jpd.public.scores);
       scores.sort((a, b) => b[1] - a[1]);
       const scoresNames = scores.map((score) => [
-        this.getAllPlayers().find((p) => p.id === score[0])?.name,
+        this.roster.find((p) => p.id === score[0])?.name,
         score[1],
       ]);
       redis?.lpush("jpd:results", JSON.stringify(scoresNames));
@@ -755,9 +666,9 @@ export class Room {
       this.jpd.public.round = "jeopardy";
     }
     if (this.jpd.public.round !== "end") {
-      this.jpd.board = constructBoard((this.jpd as any)[this.jpd.public.round]);
+      this.jpd.board = constructBoard(this.jpd[this.jpd.public.round] ?? []);
       this.jpd.public.board = constructPublicBoard(
-        (this.jpd as any)[this.jpd.public.round],
+        this.jpd[this.jpd.public.round] ?? [],
       );
       if (Object.keys(this.jpd.public.board).length === 0) {
         this.nextRound();
@@ -794,9 +705,16 @@ export class Room {
       }
     });
     this.jpd.public.canBuzz = false;
-    // Show everyone's answers
+    // Show everyone's answers and wagers
     this.jpd.public.answers = { ...this.jpd.answers };
+    this.jpd.public.wagers = { ...this.jpd.wagers };
     this.jpd.public.currentAnswer = this.jpd.board[this.jpd.public.currentQ]?.a;
+    // Set up the queue to judge, ordered by buzz time
+    this.jpd.public.toJudge = Object.entries<string>(
+      this.jpd.public.answers,
+    ).sort((a, b) => {
+      return this.jpd.public.buzzes[a[0]] - this.jpd.public.buzzes[b[0]];
+    });
     this.jpdSnapshot = JSON.parse(JSON.stringify(this.jpd));
     this.advanceJudging(false);
     this.sendState();
@@ -808,37 +726,11 @@ export class Room {
     } else {
       this.jpd.public.currentJudgeAnswerIndex += 1;
     }
-    this.jpd.public.currentJudgeAnswer = Object.keys(this.jpd.public.buzzes)[
-      this.jpd.public.currentJudgeAnswerIndex
-    ];
+    this.jpd.public.currentJudgeAnswer =
+      this.jpd.public.toJudge[this.jpd.public.currentJudgeAnswerIndex]?.[0];
     // Either we picked a correct answer (in standard mode) or ran out of players to judge
     if (skipRemaining || this.jpd.public.currentJudgeAnswer === undefined) {
       this.jpd.public.canNextQ = true;
-    }
-    if (this.jpd.public.currentJudgeAnswer) {
-      // In Final, we should reveal one at a time rather than all at once (for dramatic purposes)
-      // Note: Looks like we bulk reveal answers in revealAnswer(), so this is just wagers
-      this.jpd.public.wagers[this.jpd.public.currentJudgeAnswer] =
-        this.jpd.wagers[this.jpd.public.currentJudgeAnswer];
-      this.jpd.public.answers[this.jpd.public.currentJudgeAnswer] =
-        this.jpd.answers[this.jpd.public.currentJudgeAnswer];
-    }
-    // Undo snapshots the current state of jpd
-    // So if a player has reconnected since with a new ID the ID from buzzes might not be there anymore
-    // If so, we skip that answer (not optimal but easiest)
-    // TODO To fix this we probably have to use clientId instead of socket id to index the submitted answers
-    if (
-      this.jpd.public.currentJudgeAnswer &&
-      !this.getActivePlayers().find(
-        (p) => p.id === this.jpd.public.currentJudgeAnswer,
-      )
-    ) {
-      console.log(
-        "[ADVANCEJUDGING] player not found, moving on:",
-        this.jpd.public.currentJudgeAnswer,
-      );
-      this.advanceJudging(skipRemaining);
-      return;
     }
     if (
       openai &&
@@ -862,7 +754,7 @@ export class Room {
     // count the number of automatic judges
     redisCount("aiJudge");
     // currentQ: The board coordinates of the current question, e.g. 1_3
-    // id: socket id of the person being judged
+    // id: clientId of the person being judged
     const { currentQ, id } = data;
     // The question text
     const q = this.jpd.board[currentQ]?.q ?? "";
@@ -907,14 +799,14 @@ export class Room {
   };
 
   doHumanJudge = (
-    socket: Socket,
+    judgeId: string,
     data: { currentQ: string; id: string; correct: boolean | null },
   ) => {
-    const success = this.judgeAnswer(socket, data);
+    const success = this.judgeAnswer(judgeId, data);
   };
 
   judgeAnswer = (
-    socket: Socket | undefined,
+    judgeId: string | undefined,
     {
       currentQ,
       id,
@@ -927,6 +819,11 @@ export class Room {
       confidence?: number;
     },
   ) => {
+    // This is disabled for now since we might have some old reconnecting clients
+    // if (!isValidUUID(id)) {
+    //   // Not valid ID value
+    //   return;
+    // }
     if (id in this.jpd.public.judges) {
       // Already judged this player
       return false;
@@ -939,7 +836,7 @@ export class Room {
       // Not in judging step
       return false;
     }
-    if (this.settings.host && socket && socket?.id !== this.settings.host) {
+    if (this.settings.host && judgeId && judgeId !== this.settings.host) {
       // Not the host
       return false;
     }
@@ -961,27 +858,26 @@ export class Room {
     }
     // If null/undefined, don't change scores
     if (correct != null) {
-      const userName = this.getAllPlayers().find(
-        (p) => p.id === socket?.id,
-      )?.name;
+      const judgeName = this.roster.find((p) => p.id === judgeId)?.name;
+      const targetName = this.roster.find((p) => p.id === id)?.name;
       const msg = {
-        id: socket?.id ?? "",
+        id: judgeId ?? "",
         // name of judge
-        name: userName ?? "System",
-        bot: !Boolean(userName),
+        name: judgeName ?? "System",
+        bot: !Boolean(judgeName),
         cmd: "judge",
         msg: JSON.stringify({
           id: id,
           // name of person being judged
-          name: this.getAllPlayers().find((p) => p.id === id)?.name,
+          name: targetName,
           answer: this.jpd.public.answers[id],
           correct,
           delta: correct ? delta : -delta,
           confidence,
         }),
       };
-      this.addChatMessage(socket, msg);
-      if (!socket) {
+      this.addChatMessage(msg);
+      if (!judgeId) {
         this.aiJudged = true;
       }
     }
@@ -1148,7 +1044,7 @@ export class Room {
             const url = await genAITextToSpeech(rvcHost, text ?? "");
             // Report progress back in chat messages
             if (url) {
-              this.addChatMessage(undefined, {
+              this.addChatMessage({
                 id: "",
                 name: "System",
                 bot: true,
@@ -1165,7 +1061,7 @@ export class Room {
         }
         if (count === items.length) {
           const end = Date.now();
-          this.addChatMessage(undefined, {
+          this.addChatMessage({
             id: "",
             name: "System",
             bot: true,
@@ -1213,4 +1109,10 @@ function syllableCount(word: string) {
   let vowels = word.match(/[aeiouy]{1,2}/g);
   // Use 3 as the default if no letters, it's probably a year
   return vowels ? vowels.length : 3;
+}
+
+function isValidUUID(id: string) {
+  return /^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i.test(
+    id,
+  );
 }

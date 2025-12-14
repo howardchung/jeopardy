@@ -10,9 +10,10 @@ export const getPerQuestionState = () => {
     currentDailyDouble: false,
     canBuzz: false,
     canNextQ: false,
+    toJudge: [] as string[][],
+    currentJudgeAnswer: undefined as string | undefined,
     currentJudgeAnswerIndex: undefined as number | undefined,
-    currentJudgeAnswer: undefined as string | undefined, //socket.id
-    dailyDoublePlayer: undefined as string | undefined, //socket.id
+    dailyDoublePlayer: undefined as string | undefined,
     answers: {} as Record<string, string>,
     submitted: {} as Record<string, boolean>,
     judges: {} as Record<string, boolean | null>,
