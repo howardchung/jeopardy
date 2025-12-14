@@ -1203,9 +1203,9 @@ function getWagerBounds(round: string, score: number) {
     maxWager = Math.max(score || 0, 1000);
   } else if (round === "double") {
     maxWager = Math.max(score || 0, 2000);
-  } else if (round === 'triple') {
+  } else if (round === "triple") {
     maxWager = Math.max(score || 0, 3000);
-  } else if (round === 'final') {
+  } else if (round === "final") {
     minWager = 0;
     maxWager = Math.max(score || 0, 0);
   }
@@ -1447,7 +1447,8 @@ const renderQuestion = (input: string | undefined): React.ReactNode | null => {
     return null;
   }
   // If a valid image string, return an image
-  let regex = /^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|heic|heif|jfif)\??.*$/gim;
+  let regex =
+    /^https?:\/\/.*\/.*\.(png|gif|webp|jpeg|jpg|heic|heif|jfif)\??.*$/gim;
   if (input?.match(regex)) {
     return (
       <img

@@ -536,8 +536,8 @@ export class Room {
       try {
         const parse = Papa.parse<any>(custom, { header: true });
         const typed = [];
-        let round = 'start';
-        let cat = '';
+        let round = "start";
+        let cat = "";
         let curX = 0;
         let curY = 0;
         for (let i = 0; i < parse.data.length; i++) {
@@ -558,9 +558,9 @@ export class Room {
           let multiplier = 1;
           if (round === "double") {
             multiplier = 2;
-          } else if (round === 'triple') {
+          } else if (round === "triple") {
             multiplier = 3;
-          } else if (round === 'final') {
+          } else if (round === "final") {
             multiplier = 0;
           }
           if (d.q && d.a) {
@@ -577,12 +577,12 @@ export class Room {
           }
         }
         loadedData = {
-          airDate: new Date().toISOString().split('T')[0],
-          epNum: 'Custom',
-          jeopardy: typed.filter((d: any) => d.round === 'jeopardy'),
-          double: typed.filter((d: any) => d.round === 'double'),
-          triple: typed.filter((d: any) => d.round === 'triple'),
-          final: typed.filter((d: any) => d.round === 'final'),
+          airDate: new Date().toISOString().split("T")[0],
+          epNum: "Custom",
+          jeopardy: typed.filter((d: any) => d.round === "jeopardy"),
+          double: typed.filter((d: any) => d.round === "double"),
+          triple: typed.filter((d: any) => d.round === "triple"),
+          final: typed.filter((d: any) => d.round === "final"),
         };
         redisCount("customGames");
       } catch (e) {
@@ -615,8 +615,9 @@ export class Room {
       }
     }
     if (loadedData) {
-      redisCount('newGames');
-      const { epNum, airDate, info, jeopardy, double, triple, final } = loadedData;
+      redisCount("newGames");
+      const { epNum, airDate, info, jeopardy, double, triple, final } =
+        loadedData;
       this.jpd = getGameState(
         {
           epNum,
@@ -642,8 +643,8 @@ export class Room {
       if (Number(answerTimeout)) {
         this.settings.answerTimeout = Number(answerTimeout) * 1000;
       }
-      if (number === 'finaltest') {
-        this.jpd.public.round = 'triple';
+      if (number === "finaltest") {
+        this.jpd.public.round = "triple";
       }
       this.nextRound();
     }
@@ -693,12 +694,15 @@ export class Room {
     this.resetAfterQuestion();
     // host is made picker in resetAfterQuestion, so any picker changes here should be behind host check
     // advance round counter
-    if (this.jpd.public.round === 'jeopardy' || this.jpd.public.round === 'double') {
-      if (this.jpd.public.round === 'jeopardy') {
-        this.jpd.public.round = 'double';
+    if (
+      this.jpd.public.round === "jeopardy" ||
+      this.jpd.public.round === "double"
+    ) {
+      if (this.jpd.public.round === "jeopardy") {
+        this.jpd.public.round = "double";
       }
-      if (this.jpd.public.round === 'double') {
-        this.jpd.public.round = 'triple';
+      if (this.jpd.public.round === "double") {
+        this.jpd.public.round = "triple";
       }
       // If double, person with lowest score is picker
       // Unless we are allowing multiple corrects or there's a host
@@ -712,8 +716,8 @@ export class Room {
         playersWithScores.sort((a, b) => a.score - b.score);
         this.jpd.public.picker = playersWithScores[0]?.id;
       }
-    } else if (this.jpd.public.round === 'triple') {
-      this.jpd.public.round = 'final';
+    } else if (this.jpd.public.round === "triple") {
+      this.jpd.public.round = "final";
       const now = Date.now();
       this.jpd.public.waitingForWager = {};
       // There's no picker for final. In host mode we set one above
@@ -750,9 +754,7 @@ export class Room {
     } else {
       this.jpd.public.round = "jeopardy";
     }
-    if (
-      this.jpd.public.round !== 'end'
-    ) {
+    if (this.jpd.public.round !== "end") {
       this.jpd.board = constructBoard((this.jpd as any)[this.jpd.public.round]);
       this.jpd.public.board = constructPublicBoard(
         (this.jpd as any)[this.jpd.public.round],
@@ -762,9 +764,7 @@ export class Room {
       }
     }
     this.sendState();
-    if (
-      this.jpd.public.round !== 'final' && this.jpd.public.round !== 'end'
-    ) {
+    if (this.jpd.public.round !== "final" && this.jpd.public.round !== "end") {
       this.playCategories();
     }
   };
@@ -1010,9 +1010,9 @@ export class Room {
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 1000);
     } else if (this.jpd.public.round === "double") {
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 2000);
-    } else if (this.jpd.public.round === 'triple') {
+    } else if (this.jpd.public.round === "triple") {
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 3000);
-    } else if (this.jpd.public.round === 'final') {
+    } else if (this.jpd.public.round === "final") {
       minWager = 0;
       maxWager = Math.max(this.jpd.public.scores[id] || 0, 0);
     }

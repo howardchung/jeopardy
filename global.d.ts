@@ -46,4 +46,4 @@ type GameOptions = {
   finalTimeout?: number;
 };
 
-type RoundName = 'start' | 'jeopardy' | 'double' | 'triple' | 'final' | 'end';
+type RoundName = "start" | "jeopardy" | "double" | "triple" | "final" | "end";
