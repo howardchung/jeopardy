@@ -18,5 +18,5 @@ body {
 .fullHeightColumn {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 64px);
+  min-height: calc(100vh - 64px);
 }
