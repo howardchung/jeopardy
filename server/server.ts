@@ -46,7 +46,7 @@ app.get("/stats", async (c) => {
       .find((line) => line.startsWith("used_memory:"))
       ?.split(":")[1]
       .trim();
-    // const chatMessages = await getRedisCountDay('chatMessages');
+    const chatMessages = await getRedisCountDay('chatMessages');
     const newGamesLastDay = await getRedisCountDay("newGames");
     const customGamesLastDay = await getRedisCountDay("customGames");
     const aiJudgeLastDay = await getRedisCountDay("aiJudge");
@@ -67,7 +67,7 @@ app.get("/stats", async (c) => {
       cpuUsage,
       redisUsage,
       memUsage: process.memoryUsage().rss,
-      // chatMessages,
+      chatMessages,
       currentUsers,
       newGamesLastDay,
       customGamesLastDay,

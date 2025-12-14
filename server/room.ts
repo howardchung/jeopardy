@@ -236,7 +236,9 @@ export class Room {
           // Answer was already submitted
           return;
         }
-        this.jpd.answers[clientId] = answer;
+        if (answer) {
+          this.jpd.answers[clientId] = answer;
+        }
         this.jpd.public.submitted[clientId] = true;
         this.sendState();
         if (
@@ -512,15 +514,20 @@ export class Room {
         // Only load episodes with info matching the filter: kids, teen, college etc.
         nums = nums.filter(
           (num) =>
-            (jData as any)[num].info && (jData as any)[num].info === filter,
+            jData[num].info && jData[num].info === filter,
         );
       }
       if (number === "ddtest") {
         loadedData = { ...jData["8000"] };
-        loadedData["jeopardy"] = loadedData["jeopardy"].filter(
+        loadedData["jeopardy"] = loadedData["jeopardy"]?.filter(
           (q: any) => q.dd,
         );
-        loadedData["double"] = loadedData["double"].filter((q: any) => q.dd);
+        loadedData["double"] = loadedData["double"]?.filter((q: any) => q.dd);
+      } else if (number === "tripletest") {
+        loadedData = { ...jData["pcj_1"] };
+        loadedData["jeopardy"] = loadedData["jeopardy"]?.filter((q: any) => q.dd);
+        loadedData["double"] = loadedData["double"]?.slice(0, 1);
+        loadedData["triple"] = loadedData["triple"]?.slice(0, 1);
       } else if (number === "finaltest") {
         loadedData = { ...jData["8000"] };
         loadedData.jeopardy = [];
@@ -530,7 +537,7 @@ export class Room {
           // Random an episode
           number = nums[Math.floor(Math.random() * nums.length)];
         }
-        loadedData = (jData as any)[number];
+        loadedData = jData[number];
       }
     }
     if (loadedData) {
@@ -819,7 +826,7 @@ export class Room {
       confidence?: number;
     },
   ) => {
-    // This is disabled for now since we might have some old reconnecting clients
+    // TODO This is disabled for now since we might have some old reconnecting clients
     // if (!isValidUUID(id)) {
     //   // Not valid ID value
     //   return;

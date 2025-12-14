@@ -4,7 +4,7 @@ import config from "./config.ts";
 
 let qs = 0;
 let eps = 0;
-let jData: any;
+let jData: Record<string, { epNum: string, airDate: string, info: string, jeopardy?: RawQuestion[], double?: RawQuestion[], triple?: RawQuestion[], final?: RawQuestion[] }>;
 // On boot, start with the initial data included in repo
 await loadJData("./jeopardy.json.gz");
 loadJData();
@@ -38,9 +38,9 @@ function updateJDataStats() {
   eps = 0;
   Object.keys(jData).forEach((key) => {
     eps += 1;
-    qs += jData[key].jeopardy.length;
-    qs += jData[key].double.length;
-    qs + jData[key].final.length;
+    qs += jData[key].jeopardy?.length ?? 0;
+    qs += jData[key].double?.length ?? 0;
+    qs += jData[key].final?.length ?? 0;
   });
 }
 
