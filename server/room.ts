@@ -61,7 +61,7 @@ export class Room {
         this.roster = this.roster.filter(
           (p) =>
             p.connected ||
-            this.jpd.public.currentJudgeAnswer === p.id ||
+            p.id in this.jpd.public.answers ||
             now - p.disconnectTime < 60 * 60 * 1000,
         );
         const afterLength = this.roster.length;
@@ -75,7 +75,7 @@ export class Room {
     io.of(roomId).on("connection", (socket: Socket) => {
       // We use the clientId for game state
       // This avoids potentially unreliable reconnection issues since socket.id changes on each reconnection
-      // TODO We should probably validate that a reconnecting player is who they say they are (maybe via a second secret string passed on initial connection?)
+      // TODO We should probably validate that a reconnecting player is who they say they are (maybe via a private sessionID passed on initial connection?)
       // Otherwise a malicious user can spoof as another player (but we kind of trust the players anyway for judging)
       const clientId = socket.handshake.query?.clientId as string;
       if (!isValidUUID(clientId)) {
@@ -85,10 +85,17 @@ export class Room {
       }
 
       // clientid map keeps track of the unique clients we've seen
-      // maybe set the value to a second secret string that's used to compare when reconnecting to verify it's the same user (prevent spoofing)
+      // maybe set the value to a private sessionID that's used to compare when reconnecting to verify it's the same user (prevent spoofing)
       // The list is persisted, so if the server reboots, all clients reconnect and should have state restored
-      if (!this.clientIds[clientId]) {
-        this.clientIds[clientId] = "1";
+      const sessionID = "1";
+      if (this.clientIds[clientId]) {
+        // Reconnecting, verify the sessionID matches
+        if (sessionID !== this.clientIds[clientId]) {
+          socket.disconnect();
+          return;
+        }
+      } else {
+        this.clientIds[clientId] = sessionID;
         this.jpd.public.scores[clientId] = 0;
       }
 
@@ -105,8 +112,14 @@ export class Room {
         });
       } else {
         // Reconnecting user
-        this.roster[existingIndex].connected = true;
-        this.roster[existingIndex].disconnectTime = 0;
+        if (!this.roster[existingIndex].connected) {
+          this.roster[existingIndex].connected = true;
+          this.roster[existingIndex].disconnectTime = 0;
+        } else {
+          // User with this client ID already connected? Either collision (unlikely) or trying to spoof
+          socket.disconnect();
+          return;
+        }
       }
 
       this.sendState();
@@ -513,8 +526,7 @@ export class Room {
       if (filter) {
         // Only load episodes with info matching the filter: kids, teen, college etc.
         nums = nums.filter(
-          (num) =>
-            jData[num].info && jData[num].info === filter,
+          (num) => jData[num].info && jData[num].info === filter,
         );
       }
       if (number === "ddtest") {
@@ -525,7 +537,9 @@ export class Room {
         loadedData["double"] = loadedData["double"]?.filter((q: any) => q.dd);
       } else if (number === "tripletest") {
         loadedData = { ...jData["pcj_1"] };
-        loadedData["jeopardy"] = loadedData["jeopardy"]?.filter((q: any) => q.dd);
+        loadedData["jeopardy"] = loadedData["jeopardy"]?.filter(
+          (q: any) => q.dd,
+        );
         loadedData["double"] = loadedData["double"]?.slice(0, 1);
         loadedData["triple"] = loadedData["triple"]?.slice(0, 1);
       } else if (number === "finaltest") {
@@ -717,11 +731,11 @@ export class Room {
     this.jpd.public.wagers = { ...this.jpd.wagers };
     this.jpd.public.currentAnswer = this.jpd.board[this.jpd.public.currentQ]?.a;
     // Set up the queue to judge, ordered by buzz time
-    this.jpd.public.toJudge = Object.entries<string>(
-      this.jpd.public.answers,
-    ).sort((a, b) => {
-      return this.jpd.public.buzzes[a[0]] - this.jpd.public.buzzes[b[0]];
-    });
+    this.jpd.public.judgeArr = Object.keys(this.jpd.public.answers).sort(
+      (a, b) => {
+        return this.jpd.public.buzzes[a] - this.jpd.public.buzzes[b];
+      },
+    );
     this.jpdSnapshot = JSON.parse(JSON.stringify(this.jpd));
     this.advanceJudging(false);
     this.sendState();
@@ -734,7 +748,7 @@ export class Room {
       this.jpd.public.currentJudgeAnswerIndex += 1;
     }
     this.jpd.public.currentJudgeAnswer =
-      this.jpd.public.toJudge[this.jpd.public.currentJudgeAnswerIndex]?.[0];
+      this.jpd.public.judgeArr?.[this.jpd.public.currentJudgeAnswerIndex];
     // Either we picked a correct answer (in standard mode) or ran out of players to judge
     if (skipRemaining || this.jpd.public.currentJudgeAnswer === undefined) {
       this.jpd.public.canNextQ = true;

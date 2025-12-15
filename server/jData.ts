@@ -4,7 +4,18 @@ import config from "./config.ts";
 
 let qs = 0;
 let eps = 0;
-let jData: Record<string, { epNum: string, airDate: string, info: string, jeopardy?: RawQuestion[], double?: RawQuestion[], triple?: RawQuestion[], final?: RawQuestion[] }>;
+let jData: Record<
+  string,
+  {
+    epNum: string;
+    airDate: string;
+    info: string;
+    jeopardy?: RawQuestion[];
+    double?: RawQuestion[];
+    triple?: RawQuestion[];
+    final?: RawQuestion[];
+  }
+>;
 // On boot, start with the initial data included in repo
 await loadJData("./jeopardy.json.gz");
 loadJData();

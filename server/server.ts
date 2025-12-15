@@ -46,7 +46,7 @@ app.get("/stats", async (c) => {
       .find((line) => line.startsWith("used_memory:"))
       ?.split(":")[1]
       .trim();
-    const chatMessages = await getRedisCountDay('chatMessages');
+    const chatMessages = await getRedisCountDay("chatMessages");
     const newGamesLastDay = await getRedisCountDay("newGames");
     const customGamesLastDay = await getRedisCountDay("customGames");
     const aiJudgeLastDay = await getRedisCountDay("aiJudge");
@@ -164,7 +164,7 @@ if (redis) {
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     const roomData = await redis.get(key);
-    console.log(key, roomData?.length);
+    // console.log(key, roomData?.length);
     rooms.set(key, new Room(io, key, roomData));
   }
 }

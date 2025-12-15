@@ -592,11 +592,11 @@ export class Jeopardy extends React.Component<{
                 <Table.Th>Score</Table.Th>
                 <Table.Th>Wager</Table.Th>
                 <Table.Th>Time</Table.Th>
-                <Table.Th>Answer</Table.Th>
                 <Table.Th>Decision</Table.Th>
+                <Table.Th>Answer</Table.Th>
               </Table.Tr>
             </Table.Thead>
-            {game?.toJudge.map(([clientId, answer]) => {
+            {game?.judgeArr.map((clientId) => {
               return (
                 <Table.Tr>
                   <Table.Td>
@@ -612,10 +612,21 @@ export class Jeopardy extends React.Component<{
                       ? `+${(getBuzzOffset(clientId) / 1000).toFixed(3)}`
                       : ""}
                   </Table.Td>
-                  <Table.Td>{answer}</Table.Td>
-                  <Table.Td style={{ position: "relative" }}>
-                    <JudgeButtons id={clientId} />
+                  <Table.Td>
+                    <div
+                      style={{
+                        position: "relative",
+                        minHeight: "28px",
+                        minWidth: "100px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      }}
+                    >
+                      <JudgeButtons id={clientId} />
+                    </div>
                   </Table.Td>
+                  <Table.Td>{game.answers[clientId]}</Table.Td>
                 </Table.Tr>
               );
             })}
