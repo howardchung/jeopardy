@@ -459,7 +459,6 @@ export class Room {
       finalTimeout,
       makeMeHost,
       allowMultipleCorrect,
-      enableAIJudge,
     } = options;
     console.log("[LOADEPISODE]", number, filter, Boolean(custom));
     let loadedData = null;
@@ -572,7 +571,6 @@ export class Room {
       this.jpdSnapshot = undefined;
       this.settings.host = makeMeHost ? clientId : undefined;
       this.settings.allowMultipleCorrect = Boolean(allowMultipleCorrect);
-      this.settings.enableAIJudge = Boolean(enableAIJudge);
       if (Number(finalTimeout)) {
         this.settings.finalTimeout = Number(finalTimeout) * 1000;
       }

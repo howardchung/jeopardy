@@ -56,7 +56,6 @@ type GameSettings = {
   finalTimeout?: number;
   makeMeHost?: boolean;
   allowMultipleCorrect?: boolean;
-  enableAIJudge?: boolean;
 };
 
 const loadSavedSettings = (): GameSettings => {
@@ -1273,9 +1272,6 @@ const SettingsModal = ({
   const [allowMultipleCorrect, setAllowMultipleCorrect] = useState<
     boolean | undefined
   >(settings.allowMultipleCorrect);
-  const [enableAIJudge, setEnableAIJudge] = useState<boolean | undefined>(
-    settings.enableAIJudge,
-  );
   return (
     <Modal opened onClose={onClose} title="Settings">
       <h4>Settings will be applied to any new games you create.</h4>
@@ -1289,11 +1285,6 @@ const SettingsModal = ({
           checked={allowMultipleCorrect}
           onChange={(e) => setAllowMultipleCorrect(e.currentTarget.checked)}
           label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)"
-        />
-        <Switch
-          checked={enableAIJudge}
-          onChange={(e) => setEnableAIJudge(e.currentTarget.checked)}
-          label="Enable AI judge by default"
         />
         <div
           style={{
@@ -1342,7 +1333,6 @@ const SettingsModal = ({
             const settings: GameSettings = {
               makeMeHost: Boolean(makeMeHost),
               allowMultipleCorrect: Boolean(allowMultipleCorrect),
-              enableAIJudge: Boolean(enableAIJudge),
               answerTimeout: Number(answerTimeout),
               finalTimeout: Number(finalTimeout),
             };
