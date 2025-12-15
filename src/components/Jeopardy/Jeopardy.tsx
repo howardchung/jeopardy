@@ -1279,12 +1279,12 @@ const SettingsModal = ({
         <Switch
           checked={makeMeHost}
           onChange={(e) => setMakeMeHost(e.currentTarget.checked)}
-          label="Make me the host (Only you will be able to select questions and make judging decisions)"
+          label="Make me the host (Only the host can select questions and judge answers)"
         />
         <Switch
           checked={allowMultipleCorrect}
           onChange={(e) => setAllowMultipleCorrect(e.currentTarget.checked)}
-          label="Allow multiple correct answers (This also disables Daily Doubles and allows all players to pick the next question)"
+          label="Allow multiple correct answers. Also disables Daily Doubles and allows any player to pick questions (unless there is a host)"
         />
         <div
           style={{
