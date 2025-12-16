@@ -49,6 +49,7 @@ app.get("/stats", async (c) => {
     const chatMessages = await getRedisCountDay("chatMessages");
     const newGamesLastDay = await getRedisCountDay("newGames");
     const customGamesLastDay = await getRedisCountDay("customGames");
+    const humanJudgeLastDay = await getRedisCountDay("humanJudge");
     const aiJudgeLastDay = await getRedisCountDay("aiJudge");
     const aiShortcutLastDay = await getRedisCountDay("aiShortcut");
     const aiChatGptLastDay = await getRedisCountDay("aiChatGpt");
@@ -57,7 +58,6 @@ app.get("/stats", async (c) => {
     const aiUndoLastDay = await getRedisCountDay("aiUndo");
     const aiVoiceLastDay = await getRedisCountDay("aiVoice");
     const savesLastDay = await getRedisCountDay("saves");
-    const nonTrivialJudges = await redis?.llen("jpd:nonTrivialJudges");
     const jeopardyResults = await redis?.llen("jpd:results");
     const aiJudges = await redis?.llen("jpd:aiJudges");
 
@@ -71,6 +71,7 @@ app.get("/stats", async (c) => {
       currentUsers,
       newGamesLastDay,
       customGamesLastDay,
+      humanJudgeLastDay,
       aiJudgeLastDay,
       aiShortcutLastDay,
       aiChatGptLastDay,
@@ -79,7 +80,6 @@ app.get("/stats", async (c) => {
       aiUndoLastDay,
       aiVoiceLastDay,
       savesLastDay,
-      nonTrivialJudges,
       jeopardyResults,
       aiJudges,
       rooms: roomData,

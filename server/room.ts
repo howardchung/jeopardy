@@ -821,6 +821,7 @@ export class Room {
     judgeId: string,
     data: { currentQ: string; id: string; correct: boolean | null },
   ) => {
+    redisCount("humanJudge");
     const success = this.judgeAnswer(judgeId, data);
   };
 
