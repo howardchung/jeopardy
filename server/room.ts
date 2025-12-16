@@ -10,7 +10,6 @@ import { getJData } from "./jData.ts";
 export class Room {
   // Serialized state
   public roster: User[] = [];
-  public clientIds: Record<string, string> = {};
   private chat: ChatMessage[] = [];
   public creationTime: Date = new Date();
   public jpd: ReturnType<typeof getGameState> = getGameState({}, [], [], []);
@@ -77,26 +76,15 @@ export class Room {
       // This avoids potentially unreliable reconnection issues since socket.id changes on each reconnection
       // TODO We should probably validate that a reconnecting player is who they say they are (maybe via a private sessionID passed on initial connection?)
       // Otherwise a malicious user can spoof as another player (but we kind of trust the players anyway for judging)
-      const clientId = socket.handshake.query?.clientId as string;
+      const clientId = socket.handshake.query?.clientId;
+      if (typeof clientId !== 'string') {
+        socket.disconnect();
+        return;
+      }
       if (!isValidUUID(clientId)) {
         // Prevent prototype pollution since clientId is user input by validating UUID
         socket.disconnect();
         return;
-      }
-
-      // clientid map keeps track of the unique clients we've seen
-      // maybe set the value to a private sessionID that's used to compare when reconnecting to verify it's the same user (prevent spoofing)
-      // The list is persisted, so if the server reboots, all clients reconnect and should have state restored
-      const sessionID = "1";
-      if (this.clientIds[clientId]) {
-        // Reconnecting, verify the sessionID matches
-        if (sessionID !== this.clientIds[clientId]) {
-          socket.disconnect();
-          return;
-        }
-      } else {
-        this.clientIds[clientId] = sessionID;
-        this.jpd.public.scores[clientId] = 0;
       }
 
       // Add to roster, or update if they're just reconnecting
@@ -110,6 +98,7 @@ export class Room {
           disconnectTime: 0,
           spectator: false,
         });
+        this.jpd.public.scores[clientId] = 0;
       } else {
         // Reconnecting user
         if (!this.roster[existingIndex].connected) {
@@ -351,7 +340,6 @@ export class Room {
   serialize = () => {
     return JSON.stringify({
       chat: this.chat,
-      clientIds: this.clientIds,
       roster: this.roster,
       creationTime: this.creationTime,
       jpd: this.jpd,
@@ -363,9 +351,6 @@ export class Room {
     const roomObj = JSON.parse(roomData);
     if (roomObj.chat) {
       this.chat = roomObj.chat;
-    }
-    if (roomObj.clientIds) {
-      this.clientIds = roomObj.clientIds;
     }
     if (roomObj.creationTime) {
       this.creationTime = new Date(roomObj.creationTime);
