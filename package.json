@@ -3,8 +3,7 @@
   "version": "0.1.2",
   "private": true,
   "scripts": {
-    "start": "npm run server",
-    "server": "node server/server.ts",
+    "start": "node server/server.ts",
     "ui": "vite --host",
     "dev": "node --watch-path server server/server.ts",
     "build": "npm run buildReact && npm run typecheckServer",
