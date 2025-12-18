@@ -77,7 +77,7 @@ export class Room {
       // TODO We should probably validate that a reconnecting player is who they say they are (maybe via a private sessionID passed on initial connection?)
       // Otherwise a malicious user can spoof as another player (but we kind of trust the players anyway for judging)
       const clientId = socket.handshake.query?.clientId;
-      if (typeof clientId !== 'string') {
+      if (typeof clientId !== "string") {
         socket.disconnect();
         return;
       }

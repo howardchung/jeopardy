@@ -457,8 +457,8 @@ export class Jeopardy extends React.Component<{
     this.socket?.emit("JPD:pickQ", id);
   };
 
-  submitWager = () => {
-    this.socket?.emit("JPD:wager", this.state.localWager);
+  submitWager = (value?: string) => {
+    this.socket?.emit("JPD:wager", value || this.state.localWager);
     this.setState({ localWager: "" });
   };
 
@@ -979,32 +979,65 @@ export class Jeopardy extends React.Component<{
                       ) : null}
                       {game.waitingForWager &&
                       game.waitingForWager[clientId] ? (
-                        <NumberInput
-                          styles={{
-                            label: { textShadow: "1px 1px 2px black" },
-                            section: { marginRight: "4px" },
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
                           }}
-                          label={`Wager (${
-                            getWagerBounds(game.round, game.scores[clientId])
-                              .minWager
-                          } - ${
-                            getWagerBounds(game.round, game.scores[clientId])
-                              .maxWager
-                          })`}
-                          value={this.state.localWager}
-                          onChange={(value) =>
-                            this.setState({ localWager: value })
-                          }
-                          onKeyDown={(e: any) =>
-                            e.key === "Enter" && this.submitWager()
-                          }
-                          rightSection={
-                            <ActionIcon onClick={() => this.submitWager()}>
-                              <IconCornerDownRight size={20} />
-                            </ActionIcon>
-                          }
-                          mt="md"
-                        />
+                        >
+                          <NumberInput
+                            styles={{
+                              label: {
+                                textShadow: `0.05em 0 black,
+0 0.05em black,
+-0.05em 0 black,
+0 -0.05em black,
+-0.05em -0.05em black,
+-0.05em 0.05em black,
+0.05em -0.05em black,
+0.05em 0.05em black;`,
+                              },
+                              section: { marginRight: "4px" },
+                            }}
+                            label={`Wager (${
+                              getWagerBounds(game.round, game.scores[clientId])
+                                .minWager
+                            } - ${
+                              getWagerBounds(game.round, game.scores[clientId])
+                                .maxWager
+                            })`}
+                            value={this.state.localWager}
+                            onChange={(value) =>
+                              this.setState({ localWager: value })
+                            }
+                            onKeyDown={(e: any) =>
+                              e.key === "Enter" && this.submitWager()
+                            }
+                            rightSection={
+                              <ActionIcon onClick={() => this.submitWager()}>
+                                <IconCornerDownRight size={20} />
+                              </ActionIcon>
+                            }
+                            mt="md"
+                          />
+                          <Button
+                            onClick={() => {
+                              this.submitWager(
+                                String(
+                                  getWagerBounds(
+                                    game.round,
+                                    game.scores[clientId],
+                                  ).maxWager,
+                                ),
+                              );
+                            }}
+                          >
+                            {game.currentDailyDouble
+                              ? `I'd like to make it a true Daily Double`
+                              : "All of it"}
+                          </Button>
+                        </div>
                       ) : null}
                     </div>
                     <div className={`answer`}>{game.currentAnswer}</div>
@@ -1018,7 +1051,7 @@ export class Jeopardy extends React.Component<{
                       <TimerBar
                         duration={game.questionEndTS - game.serverTime}
                         secondary
-                        submitAnswer={this.submitAnswer}
+                        fnBeforeTimeout={this.submitAnswer}
                         text="Waiting for answers. . ."
                       />
                     )}
@@ -1026,6 +1059,7 @@ export class Jeopardy extends React.Component<{
                       <TimerBar
                         duration={game.wagerEndTS - game.serverTime}
                         secondary
+                        fnBeforeTimeout={this.submitWager}
                         text="Waiting for wagers. . ."
                       />
                     )}
@@ -1181,12 +1215,12 @@ export class Jeopardy extends React.Component<{
 function TimerBar({
   duration,
   secondary,
-  submitAnswer,
+  fnBeforeTimeout,
   text,
 }: {
   duration: number;
   secondary?: boolean;
-  submitAnswer?: Function;
+  fnBeforeTimeout?: Function;
   text?: string;
 }) {
   const [width, setWidth] = useState(0);
@@ -1194,16 +1228,16 @@ function TimerBar({
     requestAnimationFrame(() => {
       setWidth(100);
     });
-    let submitTimeout: number | undefined;
-    if (submitAnswer) {
+    let timeout: number | undefined;
+    if (fnBeforeTimeout) {
       // Submit whatever's in the box 0.5s before expected timeout
       // Bit hacky, but to fix we either need to submit updates on each character
       // Or have a separate step where the server instructs all clients to submit whatever is in box and accepts it
-      submitTimeout = window.setTimeout(submitAnswer, duration - 500);
+      timeout = window.setTimeout(fnBeforeTimeout, duration - 500);
     }
     return () => {
-      if (submitTimeout) {
-        window.clearTimeout(submitTimeout);
+      if (timeout) {
+        window.clearTimeout(timeout);
       }
     };
   }, []);
