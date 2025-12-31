@@ -1,6 +1,6 @@
 import "./App.css";
 import React, { useCallback, useEffect, useState } from "react";
-import { ActionIcon, Grid, TextInput } from "@mantine/core";
+import { Button, Grid, TextInput } from "@mantine/core";
 // import { IconArrowsShuffle } from "@tabler/icons-react";
 import { serverPath, generateName } from "../../utils";
 import { Chat } from "../Chat/Chat";
@@ -64,14 +64,15 @@ export function App() {
               leftSectionWidth={60}
               value={myName}
               onChange={(e) => updateName(e.target.value)}
-              // rightSection={
-              //   <ActionIcon
-              //     radius="md"
-              //     onClick={async () => updateName(await generateName())}
-              //   >
-              //     <IconArrowsShuffle size={20} />
-              //   </ActionIcon>
-              // }
+              rightSectionWidth={70}
+              rightSection={
+                <Button
+                  size="compact-xs"
+                  onClick={async () => updateName(await generateName())}
+                >
+                  Random
+                </Button>
+              }
             />
             <Chat
               chat={chat}
