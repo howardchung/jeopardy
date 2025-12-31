@@ -187,15 +187,16 @@ export class Room {
         if (this.jpd.board[id].dd && !this.settings.allowMultipleCorrect) {
           // if it is, don't show it yet, we need to collect wager info based only on category
           this.jpd.public.currentDailyDouble = true;
-          this.jpd.public.dailyDoublePlayer = clientId;
-          this.jpd.public.waitingForWager = { [clientId]: true };
+          const dailyDoublePlayerId = this.settings.host ? (this.jpd.lastCorrectPlayer ?? this.getActivePlayers()[0]?.id ?? clientId) : clientId;
+          this.jpd.public.dailyDoublePlayer = dailyDoublePlayerId;
+          this.jpd.public.waitingForWager = { [dailyDoublePlayerId]: true };
           this.setWagerTimeout(this.settings.answerTimeout);
           // Autobuzz the player who picked the DD, all others pass
           // Note: if a player joins during wagering, they might not be marked as passed (submitted)
           // Currently client doesn't show the answer box because it checks for buzzed in players
           // But there's probably no server block on them submitting answers
           this.getActivePlayers().forEach((p) => {
-            if (p.id === clientId) {
+            if (p.id === dailyDoublePlayerId) {
               this.jpd.public.buzzes[p.id] = Date.now();
             } else {
               this.jpd.public.submitted[p.id] = true;
@@ -869,6 +870,7 @@ export class Room {
       if (!this.settings.allowMultipleCorrect) {
         // Correct answer is next picker
         this.jpd.public.picker = id;
+        this.jpd.lastCorrectPlayer = id;
       }
     }
     if (correct === false) {

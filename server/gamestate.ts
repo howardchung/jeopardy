@@ -49,6 +49,7 @@ export const getGameState = (
     answers: {} as Record<string, string>,
     wagers: {} as Record<string, number>,
     board: {} as { [key: string]: RawQuestion },
+    lastCorrectPlayer: undefined as string | undefined,
     public: {
       serverTime: Date.now(),
       epNum: options.epNum,
