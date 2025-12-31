@@ -115,7 +115,8 @@ export class Room {
       this.sendRoster();
       socket.emit("chatinit", this.chat);
 
-      socket.on("CMD:name", (data: string) => {
+      socket.on("CMD:name", (raw: unknown) => {
+        const data = String(raw);
         if (!data) {
           return;
         }
@@ -128,7 +129,8 @@ export class Room {
           this.sendRoster();
         }
       });
-      socket.on("JPD:spectate", (spectate: boolean) => {
+      socket.on("JPD:spectate", (raw: unknown) => {
+        const spectate = Boolean(raw);
         const targetIndex = this.roster.findIndex((p) => p.id === clientId);
         if (targetIndex >= 0) {
           this.roster[targetIndex].spectator = Boolean(spectate);
@@ -138,7 +140,9 @@ export class Room {
       // socket.on('JPD:cmdIntro', () => {
       //   this.io.of(this.roomId).emit('JPD:playIntro');
       // });
-      socket.on("JPD:start", (options, data) => {
+      socket.on("JPD:start", (raw: unknown, raw2: unknown) => {
+        const options = (raw ?? {}) as GameOptions;
+        const data = raw2 ? String(raw2) : "";
         if (data && data.length > 1000000) {
           return;
         }
@@ -147,7 +151,8 @@ export class Room {
         }
         this.loadEpisode(clientId, options, data);
       });
-      socket.on("JPD:pickQ", (id: string) => {
+      socket.on("JPD:pickQ", (raw: unknown) => {
+        const id = String(raw);
         if (this.settings.host && clientId !== this.settings.host) {
           // Not the host
           return;
@@ -217,7 +222,9 @@ export class Room {
         this.jpd.public.buzzes[clientId] = Date.now();
         this.sendState();
       });
-      socket.on("JPD:answer", (question, answer) => {
+      socket.on("JPD:answer", (raw1: unknown, raw2: unknown) => {
+        const question = String(raw1);
+        const answer = raw2 ? String(raw2) : "";
         if (question !== this.jpd.public.currentQ) {
           // Not submitting for right question
           return;
@@ -255,14 +262,15 @@ export class Room {
         }
       });
 
-      socket.on("JPD:wager", (wager) => {
+      socket.on("JPD:wager", (raw: unknown) => {
+        const wager = Number(raw);
         if (this.isSpectator(clientId)) {
           // Don't allow spectators to wager
           return;
         }
         this.submitWager(clientId, wager);
       });
-      socket.on("JPD:judge", (data) => {
+      socket.on("JPD:judge", (raw: unknown) => {
         if (this.settings.host && clientId !== this.settings.host) {
           // Not the host
           return;
@@ -270,7 +278,7 @@ export class Room {
         if (this.isSpectator(clientId)) {
           return;
         }
-        this.doHumanJudge(clientId, data);
+        this.doHumanJudge(clientId, raw);
       });
       socket.on("JPD:undo", () => {
         if (this.settings.host && clientId !== this.settings.host) {
@@ -300,13 +308,14 @@ export class Room {
           this.nextQuestion();
         }
       });
-      socket.on("JPD:enableAiJudge", (enable: boolean) => {
-        this.settings.enableAIJudge = Boolean(enable);
+      socket.on("JPD:enableAiJudge", (raw: unknown) => {
+        this.settings.enableAIJudge = Boolean(raw);
         this.sendState();
         // optional: If we're in the judging phase, trigger the AI judge here
         // That way we can decide to use AI judge after the first answer has already been revealed
       });
-      socket.on("CMD:chat", (data: string) => {
+      socket.on("CMD:chat", (raw: unknown) => {
+        const data = String(raw);
         if (data && data.length > 5000) {
           // TODO add some validation on client side too so we don't just drop long messages
           return;
@@ -804,8 +813,12 @@ export class Room {
 
   doHumanJudge = (
     judgeId: string,
-    data: { currentQ: string; id: string; correct: boolean | null },
+    raw: unknown,
   ) => {
+    if (raw == null || typeof raw !== "object") {
+      return;
+    }
+    const data = raw as { currentQ: string; id: string; correct: boolean | null };
     redisCount("humanJudge");
     const success = this.judgeAnswer(judgeId, data);
   };
