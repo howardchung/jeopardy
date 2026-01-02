@@ -20,7 +20,7 @@
     "ioredis": "^5.8.2",
     "openai": "^5.1.1",
     "papaparse": "^5.5.3",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@tabler/icons-react": "^3.36.1",
