@@ -23,7 +23,7 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "@tabler/icons-react": "^3.35.0",
+    "@tabler/icons-react": "^3.36.1",
     "@types/node": "^24.10.2",
     "@types/papaparse": "^5.5.1",
     "@types/react": "^18.3.18",
