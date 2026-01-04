@@ -7,6 +7,13 @@ import config from "./config.ts";
 import { getGameState, getPerQuestionState } from "./gamestate.ts";
 import { getJData } from "./jData.ts";
 
+// Extend the interface
+declare module "socket.io" {
+  interface Socket {
+    clientId: string;
+  }
+}
+
 export class Room {
   // Serialized state
   public roster: User[] = [];
@@ -25,6 +32,7 @@ export class Room {
   // Unserialized state
   private io: Server;
   public roomId: string;
+  private socketIdMap: Record<string, string> = {};
   // Note: snapshot is not persisted so undo is not possible if server restarts
   private jpdSnapshot: ReturnType<typeof getGameState> | undefined;
   private undoActivated: boolean | undefined = undefined;
@@ -87,6 +95,13 @@ export class Room {
         return;
       }
 
+      // Disconnect other sockets with this clientId
+      if (this.socketIdMap[clientId]) {
+        io.of(roomId).sockets.get(this.socketIdMap[clientId])?.disconnect();
+      }
+      // Keep track of the current socketID associated with this client (only used for signaling and kicking)
+      this.socketIdMap[clientId] = socket.id;
+
       // Add to roster, or update if they're just reconnecting
       const existingIndex = this.roster.findIndex((p) => p.id === clientId);
       if (existingIndex === -1) {
@@ -101,12 +116,8 @@ export class Room {
         this.jpd.public.scores[clientId] = 0;
       } else {
         // Reconnecting user
-        if (!this.roster[existingIndex].connected) {
-          this.roster[existingIndex].connected = true;
-          this.roster[existingIndex].disconnectTime = 0;
-        }
-        // It's possible that the client is already connected if reconnecting after network issue
-        // In that case we don't add to roster and accept events coming from both sockets until the first one ping timeouts
+        this.roster[existingIndex].connected = true;
+        this.roster[existingIndex].disconnectTime = 0;
       }
       next();
     });
@@ -117,6 +128,7 @@ export class Room {
       if (typeof clientId !== "string") {
         return;
       }
+      socket.clientId = clientId;
       this.sendState();
       this.sendRoster();
       socket.emit("chatinit", this.chat);
@@ -341,17 +353,21 @@ export class Room {
         const chatMsg = { id: clientId, name: sender?.name, msg: data };
         this.addChatMessage(chatMsg);
       });
-      socket.on("disconnect", () => {
-        // Mark the user disconnected
-        let targetIndex = this.roster.findIndex((p) => p.id === clientId);
-        if (targetIndex >= 0) {
-          this.roster[targetIndex].connected = false;
-          this.roster[targetIndex].disconnectTime = Date.now();
-        }
-        this.sendRoster();
-      });
+      socket.on("disconnect", () => this.onDisconnect(socket));
     });
   }
+
+  onDisconnect = (socket: Socket) => {
+    const { clientId } = socket;
+    if (socket.id === this.socketIdMap[clientId]) {
+      let targetIndex = this.roster.findIndex((p) => p.id === clientId);
+      if (targetIndex >= 0) {
+        this.roster[targetIndex].connected = false;
+        this.roster[targetIndex].disconnectTime = Date.now();
+      }
+      this.sendRoster();
+    }
+  };
 
   serialize = () => {
     return JSON.stringify({
