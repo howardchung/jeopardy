@@ -104,12 +104,9 @@ export class Room {
         if (!this.roster[existingIndex].connected) {
           this.roster[existingIndex].connected = true;
           this.roster[existingIndex].disconnectTime = 0;
-        } else {
-          // User with this client ID already connected?
-          // Either collision (unlikely) or trying to spoof or duplicate tab
-          next(new Error("Duplicate session (close any other tabs and try again)"));
-          return;
         }
+        // It's possible that the client is already connected if reconnecting after network issue
+        // In that case we don't add to roster and accept events coming from both sockets until the first one ping timeouts
       }
       next();
     });
