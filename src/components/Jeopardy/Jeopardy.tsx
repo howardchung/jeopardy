@@ -39,6 +39,7 @@ import {
   IconLock,
   IconPlayerTrackNextFilled,
   IconPlug,
+  IconRefresh,
   IconSettings,
   IconStarFilled,
   IconUpload,
@@ -134,6 +135,8 @@ export class Jeopardy extends React.Component<{
       console.error(err);
       if (err.message === "Invalid namespace") {
         this.setState({ overlayMsg: "Couldn't load this room." });
+      } else {
+        this.setState({ overlayMsg: err.message });
       }
     });
     socket.on("REC:chat", (data: ChatMessage) => {
@@ -1383,19 +1386,32 @@ const SettingsModal = ({
 
 export const ErrorModal = ({ error }: { error: string }) => {
   return (
-    <Modal opened onClose={() => {}}>
-      <Title order={1} style={{ textAlign: "center" }}>
-        {error}
-      </Title>
-      <div style={{ display: "flex", justifyContent: "center" }}>
+    <Modal opened onClose={() => {}} title={error} centered>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: "8px",
+        }}
+      >
         <Button
-          size="lg"
+          size="xl"
+          onClick={() => {
+            window.location.reload();
+          }}
+          leftSection={<IconRefresh />}
+        >
+          Try again
+        </Button>
+        <Button
+          size="xl"
           onClick={() => {
             window.location.href = "/";
           }}
           leftSection={<IconHome />}
         >
-          Go to home page
+          Go to home
         </Button>
       </div>
     </Modal>

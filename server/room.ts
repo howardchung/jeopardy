@@ -71,19 +71,19 @@ export class Room {
       10 * 60 * 1000,
     );
 
-    io.of(roomId).on("connection", (socket: Socket) => {
+    io.of(roomId).use((socket, next) => {
       // We use the clientId for game state
       // This avoids potentially unreliable reconnection issues since socket.id changes on each reconnection
       // TODO We should probably validate that a reconnecting player is who they say they are (maybe via a private sessionID passed on initial connection?)
       // Otherwise a malicious user can spoof as another player (but we kind of trust the players anyway for judging)
       const clientId = socket.handshake.query?.clientId;
       if (typeof clientId !== "string") {
-        socket.disconnect();
+        next(new Error("invalid clientId type"));
         return;
       }
       if (!isValidUUID(clientId)) {
         // Prevent prototype pollution since clientId is user input by validating UUID
-        socket.disconnect();
+        next(new Error("invalid clientId format"));
         return;
       }
 
@@ -105,12 +105,21 @@ export class Room {
           this.roster[existingIndex].connected = true;
           this.roster[existingIndex].disconnectTime = 0;
         } else {
-          // User with this client ID already connected? Either collision (unlikely) or trying to spoof
-          socket.disconnect();
+          // User with this client ID already connected?
+          // Either collision (unlikely) or trying to spoof or duplicate tab
+          next(new Error("Duplicate session (close any other tabs and try again)"));
           return;
         }
       }
+      next();
+    });
 
+    io.of(roomId).on("connection", (socket: Socket) => {
+      const clientId = socket.handshake.query?.clientId;
+      // We already validated the type in middleware, this is just for TS
+      if (typeof clientId !== "string") {
+        return;
+      }
       this.sendState();
       this.sendRoster();
       socket.emit("chatinit", this.chat);
