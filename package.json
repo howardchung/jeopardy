@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@tabler/icons-react": "^3.36.1",
-    "@types/node": "^25.0.3",
+    "@types/node": "^25.0.8",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
