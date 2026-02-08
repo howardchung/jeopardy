@@ -69,14 +69,14 @@ export class Room {
           (p) =>
             p.connected ||
             p.id in this.jpd.public.answers ||
-            now - p.disconnectTime < 60 * 60 * 1000,
+            now - p.disconnectTime < 15 * 60 * 1000,
         );
         const afterLength = this.roster.length;
         if (beforeLength !== afterLength) {
           this.sendRoster();
         }
       },
-      10 * 60 * 1000,
+      5 * 60 * 1000,
     );
 
     io.of(roomId).use((socket, next) => {
