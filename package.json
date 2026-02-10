@@ -18,7 +18,7 @@
     "@hono/node-server": "^1.19.7",
     "hono": "^4.11.3",
     "ioredis": "^5.8.2",
-    "openai": "^5.1.1",
+    "openai": "^6.19.0",
     "papaparse": "^5.5.3",
     "socket.io": "^4.8.3"
   },
