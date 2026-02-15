@@ -898,6 +898,7 @@ export class Jeopardy extends React.Component<{
                         ? "dailyDouble"
                         : ""
                     }`}
+                    style={{ border: game.canBuzz ? '4px solid white' : '4px solid black' }}
                   >
                     <div className="category">
                       {game.board[game.currentQ] &&
@@ -1037,8 +1038,8 @@ export class Jeopardy extends React.Component<{
                             }}
                           >
                             {game.currentDailyDouble
-                              ? `I'd like to make it a true Daily Double`
-                              : "All of it"}
+                              ? `I'd like to make it a true Daily Double (max wager)`
+                              : "All of it (max wager)"}
                           </Button>
                         </div>
                       ) : null}
@@ -1046,7 +1047,7 @@ export class Jeopardy extends React.Component<{
                     <div className={`answer`}>{game.currentAnswer}</div>
                     {Boolean(game.playClueEndTS) && (
                       <TimerBar
-                        duration={game.playClueEndTS - game.serverTime}
+                        duration={0}
                         text="Waiting for reading. . ."
                       />
                     )}
