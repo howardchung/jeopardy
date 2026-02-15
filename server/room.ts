@@ -433,7 +433,7 @@ export class Room {
       timestamp: new Date().toISOString(),
     };
     this.chat.push(chatWithTime);
-    this.chat = this.chat.splice(-100);
+    this.chat = this.chat.splice(-150);
     this.io.of(this.roomId).emit("REC:chat", chatWithTime);
     this.saveRoom();
   };

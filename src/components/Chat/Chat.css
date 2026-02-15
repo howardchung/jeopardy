@@ -13,11 +13,7 @@
 .chatMessages {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background-color: rgb(30, 30, 30);
-  height: 100%;
-  padding-left: 8px;
-  padding-right: 8px;
+  gap: 8px;
 }
 
 .comment {
@@ -35,6 +31,7 @@
 .chatContainer {
   flex-grow: 1;
   overflow: auto;
+  background-color: rgb(30, 30, 30);
 }
 
 .system {
