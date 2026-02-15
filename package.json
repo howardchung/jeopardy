@@ -28,7 +28,7 @@
     "@types/papaparse": "^5.5.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "@mantine/core": "^8.3.10",
+    "@mantine/core": "^8.3.14",
     "react": "^18.3.1",
     "react-countup": "^6.5.3",
     "react-dom": "^18.3.1",
