@@ -223,8 +223,10 @@ export class Room {
           this.getActivePlayers().forEach((p) => {
             if (p.id === dailyDoublePlayerId) {
               this.jpd.public.buzzes[p.id] = Date.now();
-              this.jpd.stats.dailyDoubles[p.id] =
-                (this.jpd.stats.dailyDoubles[p.id] ?? 0) + 1;
+              if (this.jpd.stats) {
+                this.jpd.stats.dailyDoubles[p.id] =
+                  (this.jpd.stats.dailyDoubles[p.id] ?? 0) + 1;
+              }
             } else {
               this.jpd.public.submitted[p.id] = true;
             }
