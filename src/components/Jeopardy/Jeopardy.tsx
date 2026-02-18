@@ -1208,7 +1208,7 @@ export class Jeopardy extends React.Component<{
                                 {this.state.game?.stats?.firstBuzz?.[p.id] ?? 0}
                               </Table.Td>
                               <Table.Td>
-                                {`${((this.state.game?.stats?.reactionTimes?.[p.id].reduce((a, b) => a + b, 0) ?? 0) / (this.state.game?.stats?.reactionTimes?.[p.id]?.length ?? 0))?.toFixed(0)}ms`}
+                                {`${((this.state.game?.stats?.reactionTimes?.[p.id]?.reduce((a, b) => a + b, 0) ?? 0) / (this.state.game?.stats?.reactionTimes?.[p.id]?.length ?? 0))?.toFixed(0)}ms`}
                               </Table.Td>
                               <Table.Td>
                                 {this.state.game?.stats?.dailyDoubles?.[p.id] ??
