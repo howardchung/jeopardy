@@ -12,7 +12,7 @@ import { makeRoomName, makeUserName } from "./moniker.ts";
 import config from "./config.ts";
 import { getJDataStats } from "./jData.ts";
 import fs from "node:fs";
-import { createServer } from "node:https";
+import { createServer } from "node:http";
 import { createServer as createServerHttps } from "node:https";
 
 const rooms = new Map<string, Room>();
