@@ -201,11 +201,18 @@ export class Room {
         this.aiJudged = undefined;
         this.jpd.public.currentQ = id;
         this.jpd.public.currentValue = this.jpd.public.board[id].value;
+        if (this.jpd.stats) {
+          this.jpd.stats.questions += 1;
+        }
         // check if it's a daily double
         if (this.jpd.board[id].dd && !this.settings.allowMultipleCorrect) {
           // if it is, don't show it yet, we need to collect wager info based only on category
           this.jpd.public.currentDailyDouble = true;
-          const dailyDoublePlayerId = this.settings.host ? (this.jpd.lastCorrectPlayer ?? this.getActivePlayers()[0]?.id ?? clientId) : clientId;
+          const dailyDoublePlayerId = this.settings.host
+            ? (this.jpd.lastCorrectPlayer ??
+              this.getActivePlayers()[0]?.id ??
+              clientId)
+            : clientId;
           this.jpd.public.dailyDoublePlayer = dailyDoublePlayerId;
           this.jpd.public.waitingForWager = { [dailyDoublePlayerId]: true };
           this.setWagerTimeout(this.settings.answerTimeout);
@@ -216,6 +223,8 @@ export class Room {
           this.getActivePlayers().forEach((p) => {
             if (p.id === dailyDoublePlayerId) {
               this.jpd.public.buzzes[p.id] = Date.now();
+              this.jpd.stats.dailyDoubles[p.id] =
+                (this.jpd.stats.dailyDoubles[p.id] ?? 0) + 1;
             } else {
               this.jpd.public.submitted[p.id] = true;
             }
@@ -238,7 +247,16 @@ export class Room {
         if (this.jpd.public.buzzes[clientId]) {
           return;
         }
+        if (!Object.keys(this.jpd.public.buzzes).length && this.jpd.stats) {
+          this.jpd.stats.firstBuzz[clientId] =
+            (this.jpd.stats.firstBuzz[clientId] ?? 0) + 1;
+        }
         this.jpd.public.buzzes[clientId] = Date.now();
+        if (this.jpd.stats) {
+          const reactionTime =
+            this.jpd.public.buzzes[clientId] - this.jpd.public.buzzUnlockTS;
+          this.jpd.stats.reactionTimes[clientId] = [...(this.jpd.stats.reactionTimes[clientId] ?? []), reactionTime];
+        }
         this.sendState();
       });
       socket.on("JPD:answer", (raw1: unknown, raw2: unknown) => {
@@ -263,6 +281,10 @@ export class Room {
         if (this.jpd.public.submitted[clientId]) {
           // Answer was already submitted
           return;
+        }
+        if (this.jpd.stats && this.jpd.public.buzzes[clientId]) {
+          // Don't count passes (not buzzed, empty answer)
+          this.jpd.stats.answered[clientId] = (this.jpd.stats.answered[clientId] ?? 0) + 1;
         }
         if (answer) {
           this.jpd.answers[clientId] = answer;
@@ -545,7 +567,11 @@ export class Room {
           (num) => jData[num].info && jData[num].info === filter,
         );
       }
-      if (number === "ddtest") {
+      if (number === "2q") {
+        loadedData = { ...jData["8000"] };
+        loadedData["jeopardy"] = loadedData["jeopardy"]?.slice(0, 1);
+        loadedData["double"] = loadedData["double"]?.slice(0, 1);
+      } else if (number === "ddtest") {
         loadedData = { ...jData["8000"] };
         loadedData["jeopardy"] = loadedData["jeopardy"]?.filter(
           (q: any) => q.dd,
@@ -674,6 +700,9 @@ export class Room {
         this.jpd.public.waitingForWager![p.id] = true;
       });
       this.setWagerTimeout(this.settings.finalTimeout);
+      if (this.jpd.stats) {
+        this.jpd.stats.questions += 1;
+      }
       // autopick the question
       this.jpd.public.currentQ = "1_1";
       // autobuzz the players in ascending score order
@@ -698,6 +727,7 @@ export class Room {
         score[1],
       ]);
       redis?.lpush("jpd:results", JSON.stringify(scoresNames));
+      this.jpd.public.stats = { ...this.jpd.stats };
     } else {
       this.jpd.public.round = "jeopardy";
     }
@@ -738,6 +768,9 @@ export class Room {
     Object.keys(this.jpd.public.buzzes).forEach((key) => {
       if (!this.jpd.answers[key]) {
         this.jpd.answers[key] = "";
+        if (this.jpd.stats) {
+          this.jpd.stats.answered[key] = (this.jpd.stats.answered[key] ?? 0) + 1;
+        }
       }
     });
     this.jpd.public.canBuzz = false;
@@ -834,14 +867,15 @@ export class Room {
     }
   };
 
-  doHumanJudge = (
-    judgeId: string,
-    raw: unknown,
-  ) => {
+  doHumanJudge = (judgeId: string, raw: unknown) => {
     if (raw == null || typeof raw !== "object") {
       return;
     }
-    const data = raw as { currentQ: string; id: string; correct: boolean | null };
+    const data = raw as {
+      currentQ: string;
+      id: string;
+      correct: boolean | null;
+    };
     redisCount("humanJudge");
     const success = this.judgeAnswer(judgeId, data);
   };
@@ -888,6 +922,9 @@ export class Room {
     }
     const delta = this.jpd.public.wagers[id] || this.jpd.public.currentValue;
     if (correct === true) {
+      if (this.jpd.stats) {
+        this.jpd.stats.correct[id] = (this.jpd.stats.correct[id] ?? 0) + 1;
+      }
       this.jpd.public.scores[id] += delta;
       if (!this.settings.allowMultipleCorrect) {
         // Correct answer is next picker
@@ -896,6 +933,9 @@ export class Room {
       }
     }
     if (correct === false) {
+      if (this.jpd.stats) {
+        this.jpd.stats.incorrect[id] = (this.jpd.stats.incorrect[id] ?? 0) + 1;
+      }
       this.jpd.public.scores[id] -= delta;
     }
     // If null/undefined, don't change scores

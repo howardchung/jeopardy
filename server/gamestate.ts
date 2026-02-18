@@ -25,6 +25,18 @@ export const getPerQuestionState = () => {
   };
 };
 
+function getEmptyStats() {
+  return {
+    questions: 0,
+    answered: {} as Record<string, number>,
+    correct: {} as Record<string, number>,
+    incorrect: {} as Record<string, number>,
+    firstBuzz: {} as Record<string, number>,
+    reactionTimes: {} as Record<string, number[]>,
+    dailyDoubles: {} as Record<string, number>,
+  };
+}
+
 export const getGameState = (
   options: {
     epNum?: string;
@@ -50,6 +62,7 @@ export const getGameState = (
     wagers: {} as Record<string, number>,
     board: {} as { [key: string]: RawQuestion },
     lastCorrectPlayer: undefined as string | undefined,
+    stats: getEmptyStats(),
     public: {
       serverTime: Date.now(),
       epNum: options.epNum,
@@ -63,6 +76,7 @@ export const getGameState = (
       host: undefined as string | undefined,
       enableAIJudge: false,
       enableAIVoices: undefined as string | undefined,
+      stats: getEmptyStats(),
       ...getPerQuestionState(),
     },
   };

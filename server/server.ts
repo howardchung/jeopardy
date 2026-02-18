@@ -11,6 +11,9 @@ import { redis, getRedisCountDay } from "./redis.ts";
 import { makeRoomName, makeUserName } from "./moniker.ts";
 import config from "./config.ts";
 import { getJDataStats } from "./jData.ts";
+import fs from "node:fs";
+import { createServer } from "node:https";
+import { createServer as createServerHttps } from "node:https";
 
 const rooms = new Map<string, Room>();
 const app = new Hono();
@@ -149,6 +152,16 @@ async function freeUnusedRooms() {
 
 const server = serve({
   fetch: app.fetch,
+  createServer:
+    config.SSL_CRT_FILE && config.SSL_KEY_FILE
+      ? createServerHttps
+      : createServer,
+  serverOptions: {
+    key: config.SSL_KEY_FILE ? fs.readFileSync(config.SSL_KEY_FILE) : undefined,
+    cert: config.SSL_CRT_FILE
+      ? fs.readFileSync(config.SSL_CRT_FILE)
+      : undefined,
+  },
 });
 server.close();
 const io = new Server(server, {

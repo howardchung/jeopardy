@@ -37,6 +37,7 @@ import {
   IconHandFinger,
   IconHome,
   IconLock,
+  IconMicrophone,
   IconPlayerTrackNextFilled,
   IconPlug,
   IconRefresh,
@@ -51,6 +52,15 @@ const boardFill = new Audio("/jeopardy/jeopardy-board-fill.mp3");
 const think = new Audio("/jeopardy/jeopardy-think.mp3");
 const timesUp = new Audio("/jeopardy/jeopardy-times-up.mp3");
 const rightAnswer = new Audio("/jeopardy/jeopardy-rightanswer.mp3");
+
+const SpeechRecognition =
+  // @ts-expect-error
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+recognition.continuous = false;
+recognition.lang = "en-US";
+recognition.interimResults = false;
+recognition.maxAlternatives = 1;
 
 type GameSettings = {
   answerTimeout?: number;
@@ -104,12 +114,20 @@ export class Jeopardy extends React.Component<{
     showSettingsModal: false,
     settings: loadSavedSettings(),
     overlayMsg: "",
+    listening: false,
   };
   buzzLock = 0;
   socket: Socket | undefined = undefined;
 
   async componentDidMount() {
     window.speechSynthesis?.getVoices();
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      this.setState({ localAnswer: transcript });
+      this.setState({ listening: false });
+      recognition.stop();
+    };
 
     document.onkeydown = this.onKeydown;
 
@@ -159,6 +177,7 @@ export class Jeopardy extends React.Component<{
       this.setState({ game, localEpNum: game.epNum });
       if (!game.currentQ) {
         this.setState({ showJudgingModal: false });
+        this.stopListening();
       }
     });
     // socket.on('JPD:playIntro', () => {
@@ -539,6 +558,16 @@ export class Jeopardy extends React.Component<{
     this.setState({ settings });
   };
 
+  startListening = () => {
+    recognition.start();
+    this.setState({ listening: true });
+  };
+
+  stopListening = () => {
+    recognition.abort();
+    this.setState({ listening: false });
+  };
+
   render() {
     const clientId = getOrCreateClientId();
     const game = this.state.game;
@@ -898,7 +927,11 @@ export class Jeopardy extends React.Component<{
                         ? "dailyDouble"
                         : ""
                     }`}
-                    style={{ border: game.canBuzz ? '4px solid white' : '4px solid black' }}
+                    style={{
+                      border: game.canBuzz
+                        ? "4px solid white"
+                        : "4px solid black",
+                    }}
                   >
                     <div className="category">
                       {game.board[game.currentQ] &&
@@ -964,22 +997,36 @@ export class Jeopardy extends React.Component<{
                       !game.submitted[clientId] &&
                       game.buzzes[clientId] &&
                       game.questionEndTS ? (
-                        <TextInput
-                          autoFocus
-                          placeholder="Answer"
-                          value={this.state.localAnswer}
-                          onChange={(e) =>
-                            this.setState({ localAnswer: e.target.value })
-                          }
-                          onKeyDown={(e: any) =>
-                            e.key === "Enter" && this.submitAnswer()
-                          }
-                          rightSection={
-                            <ActionIcon onClick={() => this.submitAnswer()}>
-                              <IconCornerDownRight size={20} />
-                            </ActionIcon>
-                          }
-                        />
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "4px",
+                            alignItems: "center",
+                          }}
+                        >
+                          <TextInput
+                            autoFocus
+                            placeholder="Answer"
+                            value={this.state.localAnswer}
+                            onChange={(e) =>
+                              this.setState({ localAnswer: e.target.value })
+                            }
+                            onKeyDown={(e: any) =>
+                              e.key === "Enter" && this.submitAnswer()
+                            }
+                            rightSection={
+                              <ActionIcon onClick={() => this.submitAnswer()}>
+                                <IconCornerDownRight size={20} />
+                              </ActionIcon>
+                            }
+                          />
+                          <ActionIcon
+                            onClick={this.startListening}
+                            color={this.state.listening ? "green" : undefined}
+                          >
+                            <IconMicrophone size={20} />
+                          </ActionIcon>
+                        </div>
                       ) : null}
                       {game.waitingForWager &&
                       game.waitingForWager[clientId] ? (
@@ -1048,7 +1095,7 @@ export class Jeopardy extends React.Component<{
                     {Boolean(game.playClueEndTS) && (
                       <TimerBar
                         duration={0}
-                        text="Waiting for reading. . ."
+                        text={`Waiting for reading. . . (${((game.playClueEndTS - game.serverTime) / 1000).toFixed(1)} seconds)`}
                       />
                     )}
                     {Boolean(game.questionEndTS) && (
@@ -1101,13 +1148,13 @@ export class Jeopardy extends React.Component<{
               )}
               {game && game.round === "end" && (
                 <div id="endgame">
-                  <h1 style={{ color: "white" }}>Winner!</h1>
+                  <h2 style={{ color: "white" }}>Winner!</h2>
                   <div style={{ display: "flex" }}>
                     {this.getWinners().map((winnerId: string) => (
                       <img
                         key={winnerId}
                         alt=""
-                        style={{ width: "200px", height: "200px" }}
+                        style={{ width: "80px", height: "80px" }}
                         src={getDefaultPicture(
                           participants.find((p) => p.id === winnerId)?.name ??
                             "",
@@ -1115,6 +1162,63 @@ export class Jeopardy extends React.Component<{
                         )}
                       />
                     ))}
+                  </div>
+                  <div
+                    style={{
+                      flexGrow: 1,
+                      overflow: "auto",
+                      backgroundColor: "black",
+                    }}
+                  >
+                    <Table striped>
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th>Name</Table.Th>
+                          <Table.Th>Score</Table.Th>
+                          <Table.Th>Qs</Table.Th>
+                          <Table.Th>Answered</Table.Th>
+                          <Table.Th>Correct</Table.Th>
+                          <Table.Th>Incorrect</Table.Th>
+                          <Table.Th>First Buzzes</Table.Th>
+                          <Table.Th>Avg. Reaction</Table.Th>
+                          <Table.Th>Daily Doubles</Table.Th>
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {participants.map((p) => {
+                          return (
+                            <Table.Tr>
+                              <Table.Td>{p.name}</Table.Td>
+                              <Table.Td>
+                                {this.state.game?.scores[p.id] ?? 0}
+                              </Table.Td>
+                              <Table.Td>
+                                {this.state.game?.stats?.questions}
+                              </Table.Td>
+                              <Table.Td>
+                                {this.state.game?.stats?.answered[p.id] ?? 0}
+                              </Table.Td>
+                              <Table.Td>
+                                {this.state.game?.stats?.correct[p.id] ?? 0}
+                              </Table.Td>
+                              <Table.Td>
+                                {this.state.game?.stats?.incorrect[p.id] ?? 0}
+                              </Table.Td>
+                              <Table.Td>
+                                {this.state.game?.stats?.firstBuzz[p.id] ?? 0}
+                              </Table.Td>
+                              <Table.Td>
+                                {`${((this.state.game?.stats?.reactionTimes[p.id].reduce((a, b) => a + b, 0) ?? 0) / (this.state.game?.stats?.reactionTimes[p.id]?.length ?? 0))?.toFixed(0)}ms`}
+                              </Table.Td>
+                              <Table.Td>
+                                {this.state.game?.stats?.dailyDoubles[p.id] ??
+                                  0}
+                              </Table.Td>
+                            </Table.Tr>
+                          );
+                        })}
+                      </Table.Tbody>
+                    </Table>
                   </div>
                 </div>
               )}
