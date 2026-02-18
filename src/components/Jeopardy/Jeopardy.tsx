@@ -1196,7 +1196,7 @@ export class Jeopardy extends React.Component<{
                                 {this.state.game?.stats?.questions}
                               </Table.Td>
                               <Table.Td>
-                                {this.state.game?.stats?.answered[p.id] ?? 0}
+                                {this.state.game?.stats?.answered?.[p.id] ?? 0}
                               </Table.Td>
                               <Table.Td>
                                 {this.state.game?.stats?.correct[p.id] ?? 0}
