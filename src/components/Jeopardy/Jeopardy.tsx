@@ -56,11 +56,14 @@ const rightAnswer = new Audio("/jeopardy/jeopardy-rightanswer.mp3");
 const SpeechRecognition =
   // @ts-expect-error
   window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
-recognition.continuous = false;
-recognition.lang = "en-US";
-recognition.interimResults = false;
-recognition.maxAlternatives = 1;
+let recognition: any;
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+}
 
 type GameSettings = {
   answerTimeout?: number;
@@ -122,12 +125,14 @@ export class Jeopardy extends React.Component<{
   async componentDidMount() {
     window.speechSynthesis?.getVoices();
 
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      this.setState({ localAnswer: transcript });
-      this.setState({ listening: false });
-      recognition.stop();
-    };
+    if (recognition) {
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        this.setState({ localAnswer: transcript });
+        this.setState({ listening: false });
+        recognition.stop();
+      };
+    }
 
     document.onkeydown = this.onKeydown;
 
@@ -559,12 +564,12 @@ export class Jeopardy extends React.Component<{
   };
 
   startListening = () => {
-    recognition.start();
+    recognition?.start();
     this.setState({ listening: true });
   };
 
   stopListening = () => {
-    recognition.abort();
+    recognition?.abort();
     this.setState({ listening: false });
   };
 
