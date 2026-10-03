@@ -11,7 +11,7 @@ const defaults = {
   SSL_CRT_FILE: "", // Optional, Filename of SSL cert (to use https)
   PORT: "8083", // Port to use for server
   NODE_ENV: "",
-  OPENAI_SECRET_KEY: "",
+  ANTHROPIC_API_KEY: "",
   STATS_KEY: "test",
   REDIS_URL: "",
 };

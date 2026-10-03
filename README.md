@@ -24,7 +24,7 @@ A website for playing Jeopardy! together with friends over the Internet. Designe
 ### Judging:
 
 - Players can judge answer correctness themselves.
-- An experimental AI judge powered by ChatGPT is in testing.
+- An experimental AI judge powered by Claude is in testing.
 
 ### Data:
 
@@ -38,7 +38,7 @@ A website for playing Jeopardy! together with friends over the Internet. Designe
 ## Environment Variables
 
 - `REDIS_URL`: Provide to allow persisting rooms to Redis so they survive server reboots
-- `OPENAI_SECRET_KEY`: Provide to allow using OpenAI's ChatGPT to judge answers
+- `ANTHROPIC_API_KEY`: Provide to allow using Claude to judge answers
 
 ## Tech
 
