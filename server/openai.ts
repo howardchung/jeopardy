@@ -38,7 +38,8 @@ export async function getOpenAIDecision(
   console.log("[AIINPUT]", suffix);
   // Concatenate the prompt and the suffix for AI completion
   const result = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-6-luna",
+    reasoning_effort: "none",
     service_tier: "auto", // Use flex processing when possible to save money
     messages: [{ role: "developer", content: prompt + suffix }],
     response_format: {
