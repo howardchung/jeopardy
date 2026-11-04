@@ -14,6 +14,7 @@ const defaults = {
   OPENAI_SECRET_KEY: "",
   STATS_KEY: "test",
   REDIS_URL: "",
+  RVC_SERVICE_URL: "http://127.0.0.1:8084",
 };
 
 export default {

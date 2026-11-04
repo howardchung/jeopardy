@@ -75,7 +75,10 @@ export const getGameState = (
       // below is populated in emitstate from settings
       host: undefined as string | undefined,
       enableAIJudge: false,
-      enableAIVoices: undefined as string | undefined,
+      enableAIVoices: false as boolean | string | undefined,
+      aiVoiceProgress: undefined as
+        | { count: number; total: number }
+        | undefined,
       stats: getEmptyStats(),
       ...getPerQuestionState(),
     },

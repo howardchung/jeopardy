@@ -25,7 +25,7 @@ export function App() {
     return () => {
       window.clearInterval(heartbeat);
     };
-  });
+  }, []);
 
   const updateName = useCallback(
     (name: string) => {

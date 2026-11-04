@@ -12,6 +12,7 @@ import {
   Switch,
   Slider,
   Text,
+  Progress,
 } from "@mantine/core";
 import "./Jeopardy.css";
 import {
@@ -134,7 +135,7 @@ export class Jeopardy extends React.Component<{
       };
     }
 
-    document.onkeydown = this.onKeydown;
+    document.addEventListener("keydown", this.onKeydown);
 
     this.setState({
       readingDisabled: Boolean(
@@ -185,6 +186,16 @@ export class Jeopardy extends React.Component<{
         this.stopListening();
       }
     });
+    socket.on(
+      "JPD:aiVoiceProgress",
+      (aiVoiceProgress: { count: number; total: number } | undefined) => {
+        this.setState((prevState: any) =>
+          prevState.game
+            ? { game: { ...prevState.game, aiVoiceProgress } }
+            : null,
+        );
+      },
+    );
     // socket.on('JPD:playIntro', () => {
     //   this.playIntro();
     // });
@@ -226,7 +237,9 @@ export class Jeopardy extends React.Component<{
       // Read the question
       // console.log('JPD:playClue', text);
       // Remove parenthetical starts and blanks
-      await this.sayText(text.replace(/^\(.*\)/, "").replace(/_+/g, " blank "));
+      await this.sayText(
+        text.replace(/^\(.*\)/, "").replace(/_+/g, " blank ").trim(),
+      );
     });
     socket.on("JPD:playCategories", async () => {
       const now = Date.now();
@@ -426,18 +439,17 @@ export class Jeopardy extends React.Component<{
       // This is probably markdown or image
       return;
     }
-    // if enabled, attempt using pregen AI voice
-    // Always checking first is kind of slow due to http request needed
+    // if enabled, attempt using AI voice served from the Python RVC server
     if (this.state.game?.enableAIVoices) {
       try {
         await new Promise(async (resolve, reject) => {
           const hash = cyrb53(text).toString();
+          const rvcBase = String(this.state.game?.enableAIVoices).replace(
+            /\/+$/,
+            "",
+          );
           const aiVoice = new Audio(
-            this.state.game?.enableAIVoices +
-              "/gradio_api/file=audio/output/{hash}.mp3".replace(
-                "{hash}",
-                hash,
-              ),
+            `${rvcBase}/audio/${hash}.mp3?text=${encodeURIComponent(text)}`,
           );
           aiVoice.onended = resolve;
           aiVoice.onerror = reject;
@@ -842,6 +854,51 @@ export class Jeopardy extends React.Component<{
               label="AI Judge"
             />
           </div>
+          {/* <div className="controlToggle">
+            <Switch
+              checked={Boolean(game?.enableAIVoices)}
+              onChange={(e) => {
+                this.socket?.emit("JPD:enableAiVoices", e.target.checked);
+              }}
+              label="AI Trebek"
+            />
+          </div> */}
+          {game?.enableAIVoices && game.aiVoiceProgress && (
+            <div
+              className="controlToggle"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                minWidth: "150px",
+              }}
+              title={`AI Voices generated: ${game.aiVoiceProgress.count}/${game.aiVoiceProgress.total}`}
+            >
+              <Text size="xs" fw={600}>
+                Voices: {game.aiVoiceProgress.count}/
+                {game.aiVoiceProgress.total}
+              </Text>
+              <Progress
+                style={{ flexGrow: 1, minWidth: "60px" }}
+                size="md"
+                value={
+                  game.aiVoiceProgress.total > 0
+                    ? (game.aiVoiceProgress.count /
+                        game.aiVoiceProgress.total) *
+                      100
+                    : 100
+                }
+                color={
+                  game.aiVoiceProgress.count >= game.aiVoiceProgress.total
+                    ? "green"
+                    : "blue"
+                }
+                animated={
+                  game.aiVoiceProgress.count < game.aiVoiceProgress.total
+                }
+              />
+            </div>
+          )}
           <div className="controlToggle">
             <Switch
               checked={isSpectator}

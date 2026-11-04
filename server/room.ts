@@ -1,7 +1,7 @@
 import { Socket, Server } from "socket.io";
 import Papa from "papaparse";
 import { redis, redisCount } from "./redis.ts";
-import { genAITextToSpeech } from "./aivoice.ts";
+import { genAITextToSpeech, normalizeClueText } from "./aivoice.ts";
 import { getOpenAIDecision, openai } from "./openai.ts";
 import config from "./config.ts";
 import { getGameState, getPerQuestionState } from "./gamestate.ts";
@@ -26,7 +26,7 @@ export class Room {
     host: undefined as string | undefined,
     allowMultipleCorrect: false,
     enableAIJudge: false,
-    enableAIVoices: undefined as string | undefined,
+    enableAIVoices: false as boolean | string | undefined,
   };
 
   // Unserialized state
@@ -37,6 +37,8 @@ export class Room {
   private jpdSnapshot: ReturnType<typeof getGameState> | undefined;
   private undoActivated: boolean | undefined = undefined;
   private aiJudged: boolean | undefined = undefined;
+  private pregenRunId = 0;
+  private pregenAbortController: AbortController | undefined;
   private playClueTimeout: NodeJS.Timeout =
     undefined as unknown as NodeJS.Timeout;
   private questionAnswerTimeout: NodeJS.Timeout =
@@ -113,7 +115,8 @@ export class Room {
           disconnectTime: 0,
           spectator: false,
         });
-        this.jpd.public.scores[clientId] = 0;
+        // Keep any existing score (e.g. player was pruned from the roster but their score remains)
+        this.jpd.public.scores[clientId] ??= 0;
       } else {
         // Reconnecting user
         this.roster[existingIndex].connected = true;
@@ -280,12 +283,17 @@ export class Room {
           // Don't allow spectators to answer
           return;
         }
+        if (answer && !this.jpd.public.buzzes[clientId]) {
+          // Only players who buzzed in may submit an answer (an empty answer is a pass)
+          return;
+        }
         if (this.jpd.public.submitted[clientId]) {
           // Answer was already submitted
           return;
         }
-        if (this.jpd.stats && this.jpd.public.buzzes[clientId]) {
+        if (this.jpd.stats && this.jpd.public.buzzes[clientId] && answer) {
           // Don't count passes (not buzzed, empty answer)
+          // Buzzed players with an empty answer are counted in revealAnswer
           this.jpd.stats.answered[clientId] = (this.jpd.stats.answered[clientId] ?? 0) + 1;
         }
         if (answer) {
@@ -357,6 +365,24 @@ export class Room {
         // optional: If we're in the judging phase, trigger the AI judge here
         // That way we can decide to use AI judge after the first answer has already been revealed
       });
+      socket.on("JPD:enableAiVoices", (raw: unknown) => {
+        const rvcHost =
+          typeof raw === "string" && raw
+            ? raw
+            : raw
+              ? config.RVC_SERVICE_URL
+              : undefined;
+        this.settings.enableAIVoices = rvcHost;
+        if (!this.settings.enableAIVoices) {
+          this.pregenRunId += 1;
+          this.pregenAbortController?.abort();
+          this.jpd.public.aiVoiceProgress = undefined;
+        }
+        this.sendState();
+        if (this.settings.enableAIVoices) {
+          this.pregenAIVoices(String(this.settings.enableAIVoices));
+        }
+      });
       socket.on("CMD:chat", (raw: unknown) => {
         const data = String(raw);
         if (data && data.length > 5000) {
@@ -369,8 +395,7 @@ export class Room {
           return;
         }
         if (data.startsWith("/aivoices")) {
-          const rvcServer =
-            data.split(" ")[1] ?? "https://azure.howardchung.net/rvc";
+          const rvcServer = config.RVC_SERVICE_URL;
           this.pregenAIVoices(rvcServer);
         }
         const sender = this.roster.find((p) => p.id === clientId);
@@ -623,6 +648,13 @@ export class Room {
         this.settings.answerTimeout = Number(answerTimeout) * 1000;
       }
       this.nextRound();
+      if (this.settings.enableAIVoices) {
+        this.pregenAIVoices(
+          typeof this.settings.enableAIVoices === "string"
+            ? this.settings.enableAIVoices
+            : config.RVC_SERVICE_URL,
+        );
+      }
     }
   };
 
@@ -658,6 +690,10 @@ export class Room {
     delete this.jpd.public.board[this.jpd.public.currentQ];
     this.resetAfterQuestion();
     if (Object.keys(this.jpd.public.board).length === 0) {
+      // Undo is not allowed across rounds (timers set up by the new round can't be rolled back)
+      this.jpdSnapshot = undefined;
+      this.undoActivated = undefined;
+      this.aiJudged = undefined;
       this.nextRound();
     } else {
       this.sendState();
@@ -913,6 +949,10 @@ export class Room {
       // Not in judging step
       return false;
     }
+    if (id !== this.jpd.public.currentJudgeAnswer) {
+      // Not the answer currently being judged (e.g. stale AI result after an undo)
+      return false;
+    }
     if (this.settings.host && judgeId && judgeId !== this.settings.host) {
       // Not the host
       return false;
@@ -1094,71 +1134,80 @@ export class Room {
     this.sendState();
   };
 
-  pregenAIVoices = async (rvcHost: string) => {
+  pregenAIVoices = async (rvcHost: string = config.RVC_SERVICE_URL) => {
+    const runId = ++this.pregenRunId;
     // Indicate we should use AI voices for this game
     this.settings.enableAIVoices = rvcHost;
-    this.sendState();
-    // For the current game, get all category names and clues (61 clues + 12 category names)
-    // Final category doesn't get read right now
+    // Order strings so current round categories and clues are generated first
     const strings = new Set(
       [
-        ...(this.jpd.jeopardy?.map((item) => item.q) ?? []),
-        ...(this.jpd.double?.map((item) => item.q) ?? []),
-        ...(this.jpd.final?.map((item) => item.q) ?? []),
         ...(this.jpd.jeopardy?.map((item) => item.cat) ?? []),
+        ...(this.jpd.jeopardy?.map((item) =>
+          item.q ? normalizeClueText(item.q) : "",
+        ) ?? []),
         ...(this.jpd.double?.map((item) => item.cat) ?? []),
-      ].filter(Boolean),
+        ...(this.jpd.double?.map((item) =>
+          item.q ? normalizeClueText(item.q) : "",
+        ) ?? []),
+        ...(this.jpd.triple?.map((item) => item.cat) ?? []),
+        ...(this.jpd.triple?.map((item) =>
+          item.q ? normalizeClueText(item.q) : "",
+        ) ?? []),
+        ...(this.jpd.final?.map((item) =>
+          item.q ? normalizeClueText(item.q) : "",
+        ) ?? []),
+      ].filter(
+        (s): s is string =>
+          Boolean(s) && !s.startsWith("!") && !s.startsWith("http"),
+      ),
     );
     console.log("%s strings to generate", strings.size);
     const items = Array.from(strings);
-    const start = Date.now();
-    let cursor = items.entries();
-    // create for loops that each run off the same cursor which keeps track of location
-    let numWorkers = 10;
-    // The parallelism should ideally depend on the server configuration
-    // But we just need a value that won't take more than 5 minutes between start and stop because fetch will timeout
-    // No good way of configuring it right now without switching to undici
-    let success = 0;
+    this.jpd.public.aiVoiceProgress = { count: 0, total: items.length };
+    this.sendState();
+    if (items.length === 0) {
+      return;
+    }
+    this.pregenAbortController?.abort();
+    const abortController = new AbortController();
+    this.pregenAbortController = abortController;
     let count = 0;
-    Array(numWorkers)
-      .fill("")
-      .forEach(async (_, workerIndex) => {
-        for (let [i, text] of cursor) {
-          try {
-            const url = await genAITextToSpeech(rvcHost, text ?? "");
-            // Report progress back in chat messages
-            if (url) {
-              this.addChatMessage({
-                id: "",
-                name: "System",
-                bot: true,
-                msg: "generated ai voice " + i + ": " + url,
-              });
-              redisCount("aiVoice");
-              success += 1;
-            }
-          } catch (e) {
-            // Log errors, but continue iterating
+    await Promise.all(
+      items.map(async (text) => {
+        if (!this.settings.enableAIVoices || this.pregenRunId !== runId) {
+          return;
+        }
+        try {
+          const url = await genAITextToSpeech(
+            rvcHost,
+            text,
+            false,
+            abortController.signal,
+          );
+          if (url) {
+            redisCount("aiVoice");
+          }
+        } catch (e) {
+          if (!abortController.signal.aborted) {
             console.log(e);
           }
-          count += 1;
         }
-        if (count === items.length) {
-          const end = Date.now();
-          this.addChatMessage({
-            id: "",
-            name: "System",
-            bot: true,
-            msg:
-              success +
-              "/" +
-              count +
-              " voices generated in " +
-              (end - start) +
-              "ms",
-          });
+        if (!this.settings.enableAIVoices || this.pregenRunId !== runId) {
+          return;
         }
-      });
+        count += 1;
+        this.jpd.public.aiVoiceProgress = {
+          count,
+          total: items.length,
+        };
+        this.io
+          .of(this.roomId)
+          .emit("JPD:aiVoiceProgress", this.jpd.public.aiVoiceProgress);
+      }),
+    );
+    if (this.settings.enableAIVoices && this.pregenRunId === runId) {
+      this.sendState();
+    }
   };
 }
 

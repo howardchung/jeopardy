@@ -1,71 +1,105 @@
+import http from "node:http";
+import https from "node:https";
 import { cyrb53 } from "./hash.ts";
 
-// Given input text, gets back an mp3 file URL
-// We can send this to each client and have it be read
-// The RVC server caches for repeated inputs, so duplicate requests are fast
-// Without GPU acceleration this is kinda slow to do in real time, so we may need to add support to pre-generate audio clips for specific game
+const httpAgent = new http.Agent({ keepAlive: false, maxSockets: Infinity });
+const httpsAgent = new https.Agent({ keepAlive: false, maxSockets: Infinity });
+
+export function normalizeClueText(text: string): string {
+  return text.replace(/^\(.*\)/, "").replace(/_+/g, " blank ").trim();
+}
+
+function requestRvcSynthesize(
+  rvcHost: string,
+  text: string,
+  hash: string,
+  priority: boolean,
+  signal?: AbortSignal,
+): Promise<string | undefined> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new Error("Aborted"));
+      return;
+    }
+
+    const baseUrl = rvcHost.replace(/\/+$/, "");
+    const targetUrl = new URL(`${baseUrl}/synthesize`);
+    const isHttps = targetUrl.protocol === "https:";
+    const payload = Buffer.from(
+      JSON.stringify({ text, hash, priority }),
+      "utf-8",
+    );
+
+    const req = (isHttps ? https : http).request(
+      targetUrl,
+      {
+        method: "POST",
+        agent: isHttps ? httpsAgent : httpAgent,
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": payload.length,
+        },
+        timeout: 0,
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => {
+          const bodyStr = Buffer.concat(chunks).toString("utf-8");
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              const data = JSON.parse(bodyStr);
+              const urlPath =
+                typeof data.url === "string" ? data.url : `/audio/${hash}.mp3`;
+              resolve(
+                urlPath.startsWith("http") ? urlPath : `${baseUrl}${urlPath}`,
+              );
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            reject(
+              new Error(`RVC service HTTP ${res.statusCode}: ${bodyStr}`),
+            );
+          }
+        });
+      },
+    );
+
+    const onAbort = () => {
+      req.destroy(new Error("Aborted"));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    req.on("error", (err) => {
+      signal?.removeEventListener("abort", onAbort);
+      reject(err);
+    });
+    req.on("close", () => {
+      signal?.removeEventListener("abort", onAbort);
+    });
+
+    req.write(payload);
+    req.end();
+  });
+}
+
+// Given input text, triggers synthesis on the Python RVC server and returns the remote MP3 URL
 export async function genAITextToSpeech(
   rvcHost: string,
   text: string,
+  priority = false,
+  signal?: AbortSignal,
 ): Promise<string | undefined> {
-  if (text.length > 10000 || !text.length) {
+  if (
+    !rvcHost ||
+    !text ||
+    text.length > 10000 ||
+    text.startsWith("!") ||
+    text.startsWith("http")
+  ) {
     return;
   }
-  const resp = await fetch(rvcHost + "/gradio_api/call/partial_36", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      data: [
-        text,
-        "Trebek",
-        "en-US-ChristopherNeural",
-        0,
-        0,
-        0,
-        0,
-        0,
-        ["rmvpe"],
-        0.5,
-        3,
-        0.25,
-        0.33,
-        128,
-        true,
-        false,
-        1,
-        true,
-        0.7,
-        "contentvec",
-        "",
-        0,
-        0,
-        44100,
-        "mp3",
-        cyrb53(text).toString(),
-      ],
-    }),
-  });
-  const info = await resp.json();
-  // console.log(info);
-  // Fetch the result
-  const fetchUrl = rvcHost + "/gradio_api/call/partial_36/" + info.event_id;
-  // console.log(fetchUrl);
-  const resp2 = await fetch(fetchUrl);
-  const info2 = await resp2.text();
-  // console.log(info2);
-  const lines = info2.split("\n");
-  // Find the line after complete
-  const completeIndex = lines.indexOf("event: complete");
-  const target = lines[completeIndex + 1];
-  if (target.startsWith("data: ")) {
-    // Take off the prefix, parse the array as json and get the first element
-    const arr = JSON.parse(target.slice(6));
-    // Fix the path /grad/gradio_api/file to /gradio_api/file
-    const url = arr[0].url.replace("/grad/gradio_api/file", "/gradio_api/file");
-    // console.log(url);
-    return url;
-  }
-  return;
+  const hash = cyrb53(text).toString();
+  return requestRvcSynthesize(rvcHost, text, hash, priority, signal);
 }
