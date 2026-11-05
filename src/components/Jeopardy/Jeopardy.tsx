@@ -886,9 +886,10 @@ export class Jeopardy extends React.Component<{
                     ? (game.aiVoiceProgress.count /
                         game.aiVoiceProgress.total) *
                       100
-                    : 100
+                    : 0
                 }
                 color={
+                  game.aiVoiceProgress.total > 0 &&
                   game.aiVoiceProgress.count >= game.aiVoiceProgress.total
                     ? "green"
                     : "blue"
