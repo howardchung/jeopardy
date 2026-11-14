@@ -1177,24 +1177,28 @@ export class Room {
         if (!this.settings.enableAIVoices || this.pregenRunId !== runId) {
           return;
         }
+        let url: string | undefined;
         try {
-          const url = await genAITextToSpeech(
+          url = await genAITextToSpeech(
             rvcHost,
             text,
             false,
             abortController.signal,
           );
-          if (url) {
-            redisCount("aiVoice");
-          }
         } catch (e) {
           if (!abortController.signal.aborted) {
             console.log(e);
           }
-        }
-        if (!this.settings.enableAIVoices || this.pregenRunId !== runId) {
           return;
         }
+        if (
+          !url ||
+          !this.settings.enableAIVoices ||
+          this.pregenRunId !== runId
+        ) {
+          return;
+        }
+        redisCount("aiVoice");
         count += 1;
         this.jpd.public.aiVoiceProgress = {
           count,

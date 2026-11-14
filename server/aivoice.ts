@@ -2,8 +2,53 @@ import http from "node:http";
 import https from "node:https";
 import { cyrb53 } from "./hash.ts";
 
-const httpAgent = new http.Agent({ keepAlive: false, maxSockets: Infinity });
-const httpsAgent = new https.Agent({ keepAlive: false, maxSockets: Infinity });
+const MAX_CONCURRENT_RVC_REQUESTS = 8;
+
+const httpAgent = new http.Agent({
+  keepAlive: false,
+  maxSockets: MAX_CONCURRENT_RVC_REQUESTS,
+});
+const httpsAgent = new https.Agent({
+  keepAlive: false,
+  maxSockets: MAX_CONCURRENT_RVC_REQUESTS,
+});
+
+let activeRequests = 0;
+const waitQueue: Array<() => void> = [];
+
+function acquireSlot(signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) {
+    return Promise.reject(new Error("Aborted"));
+  }
+  if (activeRequests < MAX_CONCURRENT_RVC_REQUESTS) {
+    activeRequests++;
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve, reject) => {
+    const onAbort = () => {
+      const idx = waitQueue.indexOf(grant);
+      if (idx !== -1) {
+        waitQueue.splice(idx, 1);
+      }
+      reject(new Error("Aborted"));
+    };
+    const grant = () => {
+      signal?.removeEventListener("abort", onAbort);
+      activeRequests++;
+      resolve();
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+    waitQueue.push(grant);
+  });
+}
+
+function releaseSlot(): void {
+  activeRequests--;
+  const next = waitQueue.shift();
+  if (next) {
+    next();
+  }
+}
 
 export function normalizeClueText(text: string): string {
   return text.replace(/^\(.*\)/, "").replace(/_+/g, " blank ").trim();
@@ -51,13 +96,29 @@ function requestRvcSynthesize(
               const data = JSON.parse(bodyStr);
               const urlPath =
                 typeof data.url === "string" ? data.url : `/audio/${hash}.mp3`;
-              resolve(
-                urlPath.startsWith("http") ? urlPath : `${baseUrl}${urlPath}`,
-              );
+              const resultUrl = urlPath.startsWith("http")
+                ? urlPath
+                : `${baseUrl}${urlPath}`;
+              console.log("[RVC] synthesized", {
+                hash,
+                status: res.statusCode,
+                url: resultUrl,
+              });
+              resolve(resultUrl);
             } catch (e) {
+              console.log("[RVC] invalid JSON response", {
+                hash,
+                status: res.statusCode,
+                body: bodyStr,
+              });
               reject(e);
             }
           } else {
+            console.log("[RVC] HTTP error", {
+              hash,
+              status: res.statusCode,
+              body: bodyStr,
+            });
             reject(
               new Error(`RVC service HTTP ${res.statusCode}: ${bodyStr}`),
             );
@@ -101,5 +162,10 @@ export async function genAITextToSpeech(
     return;
   }
   const hash = cyrb53(text).toString();
-  return requestRvcSynthesize(rvcHost, text, hash, priority, signal);
+  await acquireSlot(signal);
+  try {
+    return await requestRvcSynthesize(rvcHost, text, hash, priority, signal);
+  } finally {
+    releaseSlot();
+  }
 }
