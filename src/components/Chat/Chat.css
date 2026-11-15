@@ -1,13 +1,12 @@
-.username {
-  font-weight: 700;
-  color: white;
-  font-size: 0.9em;
-}
-
-.timestamp {
-  font-weight: 300;
-  color: gray;
-  font-size: 0.7em;
+.chatContainer {
+  flex-grow: 1;
+  overflow-y: auto;
+  background-color: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  padding: 10px;
+  margin: 8px 0;
+  position: relative;
 }
 
 .chatMessages {
@@ -16,30 +15,39 @@
   gap: 8px;
 }
 
+.username {
+  font-weight: 700;
+  color: var(--ui-text);
+  font-size: 13px;
+}
+
+.timestamp {
+  font-weight: 400;
+  color: var(--ui-text-dim);
+  font-size: 11px;
+}
+
 .comment {
   word-break: break-word;
 }
 
 .comment .light {
-  color: gainsboro;
+  color: var(--ui-text);
 }
 
 .comment .dark {
-  color: gray;
-}
-
-.chatContainer {
-  flex-grow: 1;
-  overflow: auto;
-  background-color: rgb(30, 30, 30);
+  color: var(--ui-text-dim);
 }
 
 .system {
-  font-size: 0.7em;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
+  color: var(--ui-text-dim);
 }
 
 .message {
-  font-size: 0.9em;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ui-text);
 }

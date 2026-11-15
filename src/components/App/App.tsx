@@ -1,7 +1,5 @@
 import "./App.css";
 import React, { useCallback, useEffect, useState } from "react";
-import { Button, Grid, TextInput } from "@mantine/core";
-// import { IconArrowsShuffle } from "@tabler/icons-react";
 import { serverPath, generateName } from "../../utils";
 import { Chat } from "../Chat/Chat";
 import { JeopardyTopBar } from "../TopBar/TopBar";
@@ -41,47 +39,41 @@ export function App() {
   return (
     <React.Fragment>
       <JeopardyTopBar />
-      {
-        <Grid style={{ paddingLeft: "10px", paddingRight: "10px" }} gutter={10}>
-          <Grid.Col
-            style={{ position: "relative" }}
-            span={{ base: 12, md: 9 }}
-            className="fullHeightColumn"
-          >
-            <Jeopardy
-              participants={participants}
-              chat={chat}
-              updateName={updateName}
-              setParticipants={setParticipants}
-              setSocket={setSocket}
-              setScrollTimestamp={setScrollTimestamp}
-              setChat={setChat}
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 3 }} className="fullHeightColumn">
-            <TextInput
-              leftSection={<div style={{ whiteSpace: "nowrap" }}>Name:</div>}
-              leftSectionWidth={60}
+      <div className="app-grid">
+        <div className="fullHeightColumn">
+          <Jeopardy
+            participants={participants}
+            chat={chat}
+            updateName={updateName}
+            setParticipants={setParticipants}
+            setSocket={setSocket}
+            setScrollTimestamp={setScrollTimestamp}
+            setChat={setChat}
+          />
+        </div>
+        <div className="chatColumn">
+          <div className="ui-input-group">
+            <span className="ui-input-section">Name:</span>
+            <input
+              type="text"
               value={myName}
               onChange={(e) => updateName(e.target.value)}
-              rightSectionWidth={70}
-              rightSection={
-                <Button
-                  size="compact-xs"
-                  onClick={async () => updateName(await generateName())}
-                >
-                  Random
-                </Button>
-              }
             />
-            <Chat
-              chat={chat}
-              scrollTimestamp={scrollTimestamp}
-              socket={socket}
-            />
-          </Grid.Col>
-        </Grid>
-      }
+            <button
+              type="button"
+              className="ui-btn ui-btn-compact-xs"
+              onClick={async () => updateName(await generateName())}
+            >
+              Random
+            </button>
+          </div>
+          <Chat
+            chat={chat}
+            scrollTimestamp={scrollTimestamp}
+            socket={socket}
+          />
+        </div>
+      </div>
     </React.Fragment>
   );
 }

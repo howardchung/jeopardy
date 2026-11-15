@@ -1,19 +1,4 @@
-import React, { useEffect, useState } from "react";
-import {
-  Button,
-  TextInput,
-  NumberInput,
-  Menu,
-  Modal,
-  Table,
-  Badge,
-  Title,
-  ActionIcon,
-  Switch,
-  Slider,
-  Text,
-  Progress,
-} from "@mantine/core";
+import React, { useEffect, useRef, useState } from "react";
 import "./Jeopardy.css";
 import {
   getDefaultPicture,
@@ -46,7 +31,7 @@ import {
   IconStarFilled,
   IconUpload,
   IconX,
-} from "@tabler/icons-react";
+} from "../Icons";
 
 const dailyDouble = new Audio("/jeopardy/jeopardy-daily-double.mp3");
 const boardFill = new Audio("/jeopardy/jeopardy-board-fill.mp3");
@@ -595,27 +580,30 @@ export class Jeopardy extends React.Component<{
     const JudgeButtons = ({ id }: { id: string }) => {
       return game && id === game.currentJudgeAnswer && canJudge ? (
         <div className="judgeButtons">
-          <ActionIcon
+          <button
+            type="button"
+            className="ui-action-icon ui-action-icon-green"
             onClick={() => this.judgeAnswer(id, true)}
-            color="green"
             title="Correct"
           >
             <IconCheck name="check" />
-          </ActionIcon>
-          <ActionIcon
+          </button>
+          <button
+            type="button"
+            className="ui-action-icon ui-action-icon-red"
             onClick={() => this.judgeAnswer(id, false)}
-            color="red"
             title="Incorrect"
           >
             <IconX name="close" />
-          </ActionIcon>
-          <ActionIcon
+          </button>
+          <button
+            type="button"
+            className="ui-action-icon ui-action-icon-grey"
             onClick={() => this.judgeAnswer(id, null)}
-            color="grey"
             title="Skip"
           >
             <IconPlayerTrackNextFilled name="angle double right" />
-          </ActionIcon>
+          </button>
         </div>
       ) : null;
     };
@@ -633,52 +621,52 @@ export class Jeopardy extends React.Component<{
     }) => {
       return (
         <Modal size="xl" opened onClose={onClose} title={game?.currentAnswer}>
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Player</Table.Th>
-                <Table.Th>Score</Table.Th>
-                <Table.Th>Wager</Table.Th>
-                <Table.Th>Time</Table.Th>
-                <Table.Th>Decision</Table.Th>
-                <Table.Th>Answer</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            {game?.judgeArr.map((clientId) => {
-              return (
-                <Table.Tr>
-                  <Table.Td>
-                    {participants.find((p) => p.id === clientId)?.name ??
-                      clientId}
-                  </Table.Td>
-                  <Table.Td>{game.scores[clientId]}</Table.Td>
-                  <Table.Td>
-                    {game.wagers[clientId] ?? game.currentValue}
-                  </Table.Td>
-                  <Table.Td>
-                    {getBuzzOffset(clientId) && getBuzzOffset(clientId) > 0
-                      ? `+${(getBuzzOffset(clientId) / 1000).toFixed(3)}`
-                      : ""}
-                  </Table.Td>
-                  <Table.Td>
-                    <div
-                      style={{
-                        position: "relative",
-                        minHeight: "28px",
-                        minWidth: "100px",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}
-                    >
-                      <JudgeButtons id={clientId} />
-                    </div>
-                  </Table.Td>
-                  <Table.Td>{game.answers[clientId]}</Table.Td>
-                </Table.Tr>
-              );
-            })}
-          </Table>
+          <table className="ui-table">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Score</th>
+                <th>Wager</th>
+                <th>Time</th>
+                <th>Decision</th>
+                <th>Answer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {game?.judgeArr.map((clientId) => {
+                return (
+                  <tr key={clientId}>
+                    <td>
+                      {participants.find((p) => p.id === clientId)?.name ??
+                        clientId}
+                    </td>
+                    <td>{game.scores[clientId]}</td>
+                    <td>{game.wagers[clientId] ?? game.currentValue}</td>
+                    <td>
+                      {getBuzzOffset(clientId) && getBuzzOffset(clientId) > 0
+                        ? `+${(getBuzzOffset(clientId) / 1000).toFixed(3)}`
+                        : ""}
+                    </td>
+                    <td>
+                      <div
+                        style={{
+                          position: "relative",
+                          minHeight: "28px",
+                          minWidth: "100px",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                        }}
+                      >
+                        <JudgeButtons id={clientId} />
+                      </div>
+                    </td>
+                    <td>{game.answers[clientId]}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </Modal>
       );
     };
@@ -694,28 +682,28 @@ export class Jeopardy extends React.Component<{
               You can create and play a custom game by uploading a data file.
               Download the example and customize with your own questions and
               answers.
-              <div>
-                <Button
-                  component="a"
-                  color="orange"
+              <div style={{ marginTop: "8px" }}>
+                <a
+                  className="ui-btn ui-btn-orange"
                   href={`./example.csv`}
                   download="example.csv"
-                  leftSection={<IconDownload />}
                 >
+                  <IconDownload />
                   Download example.csv
-                </Button>
+                </a>
               </div>
             </div>
             <hr />
             <div>Once you're done, upload your file:</div>
-            <div>
-              <Button
+            <div style={{ marginTop: "8px" }}>
+              <button
+                type="button"
+                className="ui-btn ui-btn-purple"
                 onClick={() => this.customGame()}
-                color="purple"
-                leftSection={<IconUpload />}
               >
+                <IconUpload />
                 Upload
-              </Button>
+              </button>
             </div>
           </Modal>
         )}
@@ -736,100 +724,29 @@ export class Jeopardy extends React.Component<{
         )}
         {this.state.overlayMsg && <ErrorModal error={this.state.overlayMsg} />}
         <div className="controls">
-          <Menu>
-            <Menu.Target>
-              <Button
-                size="sm"
-                leftSection={<IconStarFilled size={20} />}
-                style={{ flexShrink: 0 }}
-              >
-                New Game
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Label>Game #</Menu.Label>
-              <TextInput
-                style={{ padding: "8px", paddingTop: "0px" }}
-                value={this.state.localEpNum}
-                onChange={(e) => this.setState({ localEpNum: e.target.value })}
-                onKeyDown={(e: any) =>
-                  e.key === "Enter" &&
-                  this.newGame({ number: this.state.localEpNum })
-                }
-                rightSection={
-                  <ActionIcon>
-                    <IconCornerDownRight
-                      onClick={() =>
-                        this.newGame({ number: this.state.localEpNum })
-                      }
-                      name="arrow right"
-                    />
-                  </ActionIcon>
-                }
-              />
-              <Menu.Divider />
-              <Menu.Label>Random</Menu.Label>
-              {[
-                { key: "all", value: null, text: "Any" },
-                { key: "kids", value: "kids", text: "Kids Week" },
-                { key: "teen", value: "teen", text: "Teen Tournament" },
-                {
-                  key: "college",
-                  value: "college",
-                  text: "College Championship",
-                },
-                {
-                  key: "celebrity",
-                  value: "celebrity",
-                  text: "Celebrity Jeopardy",
-                },
-                {
-                  key: "teacher",
-                  value: "teacher",
-                  text: "Teachers Tournament",
-                },
-                {
-                  key: "champions",
-                  value: "champions",
-                  text: "Tournament of Champions",
-                },
-              ].map((item) => (
-                <Menu.Item
-                  key={item.key}
-                  onClick={() => {
-                    this.newGame({ filter: item.value ?? undefined });
-                  }}
-                >
-                  {item.text}
-                </Menu.Item>
-              ))}
-              <Menu.Divider />
-              <Menu.Label>Custom</Menu.Label>
-              <Menu.Item
-                key={"custom"}
-                onClick={() => {
-                  this.setState({ showCustomModal: true });
-                }}
-              >
-                Upload
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-          <ActionIcon
+          <NewGameMenu
+            localEpNum={this.state.localEpNum}
+            onChangeEpNum={(val) => this.setState({ localEpNum: val })}
+            onNewGame={(opts) => this.newGame(opts)}
+            onShowCustomModal={() => this.setState({ showCustomModal: true })}
+          />
+          <button
+            type="button"
+            className="ui-action-icon ui-action-icon-lg"
             onClick={() => this.setState({ showSettingsModal: true })}
             title="Settings"
-            size="lg"
           >
             <IconSettings size={20} />
-          </ActionIcon>
-          <ActionIcon
+          </button>
+          <button
+            type="button"
+            className="ui-action-icon ui-action-icon-lg"
             onClick={() => this.socket?.emit("JPD:undo")}
             title="Undo Judge"
-            size="lg"
             disabled={!canJudge}
           >
             <IconArrowBackUp size={20} />
-          </ActionIcon>
+          </button>
           <div className="controlToggle">
             <Switch
               checked={!this.state.readingDisabled}
@@ -847,7 +764,7 @@ export class Jeopardy extends React.Component<{
           </div>
           <div className="controlToggle">
             <Switch
-              checked={game?.enableAIJudge}
+              checked={Boolean(game?.enableAIJudge)}
               onChange={(e) => {
                 this.socket?.emit("JPD:enableAiJudge", e.target.checked);
               }}
@@ -874,35 +791,41 @@ export class Jeopardy extends React.Component<{
               }}
               title={`AI Voices generated: ${game.aiVoiceProgress.count}/${game.aiVoiceProgress.total}`}
             >
-              <Text size="xs" fw={600}>
+              <span style={{ fontSize: "12px", fontWeight: 600 }}>
                 Voices: {game.aiVoiceProgress.count}/
                 {game.aiVoiceProgress.total}
-              </Text>
-              <Progress
+              </span>
+              <div
+                className="ui-progress-root"
                 style={{ flexGrow: 1, minWidth: "60px" }}
-                size="md"
-                value={
-                  game.aiVoiceProgress.total > 0
-                    ? (game.aiVoiceProgress.count /
-                        game.aiVoiceProgress.total) *
-                      100
-                    : 0
-                }
-                color={
-                  game.aiVoiceProgress.total > 0 &&
-                  game.aiVoiceProgress.count >= game.aiVoiceProgress.total
-                    ? "green"
-                    : "blue"
-                }
-                animated={
-                  game.aiVoiceProgress.count < game.aiVoiceProgress.total
-                }
-              />
+              >
+                <div
+                  className={`ui-progress-bar ${
+                    game.aiVoiceProgress.count < game.aiVoiceProgress.total
+                      ? "animated"
+                      : ""
+                  }`}
+                  style={{
+                    width: `${
+                      game.aiVoiceProgress.total > 0
+                        ? (game.aiVoiceProgress.count /
+                            game.aiVoiceProgress.total) *
+                          100
+                        : 0
+                    }%`,
+                    backgroundColor:
+                      game.aiVoiceProgress.total > 0 &&
+                      game.aiVoiceProgress.count >= game.aiVoiceProgress.total
+                        ? "#2f9e44"
+                        : "#228be6",
+                  }}
+                />
+              </div>
             </div>
           )}
           <div className="controlToggle">
             <Switch
-              checked={isSpectator}
+              checked={Boolean(isSpectator)}
               onChange={(e) => {
                 this.socket?.emit("JPD:spectate", e.target.checked);
               }}
@@ -919,16 +842,14 @@ export class Jeopardy extends React.Component<{
                   Play Intro
                 </Button> */}
           {game && game.airDate && (
-            <Badge
+            <span
+              className="ui-badge ui-badge-md"
               style={{
-                display: "flex",
-                alignItems: "center",
                 height: "36px",
                 flexShrink: 0,
+                backgroundColor:
+                  "#" + getColorHex((game && game.info) || "regular"),
               }}
-              color={getColor((game && game.info) || "regular")}
-              size="md"
-              radius="sm"
             >
               {new Date(game.airDate + "T00:00").toLocaleDateString([], {
                 year: "numeric",
@@ -936,18 +857,11 @@ export class Jeopardy extends React.Component<{
                 day: "numeric",
               })}
               {game && game.info ? " - " + game.info : ""}
-            </Badge>
+            </span>
           )}
         </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            gap: "4px",
-          }}
-        >
-          <div style={{ display: "flex", flexGrow: 1 }}>
+        <div className="jeopardyMain">
+          <div className="boardWrap">
             <div
               id="board"
               className={`board ${this.state.game?.currentQ ? "currentQ" : ""}`}
@@ -992,150 +906,163 @@ export class Jeopardy extends React.Component<{
                     }`}
                     style={{
                       border: game.canBuzz
-                        ? "4px solid white"
-                        : "4px solid black",
+                        ? "3px solid #ffffff"
+                        : "3px solid rgba(0, 0, 0, 0.7)",
                     }}
                   >
-                    <div className="category">
-                      {game.board[game.currentQ] &&
-                        game.board[game.currentQ].category}
-                    </div>
-                    <div className="category">
-                      {Boolean(game.currentValue) && game.currentValue}
-                    </div>
-                    {
-                      <div className={"clue"}>
-                        {renderQuestion(game.board[game.currentQ].question)}
+                    <div className="clueHeader">
+                      <div className="clueMeta">
+                        <div className="category">
+                          {game.board[game.currentQ] &&
+                            game.board[game.currentQ].category}
+                        </div>
+                        <div className="category">
+                          {Boolean(game.currentValue) && game.currentValue}
+                        </div>
                       </div>
-                    }
-                    <div>
+                      {(game.canNextQ || (game.currentAnswer && canJudge)) && (
+                        <div className="clueTopActions">
+                          {game.canNextQ && (
+                            <button
+                              type="button"
+                              className="ui-btn ui-btn-xs"
+                              onClick={() => this.socket?.emit("JPD:skipQ")}
+                            >
+                              <IconPlayerTrackNextFilled />
+                              Next
+                            </button>
+                          )}
+                          {game.currentAnswer && canJudge && (
+                            <button
+                              type="button"
+                              className="ui-btn ui-btn-xs"
+                              onClick={() =>
+                                this.setState({ showJudgingModal: true })
+                              }
+                            >
+                              <IconGavel />
+                              Judge
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="clue">
+                      {renderQuestion(game.board[game.currentQ].question)}
+                    </div>
+                    <div className="clueControls">
                       {!game.currentAnswer &&
                       !game.buzzes[clientId] &&
                       !game.submitted[clientId] &&
                       !game.currentDailyDouble &&
                       !isSpectator &&
                       game.round !== "final" ? (
-                        <div style={{ display: "flex" }}>
-                          <Button
+                        <div className="buzzActions">
+                          <button
+                            type="button"
                             disabled={this.state.buzzFrozen}
-                            color={game.canBuzz ? "green" : "grey"}
-                            size="lg"
+                            className={`ui-btn ui-btn-lg buzzBtn ${
+                              game.canBuzz ? "ui-btn-green" : "ui-btn-grey"
+                            }`}
                             onClick={this.onBuzz}
-                            leftSection={
-                              game.canBuzz ? <IconBulb /> : <IconLock />
-                            }
                           >
+                            {game.canBuzz ? <IconBulb /> : <IconLock />}
                             Buzz
-                          </Button>
-                          <div
-                            style={{
-                              position: "absolute",
-                              top: "0px",
-                              right: "0px",
-                              zIndex: 1,
+                          </button>
+                          <button
+                            type="button"
+                            disabled={this.state.buzzFrozen}
+                            className={`ui-btn ui-btn-lg passBtn ${
+                              game.canBuzz ? "ui-btn-red" : "ui-btn-grey"
+                            }`}
+                            onClick={() => {
+                              if (game.canBuzz) {
+                                this.submitAnswer(null);
+                              }
                             }}
                           >
-                            <Button
-                              disabled={this.state.buzzFrozen}
-                              color={game.canBuzz ? "red" : "grey"}
-                              onClick={() => {
-                                if (game.canBuzz) {
-                                  this.submitAnswer(null);
-                                }
-                              }}
-                              leftSection={
-                                game.canBuzz ? (
-                                  <IconPlayerTrackNextFilled />
-                                ) : (
-                                  <IconLock />
-                                )
-                              }
-                            >
-                              Pass
-                            </Button>
-                          </div>
+                            {game.canBuzz ? (
+                              <IconPlayerTrackNextFilled />
+                            ) : (
+                              <IconLock />
+                            )}
+                            Pass
+                          </button>
                         </div>
                       ) : null}
                       {!game.currentAnswer &&
                       !game.submitted[clientId] &&
                       game.buzzes[clientId] &&
                       game.questionEndTS ? (
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "4px",
-                            alignItems: "center",
-                          }}
-                        >
-                          <TextInput
-                            autoFocus
-                            placeholder="Answer"
-                            value={this.state.localAnswer}
-                            onChange={(e) =>
-                              this.setState({ localAnswer: e.target.value })
-                            }
-                            onKeyDown={(e: any) =>
-                              e.key === "Enter" && this.submitAnswer()
-                            }
-                            rightSection={
-                              <ActionIcon onClick={() => this.submitAnswer()}>
-                                <IconCornerDownRight size={20} />
-                              </ActionIcon>
-                            }
-                          />
-                          <ActionIcon
+                        <div className="answerInputRow">
+                          <div className="ui-input-group">
+                            <input
+                              type="text"
+                              autoFocus
+                              placeholder="Answer"
+                              value={this.state.localAnswer}
+                              onChange={(e) =>
+                                this.setState({ localAnswer: e.target.value })
+                              }
+                              onKeyDown={(e: any) =>
+                                e.key === "Enter" && this.submitAnswer()
+                              }
+                            />
+                            <button
+                              type="button"
+                              className="ui-action-icon"
+                              onClick={() => this.submitAnswer()}
+                            >
+                              <IconCornerDownRight size={20} />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className={`ui-action-icon ui-action-icon-lg ${
+                              this.state.listening
+                                ? "ui-action-icon-green"
+                                : ""
+                            }`}
                             onClick={this.startListening}
-                            color={this.state.listening ? "green" : undefined}
                           >
                             <IconMicrophone size={20} />
-                          </ActionIcon>
+                          </button>
                         </div>
                       ) : null}
                       {game.waitingForWager &&
                       game.waitingForWager[clientId] ? (
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "4px",
-                          }}
-                        >
-                          <NumberInput
-                            styles={{
-                              label: {
-                                textShadow: `0.05em 0 black,
-0 0.05em black,
--0.05em 0 black,
-0 -0.05em black,
--0.05em -0.05em black,
--0.05em 0.05em black,
-0.05em -0.05em black,
-0.05em 0.05em black;`,
-                              },
-                              section: { marginRight: "4px" },
-                            }}
-                            label={`Wager (${
+                        <div className="wagerBox">
+                          <label className="ui-input-label">
+                            {`Wager (${
                               getWagerBounds(game.round, game.scores[clientId])
                                 .minWager
                             } - ${
                               getWagerBounds(game.round, game.scores[clientId])
                                 .maxWager
                             })`}
-                            value={this.state.localWager}
-                            onChange={(value) =>
-                              this.setState({ localWager: value })
-                            }
-                            onKeyDown={(e: any) =>
-                              e.key === "Enter" && this.submitWager()
-                            }
-                            rightSection={
-                              <ActionIcon onClick={() => this.submitWager()}>
-                                <IconCornerDownRight size={20} />
-                              </ActionIcon>
-                            }
-                            mt="md"
-                          />
-                          <Button
+                          </label>
+                          <div className="ui-input-group">
+                            <input
+                              type="number"
+                              value={this.state.localWager}
+                              onChange={(e) =>
+                                this.setState({ localWager: e.target.value })
+                              }
+                              onKeyDown={(e: any) =>
+                                e.key === "Enter" && this.submitWager()
+                              }
+                            />
+                            <button
+                              type="button"
+                              className="ui-action-icon"
+                              onClick={() => this.submitWager()}
+                            >
+                              <IconCornerDownRight size={20} />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className="ui-btn"
                             onClick={() => {
                               this.submitWager(
                                 String(
@@ -1148,13 +1075,15 @@ export class Jeopardy extends React.Component<{
                             }}
                           >
                             {game.currentDailyDouble
-                              ? `I'd like to make it a true Daily Double (max wager)`
+                              ? `True Daily Double (max wager)`
                               : "All of it (max wager)"}
-                          </Button>
+                          </button>
                         </div>
                       ) : null}
+                      {game.currentAnswer && (
+                        <div className="answer">{game.currentAnswer}</div>
+                      )}
                     </div>
-                    <div className={`answer`}>{game.currentAnswer}</div>
                     {Boolean(game.playClueEndTS) && (
                       <TimerBar
                         duration={0}
@@ -1177,35 +1106,6 @@ export class Jeopardy extends React.Component<{
                         text="Waiting for wagers. . ."
                       />
                     )}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "0px",
-                        right: "0px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "4px",
-                      }}
-                    >
-                      {game.canNextQ && (
-                        <Button
-                          onClick={() => this.socket?.emit("JPD:skipQ")}
-                          leftSection={<IconPlayerTrackNextFilled />}
-                        >
-                          Next
-                        </Button>
-                      )}
-                      {game.currentAnswer && canJudge && (
-                        <Button
-                          onClick={() =>
-                            this.setState({ showJudgingModal: true })
-                          }
-                          leftSection={<IconGavel />}
-                        >
-                          Judge
-                        </Button>
-                      )}
-                    </div>
                   </div>
                 </div>
               )}
@@ -1226,101 +1126,75 @@ export class Jeopardy extends React.Component<{
                       />
                     ))}
                   </div>
-                  <div
-                    style={{
-                      flexGrow: 1,
-                      overflow: "auto",
-                      backgroundColor: "black",
-                    }}
-                  >
-                    <Table striped>
-                      <Table.Thead>
-                        <Table.Tr>
-                          <Table.Th>Name</Table.Th>
-                          <Table.Th>Score</Table.Th>
-                          <Table.Th>Qs</Table.Th>
-                          <Table.Th>Answered</Table.Th>
-                          <Table.Th>Correct</Table.Th>
-                          <Table.Th>Incorrect</Table.Th>
-                          <Table.Th>First Buzzes</Table.Th>
-                          <Table.Th>Avg. Reaction</Table.Th>
-                          <Table.Th>Daily Doubles</Table.Th>
-                        </Table.Tr>
-                      </Table.Thead>
-                      <Table.Tbody>
+                  <div className="endgameTableWrap">
+                    <table className="ui-table ui-table-striped">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Score</th>
+                          <th>Qs</th>
+                          <th>Answered</th>
+                          <th>Correct</th>
+                          <th>Incorrect</th>
+                          <th>First Buzzes</th>
+                          <th>Avg. Reaction</th>
+                          <th>Daily Doubles</th>
+                        </tr>
+                      </thead>
+                      <tbody>
                         {participants.map((p) => {
                           return (
-                            <Table.Tr>
-                              <Table.Td>{p.name}</Table.Td>
-                              <Table.Td>
-                                {this.state.game?.scores[p.id] ?? 0}
-                              </Table.Td>
-                              <Table.Td>
-                                {this.state.game?.stats?.questions}
-                              </Table.Td>
-                              <Table.Td>
+                            <tr key={p.id}>
+                              <td>{p.name}</td>
+                              <td>{this.state.game?.scores[p.id] ?? 0}</td>
+                              <td>{this.state.game?.stats?.questions}</td>
+                              <td>
                                 {this.state.game?.stats?.answered?.[p.id] ?? 0}
-                              </Table.Td>
-                              <Table.Td>
+                              </td>
+                              <td>
                                 {this.state.game?.stats?.correct?.[p.id] ?? 0}
-                              </Table.Td>
-                              <Table.Td>
+                              </td>
+                              <td>
                                 {this.state.game?.stats?.incorrect?.[p.id] ?? 0}
-                              </Table.Td>
-                              <Table.Td>
+                              </td>
+                              <td>
                                 {this.state.game?.stats?.firstBuzz?.[p.id] ?? 0}
-                              </Table.Td>
-                              <Table.Td>
+                              </td>
+                              <td>
                                 {`${((this.state.game?.stats?.reactionTimes?.[p.id]?.reduce((a, b) => a + b, 0) ?? 0) / (this.state.game?.stats?.reactionTimes?.[p.id]?.length ?? 0))?.toFixed(0)}ms`}
-                              </Table.Td>
-                              <Table.Td>
+                              </td>
+                              <td>
                                 {this.state.game?.stats?.dailyDoubles?.[p.id] ??
                                   0}
-                              </Table.Td>
-                            </Table.Tr>
+                              </td>
+                            </tr>
                           );
                         })}
-                      </Table.Tbody>
-                    </Table>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
             </div>
           </div>
-          <div style={{ display: "flex", overflowX: "auto", flexShrink: 0 }}>
+          <div className="scoreboardStrip">
             {participants.map((p) => {
               return (
                 <div key={p.id} className="scoreboard">
-                  <div className="picture" style={{ position: "relative" }}>
+                  <div className="picture">
                     <img
                       alt=""
                       src={getDefaultPicture(p.name ?? "", getColorHex(p.id))}
                     />
                     <div
+                      className="playerNameBar"
                       style={{
-                        position: "absolute",
-                        bottom: "4px",
-                        left: "0px",
-                        width: "100%",
                         backgroundColor: "#" + getColorHex(p.id),
-                        color: "white",
-                        borderRadius: "4px",
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        display: "flex",
                       }}
                     >
                       <div
                         title={p.name || p.id}
-                        style={{
-                          width: "100%",
-                          backdropFilter: "brightness(80%)",
-                          padding: "4px",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          display: "inline-block",
-                        }}
+                        className="playerNameText"
                       >
                         {p.name || p.id}
                       </div>
@@ -1362,9 +1236,13 @@ export class Jeopardy extends React.Component<{
                           right: "2px",
                         }}
                       >
-                        <Badge title="Wager" color="gray" size="xs" radius="xs">
+                        <span
+                          title="Wager"
+                          className="ui-badge ui-badge-xs"
+                          style={{ backgroundColor: "#495057" }}
+                        >
                           {game.wagers[p.id] || 0}
-                        </Badge>
+                        </span>
                       </div>
                     ) : null}
                     <div className="timeOffset">
@@ -1499,12 +1377,11 @@ const SettingsModal = ({
             fontSize: "14px",
           }}
         >
-          <NumberInput
-            styles={{ input: { width: 40 } }}
+          <input
+            type="number"
+            className="ui-number-compact"
             value={answerTimeout}
-            onChange={(value) => setAnswerTimeout(value)}
-            size="xs"
-            hideControls
+            onChange={(e) => setAnswerTimeout(e.target.value)}
           />
           Seconds for regular answers and Daily Double wagers (Default: 20)
         </div>
@@ -1516,12 +1393,11 @@ const SettingsModal = ({
             fontSize: "14px",
           }}
         >
-          <NumberInput
-            styles={{ input: { width: 40 } }}
+          <input
+            type="number"
+            className="ui-number-compact"
             value={finalTimeout}
-            onChange={(value) => setFinalTimeout(value)}
-            size="xs"
-            hideControls
+            onChange={(e) => setFinalTimeout(e.target.value)}
           />
           Seconds for Final Jeopardy answers and wagers (Default: 30)
         </div>
@@ -1533,7 +1409,9 @@ const SettingsModal = ({
           justifyContent: "flex-end",
         }}
       >
-        <Button
+        <button
+          type="button"
+          className="ui-btn"
           onClick={() => {
             const settings: GameSettings = {
               makeMeHost: Boolean(makeMeHost),
@@ -1546,7 +1424,7 @@ const SettingsModal = ({
           }}
         >
           Save
-        </Button>
+        </button>
       </div>
     </Modal>
   );
@@ -1563,28 +1441,224 @@ export const ErrorModal = ({ error }: { error: string }) => {
           gap: "8px",
         }}
       >
-        <Button
-          size="xl"
+        <button
+          type="button"
+          className="ui-btn ui-btn-xl"
           onClick={() => {
             window.location.reload();
           }}
-          leftSection={<IconRefresh />}
         >
+          <IconRefresh />
           Try again
-        </Button>
-        <Button
-          size="xl"
+        </button>
+        <button
+          type="button"
+          className="ui-btn ui-btn-xl"
           onClick={() => {
             window.location.href = "/";
           }}
-          leftSection={<IconHome />}
         >
+          <IconHome />
           Go to home
-        </Button>
+        </button>
       </div>
     </Modal>
   );
 };
+
+function Modal({
+  opened,
+  onClose,
+  title,
+  size,
+  centered,
+  children,
+}: {
+  opened?: boolean;
+  onClose: () => void;
+  title?: React.ReactNode;
+  size?: "xl" | string;
+  centered?: boolean;
+  children: React.ReactNode;
+}) {
+  if (!opened) return null;
+  return (
+    <div
+      className={`ui-modal-backdrop ${centered ? "centered" : ""}`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className={`ui-modal ${size === "xl" ? "xl" : ""}`}>
+        <div className="ui-modal-header">
+          <h3 className="ui-modal-title">{title}</h3>
+          <button
+            type="button"
+            className="ui-modal-close"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            &times;
+          </button>
+        </div>
+        <div className="ui-modal-body">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function Switch({
+  checked,
+  onChange,
+  label,
+}: {
+  checked?: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  label: string;
+}) {
+  return (
+    <label className="ui-switch">
+      <input type="checkbox" checked={Boolean(checked)} onChange={onChange} />
+      <span className="ui-switch-track">
+        <span className="ui-switch-thumb" />
+      </span>
+      <span>{label}</span>
+    </label>
+  );
+}
+
+function NewGameMenu({
+  localEpNum,
+  onChangeEpNum,
+  onNewGame,
+  onShowCustomModal,
+}: {
+  localEpNum: string;
+  onChangeEpNum: (val: string) => void;
+  onNewGame: (options: { number?: string; filter?: string }) => void;
+  onShowCustomModal: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number }>({
+    top: 0,
+    left: 0,
+  });
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div className="ui-menu" ref={menuRef}>
+      <button
+        type="button"
+        className="ui-btn ui-btn-sm"
+        style={{ flexShrink: 0 }}
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const left = Math.max(8, Math.min(rect.left, window.innerWidth - 248));
+          setPos({ top: rect.bottom + 4, left });
+          setOpen((v) => !v);
+        }}
+      >
+        <IconStarFilled size={20} />
+        New Game
+      </button>
+      {open && (
+        <div
+          className="ui-menu-dropdown"
+          style={{ top: pos.top, left: pos.left }}
+        >
+          <div className="ui-menu-label">Game #</div>
+          <div style={{ padding: "0 8px 8px" }}>
+            <div className="ui-input-group">
+              <input
+                type="text"
+                value={localEpNum}
+                onChange={(e) => onChangeEpNum(e.target.value)}
+                onKeyDown={(e: any) => {
+                  if (e.key === "Enter") {
+                    onNewGame({ number: localEpNum });
+                    setOpen(false);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="ui-action-icon"
+                onClick={() => {
+                  onNewGame({ number: localEpNum });
+                  setOpen(false);
+                }}
+              >
+                <IconCornerDownRight name="arrow right" />
+              </button>
+            </div>
+          </div>
+          <hr className="ui-menu-divider" />
+          <div className="ui-menu-label">Random</div>
+          {[
+            { key: "all", value: null, text: "Any" },
+            { key: "kids", value: "kids", text: "Kids Week" },
+            { key: "teen", value: "teen", text: "Teen Tournament" },
+            {
+              key: "college",
+              value: "college",
+              text: "College Championship",
+            },
+            {
+              key: "celebrity",
+              value: "celebrity",
+              text: "Celebrity Jeopardy",
+            },
+            {
+              key: "teacher",
+              value: "teacher",
+              text: "Teachers Tournament",
+            },
+            {
+              key: "champions",
+              value: "champions",
+              text: "Tournament of Champions",
+            },
+          ].map((item) => (
+            <button
+              type="button"
+              className="ui-menu-item"
+              key={item.key}
+              onClick={() => {
+                onNewGame({ filter: item.value ?? undefined });
+                setOpen(false);
+              }}
+            >
+              {item.text}
+            </button>
+          ))}
+          <hr className="ui-menu-divider" />
+          <div className="ui-menu-label">Custom</div>
+          <button
+            type="button"
+            className="ui-menu-item"
+            onClick={() => {
+              onShowCustomModal();
+              setOpen(false);
+            }}
+          >
+            Upload
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const renderQuestion = (input: string | undefined): React.ReactNode | null => {
   if (!input) {

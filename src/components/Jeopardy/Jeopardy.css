@@ -26,262 +26,475 @@
   src: url("./gyparody.ttf");
 }
 
-.controlsContainer {
-  position: absolute;
-  width: 100%;
-  bottom: 0px;
-}
-
+/* ---------- Controls Toolbar ---------- */
 .controls {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
   overflow-x: auto;
   flex-wrap: nowrap;
-  margin-top: 4px;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
-@media only screen and (min-width: 1200px) {
+@media only screen and (min-width: 992px) {
   .controls {
-    position: absolute;
-    top: -40px;
-    left: 270px;
-  }
-}
-
-.board {
-  background-color: black;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-template-rows: repeat(6, 1fr);
-  grid-gap: 6px;
-  padding: 6px;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  margin: 0 auto;
-  position: relative;
-  width: 100%;
-}
-
-.board.currentQ {
-  overflow-x: hidden;
-}
-
-@media only screen and (max-width: 600px) {
-  .board {
-    overflow-x: auto;
-    justify-content: start;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    padding-bottom: 0;
+    margin-bottom: 6px;
   }
 }
 
 .controlToggle {
-  background-color: rgba(200, 200, 200, 0.1);
-  border-radius: 4px;
-  padding: 10px;
-  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  padding: 0 10px;
+  min-height: 36px;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ---------- Jeopardy Main Layout ---------- */
+.jeopardyMain {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 8px;
+}
+
+.boardWrap {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.board {
+  background-color: #030712;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: auto repeat(5, minmax(48px, 1fr));
+  gap: 3px;
+  padding: 4px;
+  align-items: stretch;
+  justify-items: stretch;
+  text-align: center;
+  margin: 0 auto;
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+@media only screen and (min-width: 769px) {
+  .board {
+    grid-template-rows: repeat(6, minmax(64px, 1fr));
+    gap: 6px;
+    padding: 6px;
+  }
+}
+
+.board.currentQ {
+  overflow: hidden;
 }
 
 .box {
   align-items: center;
   justify-content: center;
   display: flex;
-  background-color: #0000b5;
-  padding-left: 4px;
-  padding-right: 4px;
+  background: linear-gradient(180deg, #0a1fa8 0%, #051178 100%);
+  padding: 4px 2px;
   height: 100%;
   width: 100%;
-  min-width: 100px;
-  min-height: 60px;
+  min-width: 0;
+  min-height: 46px;
+  border-radius: 4px;
+  user-select: none;
+}
+
+@media only screen and (min-width: 769px) {
+  .box {
+    padding: 6px 4px;
+    min-height: 64px;
+  }
 }
 
 .category {
-  font-family: "Swiss 911";
-  font-size: 1.25em;
-  line-height: 1em;
-  letter-spacing: 1px;
-  color: #e1f3ff;
+  font-family: "Swiss 911", sans-serif;
+  font-size: clamp(0.6rem, 2.2vw, 1.25rem);
+  line-height: 1.05;
+  letter-spacing: 0.4px;
+  color: #e6f2ff;
   text-transform: uppercase;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.85);
 }
 
 .value {
-  font-family: "Swiss 911";
-  font-size: 3em;
-  line-height: 1em;
-  color: #d7a04b;
-  text-shadow: black 4px 4px;
-  border: 1px solid rgba(0, 0, 0, 0);
+  font-family: "Swiss 911", sans-serif;
+  font-size: clamp(1.05rem, 4.4vw, 2.9rem);
+  line-height: 1;
+  color: #e6b355;
+  text-shadow: 2px 2px 0 #000000;
+  border: 1px solid transparent;
+  transition:
+    border-color 0.12s ease,
+    filter 0.12s ease,
+    transform 0.08s ease;
+  touch-action: manipulation;
+}
+
+@media only screen and (min-width: 769px) {
+  .value {
+    text-shadow: 3px 3px 0 #000000;
+  }
 }
 
 .value:hover {
   cursor: pointer;
-  border: 1px solid white;
+  border-color: rgba(255, 255, 255, 0.75);
+  filter: brightness(1.12);
 }
 
+.value:active {
+  transform: scale(0.97);
+}
+
+/* ---------- Clue Overlay ---------- */
 .clueContainerContainer {
   transform: scale(0.17);
   transform-origin: 0 0;
-  transition: 0.7s ease-out;
+  transition: 0.55s ease-out;
   width: 100%;
   height: 100%;
+  z-index: 5;
 }
 
 .clueContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 20px;
-  background-color: #0000b5;
+  justify-content: space-between;
+  padding: 12px 12px 22px;
+  background: radial-gradient(circle at 50% 35%, #0c22bd 0%, #051178 100%);
   position: relative;
   margin: 0 auto;
   height: 100%;
-  gap: 4px;
+  gap: 8px;
+  overflow-y: auto;
+  border-radius: 6px;
 }
 
-.clueContainer.dailyDouble {
-  background-position-x: center;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-image: url("./jeopardy-daily-double.png");
-  background-color: rgba(0, 0, 0, 1);
-}
-
-.clue {
-  font-family: "Korinna";
-  text-transform: uppercase;
-  color: white;
-  font-size: 2em;
-  line-height: 1;
-  text-align: center;
-  /* flex-grow: 1; */
-  display: flex;
-  align-items: center;
-  height: 75%;
-}
-
-@media only screen and (max-width: 600px) {
-  .clue {
-    overflow-y: auto;
-    align-items: start;
+@media only screen and (min-width: 769px) {
+  .clueContainer {
+    padding: 18px 28px 26px;
+    gap: 10px;
   }
 }
 
-.answer {
-  font-family: "Korinna";
+.clueContainer.dailyDouble {
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-image: url("./jeopardy-daily-double.png");
+  background-color: #000000;
+}
+
+.clueHeader {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.clueMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.clueMeta .category {
+  font-size: clamp(0.85rem, 2.5vw, 1.35rem);
+  color: var(--ui-gold);
+}
+
+.clueTopActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.clue {
+  font-family: "Korinna", serif;
   text-transform: uppercase;
-  color: white;
-  font-size: 22px;
-  line-height: 22px;
+  color: #ffffff;
+  font-size: clamp(1rem, 3.8vw, 2rem);
+  line-height: 1.22;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 860px;
+  overflow-y: auto;
+  padding: 4px 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.75);
+}
+
+.clueControls {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.buzzActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.buzzBtn {
+  flex: 2;
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.passBtn {
+  flex: 1;
+  min-height: 48px;
+}
+
+.answerInputRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  max-width: 420px;
+}
+
+.answerInputRow .ui-input-group {
+  flex: 1;
+}
+
+.wagerBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.answer {
+  font-family: "Korinna", serif;
+  text-transform: uppercase;
+  color: var(--ui-gold);
+  font-size: clamp(0.95rem, 3vw, 1.35rem);
+  line-height: 1.2;
+  text-align: center;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+/* ---------- Scoreboard ---------- */
+.scoreboardStrip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  padding: 2px 0 4px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .scoreboard {
   display: flex;
   flex-direction: column;
-  width: 110px;
-  margin-right: 8px;
+  width: 96px;
   flex-shrink: 0;
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+  border: 1px solid var(--ui-border-strong);
+  background-color: var(--ui-surface);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+@media only screen and (min-width: 769px) {
+  .scoreboard {
+    width: 114px;
+  }
 }
 
 .scoreboard .icons {
   position: absolute;
-  top: 0;
-  right: 0;
-  color: white;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  gap: 2px;
+  color: #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
 }
 
 .scoreboard .picture {
   width: 100%;
-  margin-bottom: -4px;
+  position: relative;
+  background-color: #0b1224;
 }
 
 .scoreboard .picture img {
   width: 100%;
+  display: block;
+}
+
+.scoreboard .playerNameBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+}
+
+.scoreboard .playerNameText {
+  width: 100%;
+  backdrop-filter: brightness(78%);
+  padding: 3px 5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .scoreboard .points {
-  font-family: "Univers";
-  color: white;
-  background-color: #0000b5;
+  font-family: "Univers", sans-serif;
+  color: #ffffff;
+  background-color: #071688;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  line-height: 22px;
-  padding: 4px 10px;
-  border: 4px solid black;
+  font-size: 18px;
+  line-height: 1.1;
+  padding: 5px 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+}
+
+@media only screen and (min-width: 769px) {
+  .scoreboard .points {
+    font-size: 21px;
+    padding: 6px 8px;
+  }
 }
 
 .scoreboard .points.negative {
-  color: red;
+  color: #f87171;
 }
 
 .scoreboard .answerBox.negative {
-  color: red;
+  color: #f87171;
 }
 
 .judgeButtons {
   position: absolute;
-  top: 0px;
+  top: 2px;
+  left: 2px;
   display: flex;
   justify-content: center;
   gap: 2px;
 }
 
 .scoreboard .answerBox {
-  font-family: "Korinna";
-  color: white;
-  background-color: #0000b5;
+  font-family: "Korinna", serif;
+  color: #ffffff;
+  background-color: #051178;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 80px;
-  font-size: 12px;
-  line-height: 12px;
-  padding: 4px;
+  min-height: 54px;
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 5px;
   word-break: break-word;
-  border: 4px solid black;
   position: relative;
+  text-align: center;
+}
+
+@media only screen and (min-width: 769px) {
+  .scoreboard .answerBox {
+    min-height: 68px;
+    font-size: 12px;
+  }
 }
 
 .scoreboard .answerBox.buzz {
-  border: 4px solid white;
+  box-shadow: inset 0 0 0 2px #ffffff;
 }
 
 .scoreboard .answerBox .timeOffset {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  font-size: 11px;
-  font-family: initial;
-  padding: 0px 3px;
-  border-radius: 3px;
+  bottom: 2px;
+  right: 3px;
+  font-size: 10px;
+  font-family: sans-serif;
+  color: var(--ui-text-dim);
 }
 
+/* ---------- Intro & Endgame ---------- */
 #intro {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  z-index: 1;
+  inset: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #000000;
 }
 
 #intro video {
   width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 #endgame {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   flex-direction: column;
   position: absolute;
+  inset: 0;
+  z-index: 6;
+  padding: 14px 12px;
+  gap: 10px;
+  background: rgba(6, 11, 24, 0.94);
+  overflow-y: auto;
+}
+
+.endgameTableWrap {
   width: 100%;
-  height: 100%;
-  padding: 20px;
-  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--ui-border);
+  background-color: var(--ui-surface);
 }

@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActionIcon, Avatar, Button, Group, TextInput } from "@mantine/core";
 import { getColorHex, getDefaultPicture } from "../../utils";
 import { Socket } from "socket.io-client";
-import { IconCpu, IconSend } from "@tabler/icons-react";
+import { IconCpu, IconSend } from "../Icons";
 import "./Chat.css";
 
 interface ChatProps {
@@ -90,8 +89,9 @@ export function Chat(props: ChatProps) {
           {/* <div ref={this.messagesEndRef} /> */}
         </div>
         {!isNearBottom && (
-          <Button
-            size="xs"
+          <button
+            type="button"
+            className="ui-btn ui-btn-xs"
             onClick={scrollToBottom}
             style={{
               position: "sticky",
@@ -101,20 +101,25 @@ export function Chat(props: ChatProps) {
             }}
           >
             Jump to bottom
-          </Button>
+          </button>
         )}
       </div>
-      <TextInput
-        onKeyDown={(e: any) => e.key === "Enter" && sendChatMsg()}
-        onChange={updateChatMsg}
-        value={chatMsg}
-        rightSection={
-          <ActionIcon radius="md" onClick={sendChatMsg}>
-            <IconSend size={20} />
-          </ActionIcon>
-        }
-        placeholder="Enter a message..."
-      />
+      <div className="ui-input-group">
+        <input
+          type="text"
+          onKeyDown={(e: any) => e.key === "Enter" && sendChatMsg()}
+          onChange={updateChatMsg}
+          value={chatMsg}
+          placeholder="Enter a message..."
+        />
+        <button
+          type="button"
+          className="ui-action-icon ui-action-icon-md"
+          onClick={sendChatMsg}
+        >
+          <IconSend size={20} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -136,11 +141,16 @@ const ChatMessage = ({
 }) => {
   return (
     <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-      <Avatar
-        src={bot ? undefined : getDefaultPicture(name ?? "", getColorHex(id))}
-      >
-        {bot ? <IconCpu /> : null}
-      </Avatar>
+      <div className="ui-avatar">
+        {bot ? (
+          <IconCpu />
+        ) : (
+          <img
+            alt=""
+            src={getDefaultPicture(name ?? "", getColorHex(id))}
+          />
+        )}
+      </div>
       <div>
         <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
           <div className="light username">{name || id}</div>

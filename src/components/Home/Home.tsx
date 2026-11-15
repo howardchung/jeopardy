@@ -10,29 +10,20 @@ import {
   IconHandFinger,
   IconMicrophoneFilled,
   IconTool,
-} from "@tabler/icons-react";
+} from "../Icons";
 
 const Feature = ({
   Icon,
   text,
   title,
 }: {
-  Icon: React.ForwardRefExoticComponent<any>;
+  Icon: React.ComponentType<{ size?: number | string }>;
   text: string;
   title: string;
 }) => {
   return (
-    <div
-      style={{
-        display: "flex",
-        flex: "1 1 0px",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "10px",
-        minWidth: "180px",
-      }}
-    >
-      {<Icon size={80} />}
+    <div className={styles.featureCard}>
+      <Icon size={48} />
       <h4 className={styles.featureTitle}>{title}</h4>
       <div className={styles.featureText}>{text}</div>
     </div>
@@ -43,12 +34,10 @@ const Hero = ({
   heroText,
   action,
   image,
-  color,
 }: {
   heroText?: string;
   action?: React.ReactNode;
   image?: string;
-  color?: string;
 }) => {
   const [epCount, setEpCount] = useState(8000);
   const [qCount, setQCount] = useState(500000);
@@ -62,9 +51,9 @@ const Hero = ({
     update();
   }, []);
   return (
-    <div className={`${styles.hero} ${color === "green" ? styles.green : ""}`}>
+    <div className={styles.hero}>
       <div className={styles.heroInner}>
-        <div style={{ padding: "30px", flex: "1 1 0" }}>
+        <div className={styles.heroCopy}>
           <div className={styles.heroText}>{heroText}</div>
           <div className={styles.subText}>
             <CountUp start={8000} end={epCount} delay={0} duration={3} />{" "}
@@ -73,16 +62,8 @@ const Hero = ({
           </div>
           {action}
         </div>
-        <div
-          style={{
-            flex: "1 1 0",
-          }}
-        >
-          <img
-            alt="hero"
-            style={{ width: "100%", borderRadius: "10px" }}
-            src={image}
-          />
+        <div>
+          <img alt="Jeopardy board preview" className={styles.heroImage} src={image} />
         </div>
       </div>
     </div>
@@ -95,9 +76,9 @@ export const JeopardyHome = () => {
       <JeopardyTopBar hideNewRoom />
       <div className={styles.container}>
         <Hero
-          heroText={"Play Jeopardy! online with friends."}
-          action={<NewRoomButton />}
-          image={"/screenshot3.png"}
+          heroText="Play Jeopardy! online with friends."
+          action={<NewRoomButton size="lg" />}
+          image="/screenshot3.png"
         />
         <div className={styles.featureSection}>
           <Feature

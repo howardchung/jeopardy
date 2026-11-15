@@ -1,23 +1,38 @@
-body {
-  margin: 0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
-    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
 ::-webkit-scrollbar-corner {
-  background: rgba(0, 0, 0, 0);
+  background: transparent;
 }
 
 body {
-  background-color: #222222;
+  background:
+    radial-gradient(
+      ellipse 85% 45% at 50% 0%,
+      rgba(29, 95, 214, 0.22),
+      transparent 70%
+    ),
+    var(--ui-bg);
+  background-attachment: fixed;
 }
 
 .fullHeightColumn {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 64px);
-  height: calc(100vh - 64px);
+  min-width: 0;
+  position: relative;
+}
+
+.chatColumn {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 340px;
+  max-height: 50dvh;
+}
+
+@media only screen and (min-width: 992px) {
+  .fullHeightColumn,
+  .chatColumn {
+    height: calc(100dvh - 68px);
+    min-height: 520px;
+    max-height: none;
+  }
 }
