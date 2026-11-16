@@ -65,7 +65,42 @@ export function decodeEntities(input: string) {
 }
 
 export const getDefaultPicture = (name: string, background = "a0a0a0") => {
-  return `https://ui-avatars.com/api/?name=${name}&background=${background}&size=256&color=ffffff`;
+  const fg = background.startsWith("#") ? background : `#${background}`;
+  const hash = Math.abs(cyrb53(name || "?"));
+  const size = 5;
+  const cell = 20;
+  const pad = 15;
+  const total = size * cell + pad * 2;
+
+  const rects: string[] = [];
+  let bit = 0;
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < 3; col++) {
+      const filled = ((hash >>> bit) & 1) === 1;
+      bit++;
+      if (filled) {
+        const x = pad + col * cell;
+        const y = pad + row * cell;
+        rects.push(`<rect x="${x}" y="${y}" width="${cell}" height="${cell}"/>`);
+        const mirrorCol = size - 1 - col;
+        if (mirrorCol !== col) {
+          const mx = pad + mirrorCol * cell;
+          rects.push(
+            `<rect x="${mx}" y="${y}" width="${cell}" height="${cell}"/>`,
+          );
+        }
+      }
+    }
+  }
+  if (rects.length === 0) {
+    const center = pad + 2 * cell;
+    rects.push(
+      `<rect x="${center}" y="${center}" width="${cell}" height="${cell}"/>`,
+    );
+  }
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges"><rect width="${total}" height="${total}" fill="#0e162b"/><g fill="${fg}">${rects.join("")}</g></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 };
 
 export const isMobile = () => {

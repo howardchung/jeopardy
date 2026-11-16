@@ -357,7 +357,8 @@
 .scoreboard .picture {
   width: 100%;
   position: relative;
-  background-color: #0b1224;
+  background-color: #0e162b;
+  padding-bottom: 20px;
 }
 
 .scoreboard .picture img {
