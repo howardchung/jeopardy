@@ -89,7 +89,6 @@
   position: relative;
   width: 100%;
   border: 1px solid var(--ui-border-strong);
-  border-radius: var(--ui-radius-lg);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
@@ -110,13 +109,12 @@
   align-items: center;
   justify-content: center;
   display: flex;
-  background: linear-gradient(180deg, #0a1fa8 0%, #051178 100%);
+  background-color: #0000b5;
   padding: 4px 2px;
   height: 100%;
   width: 100%;
   min-width: 0;
   min-height: 46px;
-  border-radius: 4px;
   user-select: none;
 }
 
@@ -185,13 +183,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 12px 22px;
-  background: radial-gradient(circle at 50% 35%, #0c22bd 0%, #051178 100%);
+  background-color: #0000b5;
   position: relative;
   margin: 0 auto;
   height: 100%;
   gap: 8px;
   overflow-y: auto;
-  border-radius: 6px;
 }
 
 @media only screen and (min-width: 769px) {
@@ -331,7 +328,6 @@
   flex-direction: column;
   width: 96px;
   flex-shrink: 0;
-  border-radius: var(--ui-radius);
   overflow: hidden;
   border: 1px solid var(--ui-border-strong);
   background-color: var(--ui-surface);
