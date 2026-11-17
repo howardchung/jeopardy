@@ -279,9 +279,19 @@ body {
 .ui-input-label {
   display: block;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 4px;
   color: var(--ui-gold);
+  text-shadow:
+    -1px -1px 0 #000000,
+    1px -1px 0 #000000,
+    -1px 1px 0 #000000,
+    1px 1px 0 #000000,
+    -2px 0 0 #000000,
+    2px 0 0 #000000,
+    0 -2px 0 #000000,
+    0 2px 0 #000000,
+    0 2px 6px rgba(0, 0, 0, 0.95);
 }
 
 .ui-number-compact {

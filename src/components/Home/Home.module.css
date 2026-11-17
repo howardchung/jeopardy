@@ -65,7 +65,6 @@
 
 .heroImage {
   width: 100%;
-  border-radius: var(--ui-radius-lg);
   border: 1px solid var(--ui-border-strong);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.55);
   display: block;
@@ -101,7 +100,6 @@
   padding: 18px 14px;
   background-color: var(--ui-surface);
   border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius-lg);
   gap: 8px;
 }
 

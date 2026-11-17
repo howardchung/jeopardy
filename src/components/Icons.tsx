@@ -137,15 +137,6 @@ export const IconLock = makeIcon(
   </>,
 );
 
-export const IconMicrophone = makeIcon(
-  <>
-    <rect x="9" y="2" width="6" height="11" rx="3" />
-    <path d="M5 10a7 7 0 0 0 14 0" />
-    <path d="M8 21l8 0" />
-    <path d="M12 17l0 4" />
-  </>,
-);
-
 export const IconPlayerTrackNextFilled = makeIcon(
   <>
     <path d="M2 5v14c0 .86 1.012 1.318 1.659 .753l8 -7a1 1 0 0 0 0 -1.506l-8 -7c-.647 -.565 -1.659 -.106 -1.659 .753z" />

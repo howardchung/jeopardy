@@ -23,7 +23,6 @@ import {
   IconHandFinger,
   IconHome,
   IconLock,
-  IconMicrophone,
   IconPlayerTrackNextFilled,
   IconPlug,
   IconRefresh,
@@ -38,18 +37,6 @@ const boardFill = new Audio("/jeopardy/jeopardy-board-fill.mp3");
 const think = new Audio("/jeopardy/jeopardy-think.mp3");
 const timesUp = new Audio("/jeopardy/jeopardy-times-up.mp3");
 const rightAnswer = new Audio("/jeopardy/jeopardy-rightanswer.mp3");
-
-const SpeechRecognition =
-  // @ts-expect-error
-  window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition: any;
-if (SpeechRecognition) {
-  recognition = new SpeechRecognition();
-  recognition.continuous = false;
-  recognition.lang = "en-US";
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-}
 
 type GameSettings = {
   answerTimeout?: number;
@@ -103,22 +90,12 @@ export class Jeopardy extends React.Component<{
     showSettingsModal: false,
     settings: loadSavedSettings(),
     overlayMsg: "",
-    listening: false,
   };
   buzzLock = 0;
   socket: Socket | undefined = undefined;
 
   async componentDidMount() {
     window.speechSynthesis?.getVoices();
-
-    if (recognition) {
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        this.setState({ localAnswer: transcript });
-        this.setState({ listening: false });
-        recognition.stop();
-      };
-    }
 
     document.addEventListener("keydown", this.onKeydown);
 
@@ -168,7 +145,6 @@ export class Jeopardy extends React.Component<{
       this.setState({ game, localEpNum: game.epNum });
       if (!game.currentQ) {
         this.setState({ showJudgingModal: false });
-        this.stopListening();
       }
     });
     socket.on(
@@ -558,16 +534,6 @@ export class Jeopardy extends React.Component<{
     );
     // update state
     this.setState({ settings });
-  };
-
-  startListening = () => {
-    recognition?.start();
-    this.setState({ listening: true });
-  };
-
-  stopListening = () => {
-    recognition?.abort();
-    this.setState({ listening: false });
   };
 
   render() {
@@ -1016,17 +982,6 @@ export class Jeopardy extends React.Component<{
                               <IconCornerDownRight size={20} />
                             </button>
                           </div>
-                          <button
-                            type="button"
-                            className={`ui-action-icon ui-action-icon-lg ${
-                              this.state.listening
-                                ? "ui-action-icon-green"
-                                : ""
-                            }`}
-                            onClick={this.startListening}
-                          >
-                            <IconMicrophone size={20} />
-                          </button>
                         </div>
                       ) : null}
                       {game.waitingForWager &&
