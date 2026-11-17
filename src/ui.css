@@ -324,10 +324,8 @@ body {
 .ui-avatar {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
   background-color: var(--ui-surface-raised);
   border: 1px solid var(--ui-border-strong);
-  color: var(--ui-gold);
   display: inline-flex;
   align-items: center;
   justify-content: center;
