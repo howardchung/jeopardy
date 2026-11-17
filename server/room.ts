@@ -313,6 +313,30 @@ export class Room {
         }
       });
 
+      socket.on("JPD:draftAnswer", (raw1: unknown, raw2: unknown) => {
+        const question = String(raw1);
+        const answer = raw2 ? String(raw2) : "";
+        if (question !== this.jpd.public.currentQ) {
+          return;
+        }
+        if (!this.jpd.public.questionEndTS) {
+          return;
+        }
+        if (answer && answer.length > 1000) {
+          return;
+        }
+        if (this.isSpectator(clientId)) {
+          return;
+        }
+        if (!this.jpd.public.buzzes[clientId]) {
+          return;
+        }
+        if (this.jpd.public.submitted[clientId]) {
+          return;
+        }
+        this.jpd.draftAnswers[clientId] = answer;
+      });
+
       socket.on("JPD:wager", (raw: unknown) => {
         const wager = Number(raw);
         if (this.isSpectator(clientId)) {
@@ -320,6 +344,25 @@ export class Room {
           return;
         }
         this.submitWager(clientId, wager);
+      });
+
+      socket.on("JPD:draftWager", (raw: unknown) => {
+        if (this.isSpectator(clientId)) {
+          return;
+        }
+        if (!this.jpd.public.waitingForWager?.[clientId]) {
+          return;
+        }
+        if (clientId in this.jpd.wagers) {
+          return;
+        }
+        const draft =
+          raw === "" || raw === null || raw === undefined ? NaN : Number(raw);
+        if (Number.isNaN(draft)) {
+          delete this.jpd.draftWagers[clientId];
+        } else {
+          this.jpd.draftWagers[clientId] = draft;
+        }
       });
       socket.on("JPD:judge", (raw: unknown) => {
         if (this.settings.host && clientId !== this.settings.host) {
@@ -445,6 +488,8 @@ export class Room {
     }
     if (roomObj.jpd && roomObj.jpd.public) {
       const gameData = roomObj.jpd;
+      gameData.draftAnswers ??= {};
+      gameData.draftWagers ??= {};
       this.jpd = gameData;
       // Reconstruct the timeouts from the saved state
       if (this.jpd.public.questionEndTS) {
@@ -665,6 +710,8 @@ export class Room {
   resetAfterQuestion = () => {
     this.jpd.answers = {};
     this.jpd.wagers = {};
+    this.jpd.draftAnswers = {};
+    this.jpd.draftWagers = {};
     clearTimeout(this.playClueTimeout);
     clearTimeout(this.questionAnswerTimeout);
     clearTimeout(this.wagerTimeout);
@@ -802,10 +849,10 @@ export class Room {
     clearTimeout(this.questionAnswerTimeout);
     this.jpd.public.questionEndTS = 0;
 
-    // Add empty answers for anyone who buzzed but didn't submit anything
+    // Add draft or empty answers for anyone who buzzed but didn't submit anything
     Object.keys(this.jpd.public.buzzes).forEach((key) => {
       if (!this.jpd.answers[key]) {
-        this.jpd.answers[key] = "";
+        this.jpd.answers[key] = this.jpd.draftAnswers?.[key] || "";
         if (this.jpd.stats) {
           this.jpd.stats.answered[key] = (this.jpd.stats.answered[key] ?? 0) + 1;
         }
@@ -1069,7 +1116,7 @@ export class Room {
         this.revealQuestion();
       } else {
         Object.keys(this.jpd.public.waitingForWager ?? {}).forEach((id) => {
-          this.submitWager(id, 0);
+          this.submitWager(id, this.jpd.draftWagers?.[id] ?? 0);
         });
       }
     }, durationMs);

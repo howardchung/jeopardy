@@ -60,6 +60,8 @@ export const getGameState = (
     final,
     answers: {} as Record<string, string>,
     wagers: {} as Record<string, number>,
+    draftAnswers: {} as Record<string, string>,
+    draftWagers: {} as Record<string, number>,
     board: {} as { [key: string]: RawQuestion },
     lastCorrectPlayer: undefined as string | undefined,
     stats: getEmptyStats(),

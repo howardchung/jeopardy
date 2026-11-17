@@ -967,9 +967,15 @@ export class Jeopardy extends React.Component<{
                               autoFocus
                               placeholder="Answer"
                               value={this.state.localAnswer}
-                              onChange={(e) =>
-                                this.setState({ localAnswer: e.target.value })
-                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                this.setState({ localAnswer: val });
+                                this.socket?.emit(
+                                  "JPD:draftAnswer",
+                                  this.state.game?.currentQ,
+                                  val,
+                                );
+                              }}
                               onKeyDown={(e: any) =>
                                 e.key === "Enter" && this.submitAnswer()
                               }
@@ -1000,9 +1006,11 @@ export class Jeopardy extends React.Component<{
                             <input
                               type="number"
                               value={this.state.localWager}
-                              onChange={(e) =>
-                                this.setState({ localWager: e.target.value })
-                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                this.setState({ localWager: val });
+                                this.socket?.emit("JPD:draftWager", val);
+                              }}
                               onKeyDown={(e: any) =>
                                 e.key === "Enter" && this.submitWager()
                               }
@@ -1049,7 +1057,6 @@ export class Jeopardy extends React.Component<{
                       <TimerBar
                         duration={game.questionEndTS - game.serverTime}
                         secondary
-                        fnBeforeTimeout={this.submitAnswer}
                         text="Waiting for answers. . ."
                       />
                     )}
@@ -1057,7 +1064,6 @@ export class Jeopardy extends React.Component<{
                       <TimerBar
                         duration={game.wagerEndTS - game.serverTime}
                         secondary
-                        fnBeforeTimeout={this.submitWager}
                         text="Waiting for wagers. . ."
                       />
                     )}
@@ -1219,12 +1225,10 @@ export class Jeopardy extends React.Component<{
 function TimerBar({
   duration,
   secondary,
-  fnBeforeTimeout,
   text,
 }: {
   duration: number;
   secondary?: boolean;
-  fnBeforeTimeout?: Function;
   text?: string;
 }) {
   const [width, setWidth] = useState(0);
@@ -1232,18 +1236,6 @@ function TimerBar({
     requestAnimationFrame(() => {
       setWidth(100);
     });
-    let timeout: number | undefined;
-    if (fnBeforeTimeout) {
-      // Submit whatever's in the box 0.5s before expected timeout
-      // Bit hacky, but to fix we either need to submit updates on each character
-      // Or have a separate step where the server instructs all clients to submit whatever is in box and accepts it
-      timeout = window.setTimeout(fnBeforeTimeout, duration - 500);
-    }
-    return () => {
-      if (timeout) {
-        window.clearTimeout(timeout);
-      }
-    };
   }, []);
   return (
     <div
