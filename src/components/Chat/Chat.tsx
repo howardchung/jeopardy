@@ -104,22 +104,27 @@ export function Chat(props: ChatProps) {
           </button>
         )}
       </div>
-      <div className="ui-input-group">
+      <form
+        className="ui-input-group"
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendChatMsg();
+        }}
+      >
         <input
           type="text"
-          onKeyDown={(e: any) => e.key === "Enter" && sendChatMsg()}
+          enterKeyHint="send"
           onChange={updateChatMsg}
           value={chatMsg}
           placeholder="Enter a message..."
         />
         <button
-          type="button"
+          type="submit"
           className="ui-action-icon ui-action-icon-md"
-          onClick={sendChatMsg}
         >
           <IconSend size={20} />
         </button>
-      </div>
+      </form>
     </div>
   );
 }

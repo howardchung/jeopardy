@@ -52,10 +52,17 @@ export function App() {
           />
         </div>
         <div className="chatColumn">
-          <div className="ui-input-group">
+          <form
+            className="ui-input-group"
+            onSubmit={(e) => {
+              e.preventDefault();
+              (document.activeElement as HTMLElement | null)?.blur?.();
+            }}
+          >
             <span className="ui-input-section">Name:</span>
             <input
               type="text"
+              enterKeyHint="done"
               value={myName}
               onChange={(e) => updateName(e.target.value)}
             />
@@ -66,7 +73,7 @@ export function App() {
             >
               Random
             </button>
-          </div>
+          </form>
           <Chat
             chat={chat}
             scrollTimestamp={scrollTimestamp}

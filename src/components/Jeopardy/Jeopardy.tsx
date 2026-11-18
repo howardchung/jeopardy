@@ -960,11 +960,18 @@ export class Jeopardy extends React.Component<{
                       !game.submitted[clientId] &&
                       game.buzzes[clientId] &&
                       game.questionEndTS ? (
-                        <div className="answerInputRow">
+                        <form
+                          className="answerInputRow"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            this.submitAnswer();
+                          }}
+                        >
                           <div className="ui-input-group">
                             <input
                               type="text"
                               autoFocus
+                              enterKeyHint="send"
                               placeholder="Answer"
                               value={this.state.localAnswer}
                               onChange={(e) => {
@@ -976,19 +983,15 @@ export class Jeopardy extends React.Component<{
                                   val,
                                 );
                               }}
-                              onKeyDown={(e: any) =>
-                                e.key === "Enter" && this.submitAnswer()
-                              }
                             />
                             <button
-                              type="button"
+                              type="submit"
                               className="ui-action-icon"
-                              onClick={() => this.submitAnswer()}
                             >
                               <IconCornerDownRight size={20} />
                             </button>
                           </div>
-                        </div>
+                        </form>
                       ) : null}
                       {game.waitingForWager &&
                       game.waitingForWager[clientId] ? (
@@ -1002,27 +1005,30 @@ export class Jeopardy extends React.Component<{
                                 .maxWager
                             })`}
                           </label>
-                          <div className="ui-input-group">
+                          <form
+                            className="ui-input-group"
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              this.submitWager();
+                            }}
+                          >
                             <input
                               type="number"
+                              enterKeyHint="send"
                               value={this.state.localWager}
                               onChange={(e) => {
                                 const val = e.target.value;
                                 this.setState({ localWager: val });
                                 this.socket?.emit("JPD:draftWager", val);
                               }}
-                              onKeyDown={(e: any) =>
-                                e.key === "Enter" && this.submitWager()
-                              }
                             />
                             <button
-                              type="button"
+                              type="submit"
                               className="ui-action-icon"
-                              onClick={() => this.submitWager()}
                             >
                               <IconCornerDownRight size={20} />
                             </button>
-                          </div>
+                          </form>
                           <button
                             type="button"
                             className="ui-btn"
@@ -1526,29 +1532,27 @@ function NewGameMenu({
         >
           <div className="ui-menu-label">Game #</div>
           <div style={{ padding: "0 8px 8px" }}>
-            <div className="ui-input-group">
+            <form
+              className="ui-input-group"
+              onSubmit={(e) => {
+                e.preventDefault();
+                onNewGame({ number: localEpNum });
+                setOpen(false);
+              }}
+            >
               <input
                 type="text"
+                enterKeyHint="go"
                 value={localEpNum}
                 onChange={(e) => onChangeEpNum(e.target.value)}
-                onKeyDown={(e: any) => {
-                  if (e.key === "Enter") {
-                    onNewGame({ number: localEpNum });
-                    setOpen(false);
-                  }
-                }}
               />
               <button
-                type="button"
+                type="submit"
                 className="ui-action-icon"
-                onClick={() => {
-                  onNewGame({ number: localEpNum });
-                  setOpen(false);
-                }}
               >
                 <IconCornerDownRight name="arrow right" />
               </button>
-            </div>
+            </form>
           </div>
           <hr className="ui-menu-divider" />
           <div className="ui-menu-label">Random</div>
