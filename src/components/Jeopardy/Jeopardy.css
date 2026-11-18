@@ -95,9 +95,15 @@
 
 @media only screen and (min-width: 769px) {
   .board {
-    grid-template-rows: repeat(6, minmax(64px, 1fr));
+    grid-template-rows: repeat(6, minmax(52px, 1fr));
     gap: 6px;
     padding: 6px;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .board {
+    grid-template-rows: repeat(6, minmax(0, 1fr));
   }
 }
 
@@ -115,19 +121,26 @@
   width: 100%;
   min-width: 0;
   min-height: 46px;
+  overflow: hidden;
   user-select: none;
 }
 
 @media only screen and (min-width: 769px) {
   .box {
     padding: 6px 4px;
-    min-height: 64px;
+    min-height: 52px;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .box {
+    min-height: 0;
   }
 }
 
 .category {
   font-family: "Swiss 911", sans-serif;
-  font-size: clamp(0.6rem, 2.2vw, 1.25rem);
+  font-size: clamp(0.6rem, min(2vw, 2.2dvh), 1.25rem);
   line-height: 1.05;
   letter-spacing: 0.4px;
   color: #e6f2ff;
@@ -139,7 +152,7 @@
 
 .value {
   font-family: "Swiss 911", sans-serif;
-  font-size: clamp(1.05rem, 4.4vw, 2.9rem);
+  font-size: clamp(1.05rem, min(4.2vw, 5.2dvh), 2.9rem);
   line-height: 1;
   color: #e6b355;
   text-shadow: 2px 2px 0 #000000;
@@ -334,7 +347,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
-@media only screen and (min-width: 769px) {
+@media only screen and (min-width: 769px) and (min-height: 821px) {
   .scoreboard {
     width: 114px;
   }
@@ -396,7 +409,7 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.6);
 }
 
-@media only screen and (min-width: 769px) {
+@media only screen and (min-width: 769px) and (min-height: 821px) {
   .scoreboard .points {
     font-size: 21px;
     padding: 6px 8px;
@@ -436,7 +449,7 @@
   text-align: center;
 }
 
-@media only screen and (min-width: 769px) {
+@media only screen and (min-width: 769px) and (min-height: 821px) {
   .scoreboard .answerBox {
     min-height: 68px;
     font-size: 12px;

@@ -276,6 +276,25 @@ export class Jeopardy extends React.Component<{
         clue.style.transform = "scale(1)";
       }, 1);
     }
+    const judgeId = this.state.game?.currentJudgeAnswer;
+    if (judgeId && prevState.game?.currentJudgeAnswer !== judgeId) {
+      const strip = document.getElementById("scoreboardStrip");
+      const card = document.getElementById(`scoreboard-${judgeId}`);
+      if (strip && card) {
+        const stripRect = strip.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        if (cardRect.left < stripRect.left || cardRect.right > stripRect.right) {
+          const targetLeft =
+            strip.scrollLeft +
+            (cardRect.left - stripRect.left) -
+            (stripRect.width - cardRect.width) / 2;
+          strip.scrollTo({
+            left: Math.max(0, targetLeft),
+            behavior: "smooth",
+          });
+        }
+      }
+    }
   }
 
   onKeydown = (e: any) => {
@@ -1144,10 +1163,14 @@ export class Jeopardy extends React.Component<{
               )}
             </div>
           </div>
-          <div className="scoreboardStrip">
+          <div id="scoreboardStrip" className="scoreboardStrip">
             {participants.map((p) => {
               return (
-                <div key={p.id} className="scoreboard">
+                <div
+                  key={p.id}
+                  id={`scoreboard-${p.id}`}
+                  className="scoreboard"
+                >
                   <div className="picture">
                     <img
                       alt=""

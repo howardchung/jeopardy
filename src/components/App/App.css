@@ -31,8 +31,8 @@ body {
 @media only screen and (min-width: 992px) {
   .fullHeightColumn,
   .chatColumn {
-    height: calc(100dvh - 68px);
-    min-height: 520px;
+    height: calc(100dvh - 72px);
+    min-height: 560px;
     max-height: none;
   }
 }
